@@ -13,7 +13,62 @@ fully functional infrastructure.
 usage: client.py [-u|--xmlrpc-url <url>] [-a|--auth_file <filename>] operation op_parameters
 ```
 
-Authentication File:
+1. INSTALLATION
+===============
+
+1.1 REQUISITES
+--------------
+
+IM is based on python, so Python 2.4 or higher runtime and standard library must
+be installed in the system.
+
+It is also required to install the Python Lex & Yacc library (http://www.dabeaz.com/ply/).
+It is available in all of the main distributions as 'python-ply' package.
+
+1.2 OPTIONAL PACKAGES
+--------------
+
+In case of using the SSL secured version of the XMLRPC API the SpringPython
+framework (http://springpython.webfactional.com/) must be installed.
+
+1.3 INSTALLING
+--------------
+
+### 1.3.1 FROM PIP
+
+You only have to call the install command of the pip tool with the IM-client package.
+
+```
+pip install IM-client
+```
+
+### 1.3.2 FROM SOURCE
+
+You only need to install the tar-gziped file to any directoy:
+
+```
+$ tar xvzf IM-client-X.XX.tar.gz
+```
+
+1.4 CONFIGURATION
+--------------
+
+To avoid typing the parameters in all the client calls. The user can define a config
+file "im_client.cfg" in the current directory or a file ".im_client.cfg" in their 
+home directory. In the config file the user can specify the following parameters:
+
+```
+[im_client]
+xmlrpc_url=http://localhost:8899
+auth_file=auth.dat
+xmlrpc_ssl=no
+xmlrpc_ssl_ca_certs=/tmp/pki/ca-chain.pem
+```
+
+* CLIENT_DIR - must be set to the full path where the IM client is installed 
+            (e.g. /usr/local/im-client)
+            
+### 1.4.1 AUTH FILE
 
 The authorization data is used to validate access to the components in the
 infrastructure. This file is composed of a set of "key - value" pairs,
@@ -36,55 +91,18 @@ The list of "key" values that must be specified for each component are:
         deployment to access. In the EC2 and in the system components (IM and VMRC)
         this field is not used.
 
-To avoid typing the parameters in all the client calls. The user can define a config
-file "im_client.cfg" in the current directory or a file ".im_client.cfg" in their 
-home directory. In the config file the user can specify the following parameters:
+An example of the auth file:
 
 ```
-[im_client]
-xmlrpc_url=http://localhost:8899
-auth_file=auth.dat
-xmlrpc_ssl=no
-xmlrpc_ssl_ca_certs=/tmp/pki/ca-chain.pem
+id = one; type = OpenNebula; host = osenserve:2633; username = user; password = pass
+type = InfrastructureManager; username = user; password = pass
+type = VMRC; host = http://server:8080/vmrc; username = user; password = pass
+id = ec2; type = EC2; username = ACCESS_KEY; password = SECRET_KEY
+id = oshost; type = OpenStack; host = oshost:8773; username = ACCESS_KEY; key = SECRET_KEY
+id = occi; type = OCCI; host = occiserver:4567; username = user; password = pass
 ```
-
-1. INSTALLATION
-===============
-
-1.1 REQUISITES
---------------
-
-IM is based on python, so Python 2.4 or higher runtime and standard library must
-be installed in the system.
-
-It is also required to install the Python Lex & Yacc library (http://www.dabeaz.com/ply/).
-It is available in all of the main distributions as 'python-ply' package.
-
-1.2 OPTIONAL PACKAGES
---------------
-
-In case of using the SSL secured version of the XMLRPC API the SpringPython
-framework (http://springpython.webfactional.com/) must be installed.
-
-1.3 INSTALLING
---------------
-
-You only need to install the tar-gziped file to any directoy:
-
-```
-$ tar xvzf IM-client-X.XX.tar.gz
-```
-
-1.4 CONFIGURATION
---------------
-
-Adjust the parameters in $CLIENT_PATH/config.py. Please pay attention to the next 
-configuration variables, as they are the most important
-
-* CLIENT_DIR - must be set to the full path where the IM client is installed 
-            (e.g. /usr/local/im-client)
          
-### 1.4.1 SECURITY
+### 1.4.2 SECURITY
 
 Security is disabled by default, but it should be taken into account that it would
 be possible that someone that has local network access can "sniff" the traffic and
