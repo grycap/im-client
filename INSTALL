@@ -1,0 +1,41 @@
+1. INSTALLATION
+
+1.1 REQUISITES
+
+IM is based on python, so Python 2.4 or higher runtime and standard library must
+be installed in the system.
+
+It is also required to install the Python Lex & Yacc library (http://www.dabeaz.com/ply/).
+It is available in all of the main distributions as 'python-ply' package.
+
+1.2 OPTIONAL PACKAGES
+
+In case of using the SSL secured version of the XMLRPC API the SpringPython
+framework (http://springpython.webfactional.com/) must be installed.
+
+1.3 INSTALLING
+
+You only need to install the tar-gziped file to any directoy:
+
+$ tar xvzf IM-client-X.XX.tar.gz
+
+1.4 CONFIGURATION
+
+Adjust the parameters in $CLIENT_PATH/config.py. Please pay attention to the next 
+configuration variables, as they are the most important
+
+CLIENT_DIR - must be set to the full path where the IM client is installed 
+            (e.g. /usr/local/im-client)
+         
+1.4.1 SECURITY
+
+Security is disabled by default, but it should be taken into account that it would
+be possible that someone that has local network access can "sniff" the traffic and
+get the messages with the IM with the authorisation data with the cloud providers.
+
+I can be activated both in the XMLRPC and REST APIs. Setting this variables:
+
+XMLRCP_SSL = True
+
+And then set the variables: XMLRCP_SSL_CA_CERTS to your CA certificates paths.
+

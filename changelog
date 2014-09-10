@@ -1,0 +1,15 @@
+IM-client 0.10
+
+    * Initial version
+
+IM-client 0.20
+
+    * Changes in the RADL code
+
+IM-client 0.21
+
+    * Changes in the examples to be correct with the new RADL syntax
+
+IM-client 1.0.0
+
+    * Minor bug fixes
