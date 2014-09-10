@@ -21,7 +21,6 @@ import sys
 import os
 from optparse import OptionParser, Option, IndentedHelpFormatter
 import ConfigParser
-from auth import Authentication
 from radl import radl_parse
 from radl.radl import RADL
 
@@ -55,6 +54,31 @@ class PosOptionParser(OptionParser):
 	def set_out(self, out):
 		self.out = out
 
+# From IM.auth
+def read_auth_data(filename):
+	if isinstance(filename, list):
+		lines = filename
+	else:
+		auth_file = open(filename, 'r')
+		lines = auth_file.readlines()
+		auth_file.close()
+
+	res = []
+	i = 0
+	for line in lines:
+		line = line.strip()
+		if len(line) > 0 and not line.startswith("#"):
+			auth = {}
+			tokens = line.split(";")
+			for token in tokens:
+				key_value = token.split(" = ")
+				if len(key_value) != 2:
+					break;
+				else:
+					auth[key_value[0].strip()] = key_value[1].strip().replace("\\n","\n")
+			res.append(auth)
+	
+	return res
 
 def get_inf_id(args):
 	if len(args) >= 1:
@@ -116,7 +140,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	if options.auth_file is None:
 		parser.error("Auth file not specified")
 
-	auth_data = Authentication.read_auth_data(options.auth_file)
+	auth_data = read_auth_data(options.auth_file)
 	
 	if auth_data is None:
 		parser.error("Auth file with incorrect format.")
