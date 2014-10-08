@@ -22,9 +22,8 @@ import os
 from optparse import OptionParser, Option, IndentedHelpFormatter
 import ConfigParser
 from radl import radl_parse
-from radl.radl import RADL
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 class PosOptionParser(OptionParser):
 	def format_help(self, formatter=None):
@@ -64,7 +63,7 @@ def read_auth_data(filename):
 		auth_file.close()
 
 	res = []
-	i = 0
+
 	for line in lines:
 		line = line.strip()
 		if len(line) > 0 and not line.startswith("#"):
@@ -75,7 +74,17 @@ def read_auth_data(filename):
 				if len(key_value) != 2:
 					break;
 				else:
-					auth[key_value[0].strip()] = key_value[1].strip().replace("\\n","\n")
+					value = key_value[1].strip().replace("\\n","\n")
+					# Enable to specify a filename and set the contents of it
+					if value.startswith("file(") and value.endswith(")"):
+						filename = value[5:len(value)-1]
+						try:
+							value_file = open(filename, 'r')
+							value = value_file.read()
+							value_file.close()
+						except:
+							pass
+					auth[key_value[0].strip()] = value
 			res.append(auth)
 	
 	return res
@@ -283,14 +292,14 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 			sys.exit(1)
 
 		propiedad = None
-		if len(args) >= 2:
+		if len(args) >= 3:
 			propiedad = args[2]
 
 		(success, info)  = server.GetVMInfo(inf_id, vm_id, auth_data)
 
 		if success:
+			info_radl = radl_parse.parse_radl(info)
 			if propiedad:
-				info_radl = radl_parse.parse_radl(info['info'])
 				for system in info_radl.systems:
 					prop = system.getValue(propiedad)
 					if prop:
@@ -317,25 +326,19 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 				(success, info)  = server.GetVMInfo(inf_id, vm_id, auth_data)
 
 				if success:
-					if propiedad == None:
-						print info
-					elif propiedad == 'state':
-						print info['state']
-					elif propiedad == 'radl':
-						print info['info']
-					elif propiedad == 'cloud':
-						print info['cloud']
-					else:
-						info_radl = radl_parse.parse_radl(info['info'])
+					info_radl = radl_parse.parse_radl(info)
+					if propiedad:
 						for system in info_radl.systems:
 							prop = system.getValue(propiedad)
 							if prop:
 								print prop
+					else:
+						print info
 				else:
 					print "ERROR getting the information about the VM: " + vm_id
 					print info
 		else:
-			print "ERROR getting the information about the infrastructure: " + str(id)
+			print "ERROR getting the information about the infrastructure: " + str(res)
 			sys.exit(1)
 	
 	elif operation == "destroy":
