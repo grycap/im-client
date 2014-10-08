@@ -13,3 +13,8 @@ IM-client 0.21
 IM-client 1.0.0
 
     * Minor bug fixes
+
+IM-client 1.1.0
+
+    * Minor bug fixes
+    * Changes to be compatible with IM version 1.1.0
