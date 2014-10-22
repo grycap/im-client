@@ -295,20 +295,15 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		if len(args) >= 3:
 			propiedad = args[2]
 
-		(success, info)  = server.GetVMInfo(inf_id, vm_id, auth_data)
-
-		if success:
-			info_radl = radl_parse.parse_radl(info)
-			if propiedad:
-				for system in info_radl.systems:
-					prop = system.getValue(propiedad)
-					if prop:
-						print prop
-			else:
-				print info
+		if propiedad:
+			(success, info)  = server.GetVMProperty(inf_id, vm_id, propiedad, auth_data)
 		else:
+			(success, info)  = server.GetVMInfo(inf_id, vm_id, auth_data)
+
+		if not success:
 			print "ERROR getting the VM info: " + vm_id
-			print info
+
+		print info
 
 	elif operation == "getinfo":
 		inf_id = get_inf_id(args)
@@ -323,20 +318,16 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
 			for vm_id in vm_ids:
 				print "Info about VM with ID: " + vm_id
-				(success, info)  = server.GetVMInfo(inf_id, vm_id, auth_data)
-
-				if success:
-					info_radl = radl_parse.parse_radl(info)
-					if propiedad:
-						for system in info_radl.systems:
-							prop = system.getValue(propiedad)
-							if prop:
-								print prop
-					else:
-						print info
+				
+				if propiedad:
+					(success, info)  = server.GetVMProperty(inf_id, vm_id, propiedad, auth_data)
 				else:
+					(success, info)  = server.GetVMInfo(inf_id, vm_id, auth_data)
+
+				if not success:
 					print "ERROR getting the information about the VM: " + vm_id
-					print info
+
+				print info
 		else:
 			print "ERROR getting the information about the infrastructure: " + str(res)
 			sys.exit(1)
