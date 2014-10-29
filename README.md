@@ -82,24 +82,31 @@ The list of "key" values that must be specified for each component are:
 * type: The type of the component. It can be any of the components of the
         architecture, such as the "InfrastructureManager", "VMRC" or any of
         the cloud deployments currently supported by the IM: OpenNebula, EC2,
-        OpenStack, OCCI or LibVirt.
+        OpenStack, OCCI, LibCloud, GCE or LibVirt.
 * username: The name of the user for the authentication. In the EC2 and OpenStack
             cases it refers to the Access Key ID value. password: The password for
             the authentication. In the EC2 and OpenStack cases it refers to the
-            Secret Access Key value.
+            Secret Access Key value. In the GCE case it can refer to the CLIENT_ID
+            and CLIENT_SECRET (using Installed Application authentication) or
+            the SERVICE_ACCOUNT_EMAIL and RSA_PRIVATE_KEY (using the Service 
+            Account authentication)
 * host: The address to the server in format "address:port" to specify the cloud
-        deployment to access. In the EC2 and in the system components (IM and VMRC)
+        deployment to access. In the EC2 or GCE and in the system components (IM and VMRC)
         this field is not used.
 
 An example of the auth file:
 
 ```
-id = one; type = OpenNebula; host = osenserve:2633; username = user; password = pass
+id = one; type = OpenNebula; host = server:2633; username = user; password = pass
 type = InfrastructureManager; username = user; password = pass
 type = VMRC; host = http://server:8080/vmrc; username = user; password = pass
-id = ec2; type = EC2; username = ACCESS_KEY; password = SECRET_KEY
-id = oshost; type = OpenStack; host = oshost:8773; username = ACCESS_KEY; key = SECRET_KEY
-id = occi; type = OCCI; host = occiserver:4567; username = user; password = pass
+id = ec2; type = EC2; username = ACESS_KEY; password = SECRET_KEY
+id = gce; type = GCE; username = CLIENT_ID; password = CLIENT_SECRET; project = project-name
+id = gce2; type = GCE; username = SERVICE_ACC_EMAIL; password = file(path_to_pem_file); project = project-name
+id = docker; type = Docker; host = server:2375
+id = occi; type = OCCI; host = server:8443; proxy = file(/tmp/proxy.pem)
+id = libcloud; type = LibCloud; driver = EC2; username = ACESS_KEY; password = SECRET_KEY
+
 ```
          
 ### 1.4.2 SECURITY
