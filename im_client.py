@@ -23,7 +23,7 @@ from optparse import OptionParser, Option, IndentedHelpFormatter
 import ConfigParser
 from radl import radl_parse
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 class PosOptionParser(OptionParser):
 	def format_help(self, formatter=None):
@@ -101,6 +101,22 @@ def get_inf_id(args):
 		print "Inf ID not specified"
 		sys.exit(1)
 
+def get_input_params(radl):
+	"""
+	Serch for input parameters, ask the user for the values and replace them in the RADL
+	"""
+	pos = 0
+	while pos != -1:
+		pos = radl.find("@input.", pos)
+		if pos != -1:
+			pos = pos + 7
+			pos_fin = radl.find("@", pos)
+			param_name = radl[pos:pos_fin]
+			valor = raw_input("Specify parameter " + param_name + ": ")
+			radl = radl.replace("@input." + param_name + "@", valor)
+
+	return radl
+	
 if __name__ == "__main__":
 	config = ConfigParser.RawConfigParser()
 	config.read(['im_client.cfg', os.path.expanduser('~/.im_client.cfg')])
@@ -215,7 +231,14 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 			print "RADL file to create inf. not specified"
 			sys.exit(1)
 
-		radl = radl_parse.parse_radl(args[0])
+		# Read the file
+		f = open(args[0])
+		radl_data = "".join(f.readlines())
+		f.close()
+		# check for input parameters @input.[param_name]@
+		radl_data = get_input_params(radl_data)
+		
+		radl = radl_parse.parse_radl(radl_data)
 	
 		(success, inf_id) = server.CreateInfrastructure(str(radl), auth_data)
 	
