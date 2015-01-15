@@ -151,8 +151,10 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	parser.add_operation_help('create','<radl_file>')
 	parser.add_operation_help('destroy','<inf_id>')
 	parser.add_operation_help('getinfo','<inf_id> [radl_attribute]')
+	parser.add_operation_help('getradl','<inf_id>')
 	parser.add_operation_help('getcontmsg','<inf_id>')
 	parser.add_operation_help('getvminfo','<inf_id> <vm_id> [radl_attribute]')
+	parser.add_operation_help('getvmcontmsg','<inf_id> <vm_id>')
 	parser.add_operation_help('addresource','<inf_id> <radl_file>')
 	parser.add_operation_help('removeresource', '<inf_id> <vm_id>')
 	parser.add_operation_help('alter','<inf_id> <vm_id> <radl_file>')
@@ -175,7 +177,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	operation = args[0].lower()
 	args = args[1:]
 
-	if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start", "alter", "getcontmsg", "getvminfo", "reconfigure"]):
+	if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start", "alter", "getcontmsg", "getvminfo", "reconfigure","getradl","getvmcontmsg"]):
 		parser.error("operation not recognised.  Use --help to show all the available operations")
 
 	if XMLRCP_SSL:
@@ -294,17 +296,15 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	elif operation == "getcontmsg":
 		inf_id = get_inf_id(args)
 
-		(success, res) = server.GetInfrastructureInfo(inf_id, auth_data)
+		(success, cont_out) = server.GetInfrastructureContMsg(inf_id, auth_data)
 		if success:
-			cont_out = res['cont_out']
-			
 			if len(cont_out) > 0:
 				print "Msg Contextualizator: \n"
 				print cont_out
 			else:
 				print "No Msg Contextualizator avaliable\n"
 		else:
-			print res
+			print "Error getting infrastructure contextualization message: " + res
 
 	elif operation == "getvminfo":
 		inf_id = get_inf_id(args)
@@ -334,11 +334,9 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		if len(args) >= 2:
 			propiedad = args[1]
 
-		(success, res) = server.GetInfrastructureInfo(inf_id, auth_data)
+		(success, vm_ids) = server.GetInfrastructureInfo(inf_id, auth_data)
 
 		if success:
-			vm_ids = res['vm_list']
-
 			for vm_id in vm_ids:
 				print "Info about VM with ID: " + vm_id
 				
@@ -392,4 +390,30 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 			print "Infrastructure stopped"
 		else:
 			print "ERROR stopping the infrastructure: " + inf_id
+			sys.exit(1)
+			
+	elif operation == "getradl":
+		inf_id = get_inf_id(args)
+		(success, radl) = server.GetInfrastructureRADL(inf_id, auth_data)
+
+		if success:
+			print radl
+		else:
+			print "ERROR getting the infrastructure RADL: " + inf_id
+			sys.exit(1)
+			
+	elif operation == "getvmcontmsg":
+		inf_id = get_inf_id(args)
+		if len(args) >= 2:
+			vm_id = args[1]
+		else:
+			print "VM ID to get info not specified"
+			sys.exit(1)
+
+		(success, info)  = server.GetVMContMsg(inf_id, vm_id, auth_data)
+		
+		if success:
+			print info
+		else:
+			print "Error getting VM contextualization message: " + info
 			sys.exit(1)

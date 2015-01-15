@@ -22,3 +22,5 @@ IM-client 1.1.0
 IM-client 1.2.0
 
     * Add support to parametric RADLs (@input.[param]@ values)
+    * Add the getradl operation
+    * Add the getvmcontmsg operation
