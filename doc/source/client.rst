@@ -57,6 +57,10 @@ The :program:`im_client` is called like this::
       Show the information associated to the virtual machine with ID ``vmId``
       associated to the infrastructure with ID ``infId``.
 
+   ``getvmcontmsg infId vmId``
+      Show the contextualization message of the virtual machine with ID ``vmId``
+      associated to the infrastructure with ID ``infId``.
+
    ``addresource infId radlfile``
       Add to infrastructure with ID ``infId`` the resources specifies in the
       RADL file with path ``radlfile``.
@@ -101,7 +105,7 @@ keys are:
 
 * ``type`` indicates the service that refers the credential. The services
   supported are ``InfrastructureManager``, ``VMRC``, ``OpenNebula``, ``EC2``,
-  ``OpenStack``, ``OCCI``, ``LibCloud`` and ``LibVirt``.
+  ``OpenStack``, ``OCCI``, ``LibCloud``, ``Docker``, ``GCE`` and ``LibVirt``.
 
 * ``username`` indicates the user name associated to the credential. In EC2 and
   OpenStack it refers to the *Access Key ID*.
@@ -111,6 +115,13 @@ keys are:
 
 * ``host`` indicates the address of the access point to the cloud provider.
   This field is not used in IM and EC2 credentials.
+  
+* ``proxy`` indicates the content of the proxy file associated to the credential.
+  To refer to a file you must use the function "file(/tmp/proxyfile.pem)" as shown in the example.
+  This field is only used in the OCCI plugin.
+  
+* ``project`` indicates the project name associated to the credential.
+  This field is only used in the GCE plugin
 
 * ``id`` associates an identifier to the credential. The identifier should be
   used as the label in the *deploy* section in the RADL.
@@ -122,7 +133,9 @@ An example of the auth file::
    type = VMRC; host = http://server:8080/vmrc; username = user; password = pass
    id = ec2; type = EC2; username = ACCESS_KEY; password = SECRET_KEY
    id = oshost; type = OpenStack; host = oshost:8773; username = ACCESS_KEY; key = SECRET_KEY
-   id = occi; type = OCCI; host = occiserver:4567; username = user; password = pass
+   id = gce; type = GCE; username = username.apps.googleusercontent.com; password = pass; project = projectname
+   id = docker; type = Docker; host = http://host:2375
+   id = occi; type = OCCI; proxy = file(/tmp/proxy.pem); host = https://fc-one.i3m.upv.es:11443
 
 IM Server does not store the credentials used in the creation of
 infrastructures. Then the user has to provide them in every call of
