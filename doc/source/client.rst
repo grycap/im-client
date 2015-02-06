@@ -113,7 +113,8 @@ keys are:
 
 * ``password`` indicates the password associated to the credential. In EC2 and
   OpenStack it refers to the *Secret Access Key*. In GCE it refers to *Service 
-  Private Key* (`more info <https://developers.google.com/console/help/new/#serviceaccounts>`_).
+  Private Key*. See how to get it and how to extract the private key file from
+  `here info <https://cloud.google.com/storage/docs/authentication#service_accounts>`_).
 
 * ``host`` indicates the address of the access point to the cloud provider.
   This field is not used in IM and EC2 credentials.
@@ -126,12 +127,12 @@ keys are:
   This field is only used in the GCE plugin.
   
 * ``public_key`` indicates the content of the public key file associated to the credential.
-  To refer to a file you must use the function "file(/tmp/proxyfile.pem)" as shown in the example.
+  To refer to a file you must use the function "file(cert.pem)" as shown in the example.
   This field is only used in the Azure plugin. See how to get it
   `here <https://msdn.microsoft.com/en-us/library/azure/gg551722.aspx>`_
 
 * ``private_key`` indicates the content of the private key file associated to the credential.
-  To refer to a file you must use the function "file(/tmp/proxyfile.pem)" as shown in the example.
+  To refer to a file you must use the function "file(key.pem)" as shown in the example.
   This field is only used in the Azure plugin. See how to get it
   `here <https://msdn.microsoft.com/en-us/library/azure/gg551722.aspx>`_
 
