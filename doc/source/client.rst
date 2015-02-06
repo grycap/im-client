@@ -105,13 +105,15 @@ keys are:
 
 * ``type`` indicates the service that refers the credential. The services
   supported are ``InfrastructureManager``, ``VMRC``, ``OpenNebula``, ``EC2``,
-  ``OpenStack``, ``OCCI``, ``LibCloud``, ``Docker``, ``GCE`` and ``LibVirt``.
+  ``OpenStack``, ``OCCI``, ``LibCloud``, ``Docker``, ``GCE``, ``Azure`` and ``LibVirt``.
 
 * ``username`` indicates the user name associated to the credential. In EC2 and
-  OpenStack it refers to the *Access Key ID*.
+  OpenStack it refers to the *Access Key ID*. In Azure it refers to the user 
+  Subscription ID. In GCE it refers to *Service Account’s Email Address*. 
 
 * ``password`` indicates the password associated to the credential. In EC2 and
-  OpenStack it refers to the *Secret Acess Key*.
+  OpenStack it refers to the *Secret Access Key*. In GCE it refers to *Service 
+  Private Key* (`more info <https://developers.google.com/console/help/new/#serviceaccounts>`_).
 
 * ``host`` indicates the address of the access point to the cloud provider.
   This field is not used in IM and EC2 credentials.
@@ -121,7 +123,17 @@ keys are:
   This field is only used in the OCCI plugin.
   
 * ``project`` indicates the project name associated to the credential.
-  This field is only used in the GCE plugin
+  This field is only used in the GCE plugin.
+  
+* ``public_key`` indicates the content of the public key file associated to the credential.
+  To refer to a file you must use the function "file(/tmp/proxyfile.pem)" as shown in the example.
+  This field is only used in the Azure plugin. See how to get it
+  `here <https://msdn.microsoft.com/en-us/library/azure/gg551722.aspx>`_
+
+* ``private_key`` indicates the content of the private key file associated to the credential.
+  To refer to a file you must use the function "file(/tmp/proxyfile.pem)" as shown in the example.
+  This field is only used in the Azure plugin. See how to get it
+  `here <https://msdn.microsoft.com/en-us/library/azure/gg551722.aspx>`_
 
 * ``id`` associates an identifier to the credential. The identifier should be
   used as the label in the *deploy* section in the RADL.
@@ -136,6 +148,8 @@ An example of the auth file::
    id = gce; type = GCE; username = username.apps.googleusercontent.com; password = pass; project = projectname
    id = docker; type = Docker; host = http://host:2375
    id = occi; type = OCCI; proxy = file(/tmp/proxy.pem); host = https://fc-one.i3m.upv.es:11443
+   id = azure; type = Azure; username = subscription-id; public_key = file(cert.pem); private_key = file(key.pem)
+   
 
 IM Server does not store the credentials used in the creation of
 infrastructures. Then the user has to provide them in every call of
