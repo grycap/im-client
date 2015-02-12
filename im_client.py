@@ -23,7 +23,7 @@ from optparse import OptionParser, Option, IndentedHelpFormatter
 import ConfigParser
 from radl import radl_parse
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 class PosOptionParser(OptionParser):
 	def format_help(self, formatter=None):

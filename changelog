@@ -24,3 +24,8 @@ IM-client 1.2.0
     * Add support to parametric RADLs (@input.[param]@ values)
     * Add the getradl operation
     * Add the getvmcontmsg operation
+
+IM-client 1.2.1
+
+    * Check the RADL before sending to the IM server in the create operation
+    * Update the radl.py to the last updates in the IM server
