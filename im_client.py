@@ -241,6 +241,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		radl_data = get_input_params(radl_data)
 		
 		radl = radl_parse.parse_radl(radl_data)
+		radl.check()
 	
 		(success, inf_id) = server.CreateInfrastructure(str(radl), auth_data)
 	

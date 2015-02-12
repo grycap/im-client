@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import copy
-from itertools import groupby
+import socket,struct
 from distutils.version import LooseVersion
 
 def UnitToValue(unit):
@@ -34,6 +34,36 @@ def UnitToValue(unit):
 
 def is_version(version, _):
 	return all([num.isdigit() for num in version.getValue().split(".")])
+
+def check_provider_ids_format(provider_ids, _):
+	"""
+	Check the format of the provider_ids string.
+	Valid format:
+	EC2=subnet-123123,GCE=default
+	"""
+	try:
+		network.parseProviderIDs(provider_ids.getValue())
+	except:
+		return False
+	else:
+		return True
+
+def check_outports_format(outports, _):
+	"""
+	Check the format of the outports string.
+	Valid formats:
+	8899/tcp-8899/tcp,22/tcp-22/tcp
+	8899/tcp-8899,22/tcp-22
+	8899-8899,22-22
+	8899/tcp,22/udp
+	8899,22
+	"""
+	try:
+		network.parseOutPorts(outports.getValue())
+	except:
+		return False
+	else:
+		return True
 
 class RADLParseException(Exception):
 	"""Error parsing RADL document."""
@@ -73,6 +103,13 @@ class Feature:
 		"""Return a copy of this Feature."""
 
 		return copy.deepcopy(self)
+	
+	def getLogOperator(self):
+		"""Return the operator of this Feature in python style."""
+		if self.operator == "=":
+			return "=="
+		else:
+			return self.operator
 
 	def getValue(self, unit=None):
 		"""
@@ -159,7 +196,7 @@ class Features(object):
 		"""List of features."""
 
 		r = []
-		for p, inter in self.props.items():
+		for _, inter in self.props.items():
 			if isinstance(inter, tuple):
 				if (inter[0] and inter[1] and inter[0].getValue() == inter[1].getValue() and
 					inter[0].operator == "=" and inter[1].operator == "="):
@@ -215,7 +252,7 @@ class Features(object):
 		elif f.prop not in self.props and missing in ["ignore", "first"]:
 			return
 		
-		if isinstance(f.value, int) or isinstance(f, float):
+		if isinstance(f.value, int) or isinstance(f.value, float):
 			if f.operator == "=":
 				inter1 = (f, f)
 			elif f.operator[0] == "<":
@@ -240,15 +277,16 @@ class Features(object):
 				self.props.setdefault(f.prop, {})[f.value.getValue("name")] = f
 		else:
 			value0 = self.props.get(f.prop, None)
-			if not value0 or (value0.value != f.value and conflict == "other"):
+			if not value0 or (conflict == "other"):
 				self.props[f.prop] = f
 			elif value0.value != f.value and conflict == "error":
 				raise RADLParseException("Conflict adding `%s` because `%s` is already set." % (f, value0), line=f.line)
 
-	def hasFeature(self, prop):
+	def hasFeature(self, prop, check_softs=False):
 		"""Return if there is a property with that name."""
 
-		return prop in self.props
+		return prop in self.props or (check_softs and
+			any([ fs.hasFeature(prop) for fs in self.props.get(SoftFeatures.SOFT, []) ]))
 
 	def getValue(self, prop, default=None):
 		"""Return the value of feature with that name or ``default``."""
@@ -536,7 +574,6 @@ class contextualize(Aspect, object):
 		"""Get a dictionary of the contextualize_items grouped by the step or the default value"""
 
 		if self.items.values():
-			#return dict((k,list(v)) for k,v in groupby(sorted(self.items.values()), key=lambda x: x.num))
 			res = {}
 			for elem in self.items.values():
 				if elem.num in res:
@@ -584,8 +621,8 @@ class configure(Aspect):
 class deploy(Aspect):
 	"""Store a RADL ``deploy``."""
 
-	def __init__(self, id, vm_number, cloud_id=None, line=None):
-		self.id = id
+	def __init__(self, deploy_id, vm_number, cloud_id=None, line=None):
+		self.id = deploy_id
 		"""System id."""
 		self.vm_number = vm_number
 		"""Number of virtual machines to deploy."""
@@ -611,6 +648,8 @@ class deploy(Aspect):
 
 class network(Features, Aspect):
 	"""Store a RADL ``network``."""
+	
+	private_net_masks = ["10.0.0.0/8","172.16.0.0/12","192.168.0.0/16","169.254.0.0/16","100.64.0.0/10","192.0.0.0/24","198.18.0.0/15"]
 
 	def __init__(self, name, features=None, reference=False, line=None):
 		self.id = name
@@ -619,6 +658,29 @@ class network(Features, Aspect):
 		"""True if it is only a reference and it isn't a definition."""
 		Features.__init__(self, features)
 		self.line = line
+
+	@staticmethod
+	def isPrivateIP(ip):
+		"""
+		Check if an IP address is private
+		"""
+		for mask in network.private_net_masks: 
+			if network.addressInNetwork(ip,mask):
+				return True
+		return False
+
+	@staticmethod
+	def addressInNetwork(ip,net):
+		"""Is an address in a network (format: 10.0.0.0/24)"""
+		ipaddr = struct.unpack('>L',socket.inet_aton(ip))[0]
+		netaddr,bits = net.split('/')
+		netmask = struct.unpack('>L',socket.inet_aton(netaddr))[0]
+		ipaddr_masked = ipaddr & (4294967295<<(32-int(bits)))   # Logical AND of IP address and mask will equal the network address if it matches
+		if netmask == netmask & (4294967295<<(32-int(bits))):   # Validate network address is valid for mask
+			return ipaddr_masked == netmask
+		else:
+			# print "***WARNING*** Network",netaddr,"not valid with mask /"+bits
+			return False
 
 	def getId(self):
 		return self.id
@@ -630,7 +692,9 @@ class network(Features, Aspect):
 		"""Check the features in this network."""
 
 		SIMPLE_FEATURES = {
-			"outbound": (str, ["YES", "NO"])
+			"outbound": (str, ["YES", "NO"]),
+			"outports": (str, check_outports_format),
+			"provider_ids": (str, check_provider_ids_format)
 		}
 		self.check_simple(SIMPLE_FEATURES, radl)
 
@@ -643,6 +707,89 @@ class network(Features, Aspect):
 		"""Return a network with id being ``name`` and with outbound=yes if ``public``."""
 
 		return network(name, [Feature("outbound", "=", "yes" if public else "no")])
+
+	@staticmethod
+	def parseProviderIDs(provider_ids):
+		"""
+		Parse the format of the provider_ids string.
+		Valid format:
+		EC2=subnet-123123,GCE=default
+		Returns a dict with the format: key = provider, value = net_id
+		"""
+		res = {}
+		for provider_id in provider_ids.split(','):
+			parts = provider_id.split('=')
+			if len(parts) == 2:
+				res[parts[0]] = parts[1]
+			elif len(parts) < 2:
+				raise Exception("Incorrect format in provider_ids: " + provider_id)
+			else:
+				res[parts[0]] = "=".join(parts[1:])
+
+		return res
+
+	def getProviderIDs(self):
+		"""
+		Get the provider_ids of this network.
+		Valid format:
+		EC2=subnet-123123,GCE=default
+		Returns a dict with the format: key = provider, value = net_id
+		"""
+		provider_ids = self.getValue("provider_ids")
+		if provider_ids:
+			return self.parseProviderIDs(provider_ids)
+		else:
+			return None
+
+	@staticmethod
+	def parseOutPorts(outports):
+		"""
+		Parse the outports string
+		Valid formats:
+		8899/tcp-8899/tcp,22/tcp-22/tcp
+		8899/tcp-8899,22/tcp-22
+		8899-8899,22-22
+		8899/tcp,22/udp
+		8899,22
+		Returns a list of tuple with the format: (remote_port,remote_protocol,local_port,local_protocol)
+		"""
+		res = []
+		ports = outports.split(',')
+		for port in ports:
+			parts = port.split('-')
+			remote_port = parts[0]
+			if len(parts) > 1:
+				local_port = parts[1]
+			else:
+				local_port = remote_port
+
+			local_port_parts = local_port.split("/")
+			if len(local_port_parts) > 1:
+				local_protocol = local_port_parts[1]
+				local_port = local_port_parts[0]
+			else:
+				local_protocol = "tcp"
+		
+			remote_port_parts = remote_port.split("/")	
+			if len(remote_port_parts) > 1:
+				remote_protocol = remote_port_parts[1]
+				remote_port = remote_port_parts[0]
+			else:
+				remote_protocol = "tcp"
+			res.append((int(remote_port),remote_protocol,int(local_port),local_protocol))
+		return res
+
+	def getOutPorts(self):
+		"""
+		Get the outports of this network.
+		outports format: 22/tcp-22/tcp,8899/tcp,8800
+		Returns a list of tuples with the format: (remote_port,remote_protocol,local_port,local_protocol)
+		"""
+		outports = self.getValue("outports")
+		if outports:
+			return self.parseOutPorts(outports)
+		else:
+			return None
 
 class FeaturesApp(Features):
 	"""Store an RADL application."""
@@ -750,12 +897,40 @@ class system(Features, Aspect):
 				return None
 			if value == connection:
 				return i
-			i += 1
+			i += 1 
 
-	def getRequestedName(self, iface_num=0):
+	def getRequestedNameIface(self, iface_num=0, num = None, default_hostname = None, default_domain = None):
 		"""Return the dns name associated to the net interface."""
+		
+		full_name = self.getValue("net_interface.%d.dns_name" % iface_num)
 
-		return self.getValue("net_interface.%d.dns_name" % iface_num)
+		if full_name:
+			replaced_full_name = system.replaceTemplateName(full_name, num)
+			(hostname, domain) = replaced_full_name
+			if not domain:
+				domain = default_domain
+			return (hostname, domain)
+		else:
+			if default_hostname:
+				(hostname, _) = system.replaceTemplateName(default_hostname, num)
+				return (hostname, default_domain)
+			else:
+				return None
+	
+	@staticmethod
+	def replaceTemplateName(full_name, num = None):
+		if full_name:
+			if num is not None:
+				full_name = full_name.replace("#N#", str(num))
+			dot_pos = full_name.find('.')
+			if dot_pos != -1:
+				domain = full_name[dot_pos+1:]
+				name = full_name[:dot_pos]
+				return (name, domain)
+			else:
+				return (full_name, None)
+		else:
+			return full_name
 	
 	def getNetworkIDs(self):
 		"""Return a list of network id of this system."""
@@ -769,13 +944,46 @@ class system(Features, Aspect):
 			res.append(netid)
 			i += 1
 	
-	def getCredentialValues(self):
+	def getCredentialValues(self, new = False):
 		"""Return the values in disk.0.os.credentials.*."""
 
-		return tuple([ self.getValue("disk.0.os.credentials." + p) for p in [
+		credentials_base = "disk.0.os.credentials."
+		if new:
+			credentials_base = "disk.0.os.credentials.new."
+		return tuple([ self.getValue(credentials_base + p) for p in [
 						 "username", "password", "public_key",
 						 "private_key"]
 					 ])
+		
+	def updateNewCredentialValues(self):
+		"""
+		Set the new credential values to the credentials to use, and delete the new ones
+		"""
+
+		credentials_base = "disk.0.os.credentials."
+		new_credentials_base = "disk.0.os.credentials.new."
+		
+		for elem in ['password','public_key','private_key']:
+			if self.getValue(new_credentials_base + elem):
+				self.setValue(credentials_base + elem, self.getValue(new_credentials_base + elem))
+				self.delValue(new_credentials_base + elem)
+		
+	def setCredentialValues(self, username=None, password=None, public_key=None, private_key=None, new = False):
+		"""Set the values in disk.0.os.credentials.*."""
+
+		credentials_base = "disk.0.os.credentials."
+		if new:
+			credentials_base = "disk.0.os.credentials.new."
+			
+		if username:
+			self.setValue(credentials_base + "username", username)
+		if password:
+			self.setValue(credentials_base + "password", password)
+		if public_key:
+			self.setValue(credentials_base + "public_key", public_key)
+		if private_key:
+			self.setValue(credentials_base + "private_key", private_key)
+
 		
 	def getCredentials(self):
 		"""Return UserKeyCredential or UserPassCredential.""" 
@@ -801,20 +1009,12 @@ class system(Features, Aspect):
 	def setUserPasswdCredentials(self, username, password):
 		"""Set username and password in ``disk.0.os.credentials``."""
 
-		if username:
-			self.setValue("disk.0.os.credentials.username", username)
-		if password:
-			self.setValue("disk.0.os.credentials.password", password)
+		self.setCredentialValues(username=username,password=password)
 
 	def setUserKeyCredentials(self, username, public_key=None, private_key=None):
 		"""Set these properties in ``disk.0.os.credentials``."""
-
-		if username:
-			self.setValue("disk.0.os.credentials.username", username)
-		if public_key:
-			self.setValue("disk.0.os.credentials.public_key", public_key)
-		if private_key:
-			self.setValue("disk.0.os.credentials.private_key", private_key)
+		
+		self.setCredentialValues(username=username,public_key=public_key,private_key=private_key)
 
 	def getApplications(self):
 		"""Return a list of Application with the specified apps in this system."""
@@ -846,12 +1046,13 @@ class system(Features, Aspect):
 
 		mem_units = ["", "B", "K", "M", "G", "KB", "MB", "GB"]
 		SIMPLE_FEATURES = {
+			"spot": (str, ["YES", "NO"]),
 			"image_type": (str, ["VMDK", "QCOW", "QCOW2", "RAW"]),
 			"virtual_system_type": (str, system._check_virtual_system_type),
-			"price": (float, positive, None),
+			"price": ((int,float), positive, None),
 			"cpu.count": (int, positive, None),
 			"cpu.arch": (str, ['I386', 'X86_64']),
-			"cpu.performance": (float, positive, ["ECU", "GCEU", "HRZ"]),
+			"cpu.performance": ((int,float), positive, ["ECU", "GCEU", "HRZ"]),
 			"memory.size": (int, positive, mem_units),
 			SoftFeatures.SOFT: (SoftFeatures, lambda x, r: x.check(r))
 		}
