@@ -351,7 +351,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
 				print info
 		else:
-			print "ERROR getting the information about the infrastructure: " + str(res)
+			print "ERROR getting the information about the infrastructure: " + str(vm_ids)
 			sys.exit(1)
 	
 	elif operation == "destroy":
