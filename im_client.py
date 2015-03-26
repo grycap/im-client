@@ -122,7 +122,7 @@ if __name__ == "__main__":
 	config.read(['im_client.cfg', os.path.expanduser('~/.im_client.cfg')])
 
 	default_auth_file = None
-	default_xmlrpc = "http://localhost:8888"
+	default_xmlrpc = "http://localhost:8899"
 	XMLRCP_SSL = False
 	XMLRCP_SSL_CA_CERTS = "./pki/ca-chain.pem"
 
