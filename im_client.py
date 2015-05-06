@@ -21,9 +21,8 @@ import sys
 import os
 from optparse import OptionParser, Option, IndentedHelpFormatter
 import ConfigParser
-from radl import radl_parse
 
-__version__ = "1.2.1"
+__version__ = "1.2.2"
 
 class PosOptionParser(OptionParser):
 	def format_help(self, formatter=None):
@@ -118,6 +117,8 @@ def get_input_params(radl):
 	return radl
 	
 if __name__ == "__main__":
+	from radl import radl_parse
+	
 	config = ConfigParser.RawConfigParser()
 	config.read(['im_client.cfg', os.path.expanduser('~/.im_client.cfg')])
 
