@@ -29,3 +29,8 @@ IM-client 1.2.1
 
     * Check the RADL before sending to the IM server in the create operation
     * Update the radl.py to the last updates in the IM server
+
+IM-client 1.2.2
+
+    * Improve the RADL parser code
+    * Bugfix in im-client installation
