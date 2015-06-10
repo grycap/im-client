@@ -22,7 +22,7 @@ import os
 from optparse import OptionParser, Option, IndentedHelpFormatter
 import ConfigParser
 
-__version__ = "1.2.2"
+__version__ = "1.3.0"
 
 class PosOptionParser(OptionParser):
 	def format_help(self, formatter=None):
@@ -162,6 +162,8 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	parser.add_operation_help('start','<inf_id>')
 	parser.add_operation_help('stop','<inf_id>')
 	parser.add_operation_help('reconfigure','<inf_id> [<radl_file>]')
+	parser.add_operation_help('startvm','<inf_id> <vm_id>')
+	parser.add_operation_help('stopvm','<inf_id> <vm_id>')
 
 	(options, args) = parser.parse_args()
 
@@ -178,7 +180,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	operation = args[0].lower()
 	args = args[1:]
 
-	if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start", "alter", "getcontmsg", "getvminfo", "reconfigure","getradl","getvmcontmsg"]):
+	if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start", "alter", "getcontmsg", "getvminfo", "reconfigure","getradl","getvmcontmsg","stopvm","startvm"]):
 		parser.error("operation not recognised.  Use --help to show all the available operations")
 
 	if XMLRCP_SSL:
@@ -418,4 +420,37 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 			print info
 		else:
 			print "Error getting VM contextualization message: " + info
+			sys.exit(1)
+
+
+	elif operation == "startvm":
+		inf_id = get_inf_id(args)
+		if len(args) >= 2:
+			vm_id = args[1]
+		else:
+			print "VM ID to get info not specified"
+			sys.exit(1)
+
+		(success, info)  = server.StartVM(inf_id, vm_id, auth_data)
+		
+		if success:
+			print "VM started"
+		else:
+			print "Error starting VM: " + info
+			sys.exit(1)
+			
+	elif operation == "stopvm":
+		inf_id = get_inf_id(args)
+		if len(args) >= 2:
+			vm_id = args[1]
+		else:
+			print "VM ID to get info not specified"
+			sys.exit(1)
+
+		(success, info)  = server.StopVM(inf_id, vm_id, auth_data)
+		
+		if success:
+			print "VM stopped"
+		else:
+			print "Error stopping VM: " + info
 			sys.exit(1)
