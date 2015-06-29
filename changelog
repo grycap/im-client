@@ -43,3 +43,5 @@ IM-client 1.3.1
 
     * BugFix in reconfigure operation reading RADL file
     * BugFix in getvmcontmsg operation in case of error
+    * Add sshvm operation
+    * Translate help messages

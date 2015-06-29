@@ -107,7 +107,6 @@ class Feature:
 		Args:
 		- unit(str,optional): A unit to convert the current feature value ('B','K','M','G') 
 		"""
-
 		if unit or self.unit:
 			r = float(self.value * UnitToValue(self.unit)) / UnitToValue(unit)
 			return int(round(r)) if isinstance(self.value, int) else r

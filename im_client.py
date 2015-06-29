@@ -19,6 +19,7 @@
 import xmlrpclib
 import sys
 import os
+import tempfile
 from optparse import OptionParser, Option, IndentedHelpFormatter
 import ConfigParser
 
@@ -51,6 +52,47 @@ class PosOptionParser(OptionParser):
 
 	def set_out(self, out):
 		self.out = out
+
+class CmdSsh:
+	"""
+	Class to execute a ssh directly to a VM (from EC3)
+	"""
+
+	@staticmethod
+	def run(radl, show_only=False):
+		try:
+			if radl.systems[0].getValue("disk.0.os.credentials.private_key"):
+				ops = CmdSsh._connect_key(radl)
+			else:
+				ops = CmdSsh._connect_password(radl)
+				
+			if show_only:
+				print " ".join(ops)
+			else:
+				os.execlp(ops[0], *ops)
+		except OSError as e:
+			print "Error connecting to VM: %s\nProbably 'sshpass' or 'ssh' program is not installed!" % str(e)
+			sys.exit(1)
+		except Exception as e:
+			print "Error connecting to VM: %s" % str(e)
+			sys.exit(1)
+
+	@staticmethod
+	def _connect_password(radl):
+		s = radl.systems[0]
+		return ["sshpass", "-p%s" % s.getValue("disk.0.os.credentials.password"),
+				"ssh", "-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
+				"%s@%s" % (s.getValue("disk.0.os.credentials.username"), radl.getPublicIP())]
+
+	@staticmethod
+	def _connect_key(radl):
+		s = radl.systems[0]
+		f = tempfile.NamedTemporaryFile(mode="w", delete=False)
+		f.write(s.getValue("disk.0.os.credentials.private_key"))
+		f.close()
+		return ["ssh", "-i", f.name, "-o", "UserKnownHostsFile=/dev/null",
+				"-o", "StrictHostKeyChecking=no",
+				"%s@%s" % (s.getValue("disk.0.os.credentials.username"), radl.getPublicIP())]
 
 # From IM.auth
 def read_auth_data(filename):
@@ -146,8 +188,8 @@ under certain conditions; please read the license at \n\
 http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
 	parser = PosOptionParser(usage="%prog [-u|--xmlrpc-url <url>] [-a|--auth_file <filename>] operation op_parameters"+NOTICE, version="%prog " + __version__)
-	parser.add_option("-a", "--auth_file", dest="auth_file", nargs=1, default=default_auth_file, help="Fichero con los datos de autenticacion", type="string")
-	parser.add_option("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=default_xmlrpc, help="Direccion url xmlrpc del demonio InfrastructureManager", type="string")
+	parser.add_option("-a", "--auth_file", dest="auth_file", nargs=1, default=default_auth_file, help="Authentication data file", type="string")
+	parser.add_option("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=default_xmlrpc, help="URL address of the InfrastructureManager XML-RCP daemon", type="string")
 	parser.add_operation_help('list', '')
 	parser.add_operation_help('create','<radl_file>')
 	parser.add_operation_help('destroy','<inf_id>')
@@ -164,6 +206,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	parser.add_operation_help('reconfigure','<inf_id> [<radl_file>]')
 	parser.add_operation_help('startvm','<inf_id> <vm_id>')
 	parser.add_operation_help('stopvm','<inf_id> <vm_id>')
+	parser.add_operation_help('sshvm','<inf_id> <vm_id>')
 
 	(options, args) = parser.parse_args()
 
@@ -180,7 +223,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	operation = args[0].lower()
 	args = args[1:]
 
-	if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start", "alter", "getcontmsg", "getvminfo", "reconfigure","getradl","getvmcontmsg","stopvm","startvm"]):
+	if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start", "alter", "getcontmsg", "getvminfo", "reconfigure","getradl","getvmcontmsg","stopvm","startvm", "sshvm"]):
 		parser.error("operation not recognised.  Use --help to show all the available operations")
 
 	if XMLRCP_SSL:
@@ -457,4 +500,21 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 			print "VM stopped"
 		else:
 			print "Error stopping VM: " + info
+			sys.exit(1)
+
+	elif operation == "sshvm":
+		inf_id = get_inf_id(args)
+		if len(args) >= 2:
+			vm_id = args[1]
+		else:
+			print "VM ID to get info not specified"
+			sys.exit(1)
+
+		(success, info)  = server.GetVMInfo(inf_id, vm_id, auth_data)
+		
+		if success:
+			radl = radl_parse.parse_radl(info)
+			CmdSsh.run(radl)
+		else:
+			print "Error accessing VM: " + info
 			sys.exit(1)
