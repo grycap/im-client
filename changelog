@@ -38,3 +38,8 @@ IM-client 1.2.2
 IM-client 1.3.0
 
     * Add the startvm and stopvm operations
+
+IM-client 1.3.1
+
+    * BugFix in reconfigure operation reading RADL file
+    * BugFix in getvmcontmsg operation in case of error

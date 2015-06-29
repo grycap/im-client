@@ -22,7 +22,7 @@ import os
 from optparse import OptionParser, Option, IndentedHelpFormatter
 import ConfigParser
 
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 
 class PosOptionParser(OptionParser):
 	def format_help(self, formatter=None):
@@ -287,7 +287,11 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 				print "RADL file '" + args[1] + "' not exist"
 				sys.exit(1)
 			else:
-				radl = radl_parse.parse_radl(args[0])
+				# Read the file
+				f = open(args[1])
+				radl_data = "".join(f.readlines())
+				f.close()
+				radl = radl_parse.parse_radl(radl_data)				
 	
 		(success, res) = server.Reconfigure(inf_id, str(radl), auth_data)
 	
@@ -308,7 +312,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 			else:
 				print "No Msg Contextualizator avaliable\n"
 		else:
-			print "Error getting infrastructure contextualization message: " + res
+			print "Error getting infrastructure contextualization message: " + cont_out
 
 	elif operation == "getvminfo":
 		inf_id = get_inf_id(args)
