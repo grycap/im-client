@@ -61,13 +61,19 @@ The :program:`im_client` is called like this::
       Show the contextualization message of the virtual machine with ID ``vmId``
       associated to the infrastructure with ID ``infId``.
 
-   ``addresource infId radlfile``
+   ``addresource infId radlfile ctxt_flag``
       Add to infrastructure with ID ``infId`` the resources specifies in the
-      RADL file with path ``radlfile``.
+      RADL file with path ``radlfile``. The ``ctxt_flag`` parameter is optional
+      and is a flag to specify if the contextualization step will be launched
+      just after the VM addition. If not specified the contextualization step
+      will be launched. 
 
-   ``removeresource infId vmId``
+   ``removeresource infId vmId ctxt_flag``
       Destroy the virtual machine with ID ``vmId`` in the infrastructure with
-      ID ``infId``.
+      ID ``infId``. The ``ctxt_flag`` parameter is optional
+      and is a flag to specify if the contextualization step will be launched
+      just after the VM addition. If not specified the contextualization step
+      will be launched.
 
    ``start infId``
       Resume all the virtual machines associated to the infrastructure with ID
@@ -82,9 +88,11 @@ The :program:`im_client` is called like this::
       associated to the infrastructure with ID ``vmId``, using the RADL
       specification in file with path ``radlfile``.
 
-   ``reconfigure infId``
+   ``reconfigure infId vm_list``
       Reconfigure the infrastructure with ID ``infId`` and also update the
-      configuration data.
+      configuration data. The last  ``vm_list`` parameter is optional
+      and is a list integers specifying the IDs of the VMs to reconfigure.
+      If not specified all the VMs will be reconfigured. 
       
    ``startvm infId vmId``
       Resume the specified virtual machine ``vmId`` associated to the infrastructure with ID
@@ -117,7 +125,7 @@ keys are:
 
 * ``type`` indicates the service that refers the credential. The services
   supported are ``InfrastructureManager``, ``VMRC``, ``OpenNebula``, ``EC2``,
-  ``OpenStack``, ``OCCI``, ``LibCloud``, ``Docker``, ``GCE``, ``Azure`` and ``LibVirt``.
+  ``OpenStack``, ``OCCI``, ``LibCloud``, ``Docker``, ``GCE``, ``Azure``, ``Kubernetes`` and ``LibVirt``.
 
 * ``username`` indicates the user name associated to the credential. In EC2 and
   OpenStack it refers to the *Access Key ID*. In Azure it refers to the user 
@@ -162,6 +170,7 @@ An example of the auth file::
    id = docker; type = Docker; host = http://host:2375
    id = occi; type = OCCI; proxy = file(/tmp/proxy.pem); host = https://fc-one.i3m.upv.es:11443
    id = azure; type = Azure; username = subscription-id; public_key = file(cert.pem); private_key = file(key.pem)
+   id = kub; type = Kubernetes; host = http://server:8080; username = user; password = pass
    
 
 IM Server does not store the credentials used in the creation of

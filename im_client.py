@@ -198,12 +198,12 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	parser.add_operation_help('getcontmsg','<inf_id>')
 	parser.add_operation_help('getvminfo','<inf_id> <vm_id> [radl_attribute]')
 	parser.add_operation_help('getvmcontmsg','<inf_id> <vm_id>')
-	parser.add_operation_help('addresource','<inf_id> <radl_file>')
-	parser.add_operation_help('removeresource', '<inf_id> <vm_id>')
+	parser.add_operation_help('addresource','<inf_id> <radl_file> [ctxt flag]')
+	parser.add_operation_help('removeresource', '<inf_id> <vm_id> [ctxt flag]')
 	parser.add_operation_help('alter','<inf_id> <vm_id> <radl_file>')
 	parser.add_operation_help('start','<inf_id>')
 	parser.add_operation_help('stop','<inf_id>')
-	parser.add_operation_help('reconfigure','<inf_id> [<radl_file>]')
+	parser.add_operation_help('reconfigure','<inf_id> [<radl_file>] [vm_list]')
 	parser.add_operation_help('startvm','<inf_id> <vm_id>')
 	parser.add_operation_help('stopvm','<inf_id> <vm_id>')
 	parser.add_operation_help('sshvm','<inf_id> <vm_id>')
@@ -236,13 +236,21 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
 	if operation == "removeresource":
 		inf_id = get_inf_id(args)
+		context = True
 		if len(args) >= 2:
 			vm_list = args[1]
+			
+			if len(args) >= 3:
+				if args[2] in ["0", "1"]:
+					context = bool(int(args[2]))
+				else:
+					print "The ctxt flag must be 0 or 1"
+					sys.exit(1)
 		else:
 			print "Coma separated VM list to remove not specified"
 			sys.exit(1)
 		
-		(success, vms_id) = server.RemoveResource(inf_id, vm_list, auth_data)
+		(success, vms_id) = server.RemoveResource(inf_id, vm_list, auth_data, context)
 	
 		if success:
 			print str(vms_id) + " resources deleted: "
@@ -252,17 +260,25 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	
 	elif operation == "addresource":
 		inf_id = get_inf_id(args)
+		context = True
 		if len(args) >= 2:
 			if not os.path.isfile(args[1]):
 				print "RADL file '" + args[1] + "' not exist"
 				sys.exit(1)
+				
+			if len(args) >= 3:
+				if args[2] in ["0", "1"]:
+					context = bool(int(args[2]))
+				else:
+					print "The ctxt flag must be 0 or 1"
+					sys.exit(1)
 		else:
 			print "RADL file to add resources not specified"
 			sys.exit(1)
 
 		radl = radl_parse.parse_radl(args[1])
 		
-		(success, vms_id) = server.AddResource(inf_id, str(radl), auth_data)
+		(success, vms_id) = server.AddResource(inf_id, str(radl), auth_data, context)
 			
 		if success:
 			print "Resources added: " + str(vms_id)
@@ -288,7 +304,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		
 		radl = radl_parse.parse_radl(radl_data)
 		radl.check()
-	
+
 		(success, inf_id) = server.CreateInfrastructure(str(radl), auth_data)
 	
 		if success:
@@ -325,6 +341,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	elif operation == "reconfigure":
 		inf_id = get_inf_id(args)
 		radl = ""
+		vm_list = None
 		if len(args) >= 2:
 			if not os.path.isfile(args[1]):
 				print "RADL file '" + args[1] + "' not exist"
@@ -334,9 +351,12 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 				f = open(args[1])
 				radl_data = "".join(f.readlines())
 				f.close()
-				radl = radl_parse.parse_radl(radl_data)				
+				radl = radl_parse.parse_radl(radl_data)
+				
+				if len(args) >= 3:				
+					vm_list = [int(vm_id) for vm_id in args[3].split(",")]
 	
-		(success, res) = server.Reconfigure(inf_id, str(radl), auth_data)
+		(success, res) = server.Reconfigure(inf_id, str(radl), auth_data, vm_list)
 	
 		if success:
 			print "Infrastructure reconfigured: " + str(res)
