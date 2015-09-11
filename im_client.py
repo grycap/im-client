@@ -23,7 +23,7 @@ import tempfile
 from optparse import OptionParser, Option, IndentedHelpFormatter
 import ConfigParser
 
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 
 class PosOptionParser(OptionParser):
 	def format_help(self, formatter=None):
