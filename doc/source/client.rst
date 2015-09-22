@@ -99,11 +99,11 @@ The :program:`im_client` is called like this::
       ``infId``, stopped previously by the operation ``stop``.
 
    ``stopvm infId vmId``
-      Stop (but not remove) the specified virtual machine ``vmId` associated to the infrastructure with ID
+      Stop (but not remove) the specified virtual machine ``vmId`` associated to the infrastructure with ID
       infrastructure with ID ``infId``.
       
    ``sshvm infId vmId``
-      Connect with SSH with the specified virtual machine ``vmId` associated to the infrastructure with ID
+      Connect with SSH with the specified virtual machine ``vmId`` associated to the infrastructure with ID
       infrastructure with ID ``infId``.
 
 .. _auth-file:
