@@ -36,6 +36,9 @@ class RADLParser:
 	tokens = (
 		'LPAREN',
 		'RPAREN',
+		'LBRACK',
+		'RBRACK',
+		'COMMA',
 		'NUMBER',
 		'AND',
 		'EQ',
@@ -55,7 +58,8 @@ class RADLParser:
 		'RECIPE_BEGIN',
 		'RECIPE_END',
 		'CONTEXTUALIZE',
-		'STEP'
+		'STEP',
+		'WITH'
 	)
 	
 	# A string containing ignored characters (spaces and tabs)
@@ -98,6 +102,18 @@ class RADLParser:
 		t.lexer.pop_state()
 		return t
 	
+	def t_body_LBRACK(self,t):
+		r'\['
+		return t
+	
+	def t_body_RBRACK(self,t):
+		r'\]'
+		return t
+	
+	def t_body_COMMA(self,t):
+		r'\,'
+		return t
+	
 	def t_newline(self,t):
 		r'\n'
 		t.lexer.lineno += len(t.value)
@@ -115,8 +131,9 @@ class RADLParser:
 		return t
 	
 	def t_STRING(self,t):
-		r"'([^\\']|\\.)*'"
-		t.value = t.value[1:-1].replace("\\'", "'")
+		r"'([^\\']|\\.)*'" 		
+		#t.value = t.value[1:-1].replace("\\'", "'")
+		t.value = t.value[1:-1]
 		return t
 	
 	reserved = {
@@ -128,7 +145,8 @@ class RADLParser:
 		'deploy' : 'DEPLOY',
 		'configure': 'CONFIGURE',
 		'contextualize': 'CONTEXTUALIZE',
-		'step':'STEP'
+		'step':'STEP',
+		'with':'WITH'
 	}
 	
 	def t_VAR(self, t):
@@ -210,25 +228,30 @@ class RADLParser:
 			t[0] = contextualize(t[3], line=t.lineno(1))
 		else:
 			t[0] = contextualize(t[4], t[2], line=t.lineno(1))
-	
+
 	def p_contextualize_items(self, t):
 		"""contextualize_items : contextualize_items contextualize_item 
-							   | contextualize_item"""
-	
-		if len(t) == 2:
-			t[0] = [t[1]]
-		else:
+							   | contextualize_item
+							   | empty"""			
+		if len(t) == 3:
 			t[0] = t[1]
 			t[0].append(t[2])
+		elif t[1]:
+			t[0] = [t[1]]
+		else:
+			t[0] = []
 	
 	def p_contextualize_item(self, t):
 		"""contextualize_item : SYSTEM VAR CONFIGURE VAR
-							  | SYSTEM VAR CONFIGURE VAR STEP NUMBER"""
+							  | SYSTEM VAR CONFIGURE VAR STEP NUMBER
+							  | SYSTEM VAR CONFIGURE VAR WITH VAR"""
 	
 		if len(t) == 5:
 			t[0] = contextualize_item(t[2], t[4], line=t.lineno(1))
+		elif t[5] == "with":
+			t[0] = contextualize_item(t[2], t[4], ctxt_tool=t[6], line=t.lineno(1))
 		else:
-			t[0] = contextualize_item(t[2], t[4], t[6], line=t.lineno(1))
+			t[0] = contextualize_item(t[2], t[4], num=t[6], line=t.lineno(1))
 	
 	def p_network_sentence(self, t):
 		"""network_sentence : NETWORK VAR
@@ -277,9 +300,12 @@ class RADLParser:
 	def p_feature_simple(self, t):
 		"""feature_simple : VAR comparator NUMBER VAR
 						  | VAR comparator NUMBER
+						  | VAR comparator LBRACK string_list RBRACK
 						  | VAR comparator STRING"""
 	
-		if len(t) == 5:
+		if len(t) == 6:
+			t[0] = Feature(t[1], t[2], t[4], line=t.lineno(1)) 
+		elif len(t) == 5:
 			t[0] = Feature(t[1], t[2], t[3], unit=t[4],
 								 line=t.lineno(1))
 		elif len(t) == 4:
@@ -303,6 +329,19 @@ class RADLParser:
 		"""feature_contains : VAR CONTAINS LPAREN features RPAREN"""
 	
 		t[0] = Feature(t[1], t[2], Features(t[4]), line=t.lineno(1))
+	
+	def p_string_list(self, t):
+		"""string_list : string_list COMMA STRING
+						| STRING
+						| empty"""
+
+		if len(t) == 4:
+			t[0] = t[1]
+			t[0].append(t[3])
+		elif t[1]:
+			t[0] = [t[1]]
+		else:
+			t[0] = []
 	
 	def p_error(self, t):
 		raise RADLParseException("Parse error in: " + str(t), line=t.lineno if t else None)

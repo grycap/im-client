@@ -17,13 +17,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import xmlrpclib
+import yaml
 import sys
 import os
 import tempfile
 from optparse import OptionParser, Option, IndentedHelpFormatter
 import ConfigParser
 
-__version__ = "1.3.2"
+__version__ = "1.4.0"
 
 class PosOptionParser(OptionParser):
 	def format_help(self, formatter=None):
@@ -136,8 +137,7 @@ def get_inf_id(args):
 			inf_id = int(args[0])
 			return inf_id
 		else:
-			print "Incorrect Inf ID"
-			sys.exit(1)
+			return args[0]
 	else:
 		print "Inf ID not specified"
 		sys.exit(1)
@@ -157,7 +157,20 @@ def get_input_params(radl):
 			radl = radl.replace("@input." + param_name + "@", valor)
 
 	return radl
-	
+
+def is_tosca(yaml_string):
+	"""
+	Check if a string seems to be a tosca document
+	"""
+	try:
+		yamlo = yaml.load(yaml_string)
+		if isinstance(yamlo, dict) and 'tosca_definitions_version' in yamlo.keys():
+			return True 
+		else:
+			return False
+	except:
+		return False
+
 if __name__ == "__main__":
 	from radl import radl_parse
 	
@@ -196,6 +209,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	parser.add_operation_help('getinfo','<inf_id> [radl_attribute]')
 	parser.add_operation_help('getradl','<inf_id>')
 	parser.add_operation_help('getcontmsg','<inf_id>')
+	parser.add_operation_help('getstate','<inf_id>')
 	parser.add_operation_help('getvminfo','<inf_id> <vm_id> [radl_attribute]')
 	parser.add_operation_help('getvmcontmsg','<inf_id> <vm_id>')
 	parser.add_operation_help('addresource','<inf_id> <radl_file> [ctxt flag]')
@@ -223,7 +237,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	operation = args[0].lower()
 	args = args[1:]
 
-	if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start", "alter", "getcontmsg", "getvminfo", "reconfigure","getradl","getvmcontmsg","stopvm","startvm", "sshvm"]):
+	if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start", "alter", "getcontmsg", "getvminfo", "reconfigure","getradl","getvmcontmsg","stopvm","startvm", "sshvm","getstate"]):
 		parser.error("operation not recognised.  Use --help to show all the available operations")
 
 	if XMLRCP_SSL:
@@ -302,8 +316,11 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		# check for input parameters @input.[param_name]@
 		radl_data = get_input_params(radl_data)
 		
-		radl = radl_parse.parse_radl(radl_data)
-		radl.check()
+		if is_tosca(radl_data):
+			radl = radl_data
+		else:
+			radl = radl_parse.parse_radl(radl_data)
+			radl.check()
 
 		(success, inf_id) = server.CreateInfrastructure(str(radl), auth_data)
 	
@@ -376,6 +393,15 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 				print "No Msg Contextualizator avaliable\n"
 		else:
 			print "Error getting infrastructure contextualization message: " + cont_out
+
+	elif operation == "getstate":
+		inf_id = get_inf_id(args)
+
+		(success, state) = server.GetInfrastructureState(inf_id, auth_data)
+		if success:
+			print state
+		else:
+			print "Error getting infrastructure state: " + state
 
 	elif operation == "getvminfo":
 		inf_id = get_inf_id(args)
