@@ -397,9 +397,13 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	elif operation == "getstate":
 		inf_id = get_inf_id(args)
 
-		(success, state) = server.GetInfrastructureState(inf_id, auth_data)
+		(success, res) = server.GetInfrastructureState(inf_id, auth_data)
 		if success:
-			print state
+			state = res['state']
+			vm_states = res['vm_states']
+			print "The infrastructure is in state: %s" % state
+			for vm_id, vm_state in vm_states.iteritems():
+				print "VM ID: %s is in state: %s." % (vm_id, vm_state)
 		else:
 			print "Error getting infrastructure state: " + state
 
