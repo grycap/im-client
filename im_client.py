@@ -405,7 +405,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 			for vm_id, vm_state in vm_states.iteritems():
 				print "VM ID: %s is in state: %s." % (vm_id, vm_state)
 		else:
-			print "Error getting infrastructure state: " + state
+			print "Error getting infrastructure state: " + res
 
 	elif operation == "getvminfo":
 		inf_id = get_inf_id(args)
