@@ -52,6 +52,9 @@ The :program:`im_client` is called like this::
 
    ``getcontmsg infId``
       Show the contextualization message of the infrastructure with ID ``id``.
+      
+   ``getstate infId``
+      Show the state of the infrastructure with ID ``id``.
 
    ``getvminfo infId vmId``
       Show the information associated to the virtual machine with ID ``vmId``
