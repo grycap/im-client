@@ -1115,6 +1115,8 @@ class RADL:
 	def __init__(self):
 		self.networks = []
 		"""List of network."""
+		self.ansible_hosts = []
+		"""List of ansible_hosts."""
 		self.systems = []
 		"""List of system."""
 		self.deploys = []
@@ -1148,7 +1150,7 @@ class RADL:
 			self.contextualize.update(aspect)
 			return True
 
-		classification = [(network, self.networks), (system, self.systems),
+		classification = [(network, self.networks), (system, self.systems), (ansible, self.ansible_hosts),
 						  (deploy, self.deploys), (configure, self.configures)]
 		aspect_list = [l for t, l in classification if isinstance(aspect, t)]
 		assert len(aspect_list) == 1, "Unexpected aspect for RADL."
@@ -1270,3 +1272,67 @@ class RADL:
 			if elem.id == net_id:
 				return elem
 		return None
+
+	def get_ansible_by_id(self, ansible_id):
+		"""Return a ansible with that id or None."""
+
+		for elem in self.ansible_hosts:
+			if elem.id == ansible_id:
+				return elem
+		return None
+
+class ansible(Features, Aspect):
+	"""Store a RADL ``ansible``."""
+
+	def __init__(self, name, features, line=None):
+		self.id = name
+		"""Ansible host id."""
+		Features.__init__(self, features)
+		self.line = line
+		self.reference = False
+
+	def __str__(self):
+		return "ansible %s (%s)" % (self.id, Features.__str__(self))
+
+	def check(self, radl):
+		"""Check the features in this network."""
+
+		SIMPLE_FEATURES = {
+			"host": (str, None),
+			"credentials.username": (str, None),
+			"credentials.password": (str, None),
+			"credentials.private_key": (str, None)
+		}
+		self.check_simple(SIMPLE_FEATURES, radl)
+		
+		if not self.getHost():
+			raise RADLParseException("Ansible host must have a host", line=self.line)
+		(username, password, private_key) = self.getCredentialValues()
+		if not username:
+			raise RADLParseException("Ansible host must have a credentials.username", line=self.line)
+		if not password and not private_key:
+			raise RADLParseException("Ansible host must have a credentials.password or credentials.private_key", line=self.line)
+	
+	def getHost(self):
+		return self.getValue("host")
+		
+	def getCredentials(self):
+		"""Return UserKeyCredential or UserPassCredential.""" 
+
+		(username, password, private_key) = self.getCredentialValues()
+		
+		if private_key:
+			return UserKeyCredential(username, None, private_key)
+
+		if username or password:
+			return UserPassCredential(username, password)
+
+		return None
+	
+	def getCredentialValues(self, new = False):
+		"""Return the values in credentials.*."""
+
+		credentials_base = "credentials."
+		return tuple([ self.getValue(credentials_base + p) for p in [
+						 "username", "password", "private_key"]
+					 ])
