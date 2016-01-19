@@ -17,14 +17,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import xmlrpclib
-import yaml
 import sys
 import os
 import tempfile
 from optparse import OptionParser, Option, IndentedHelpFormatter
 import ConfigParser
 
-__version__ = "1.4.1"
+__version__ = "1.4.2"
 
 class PosOptionParser(OptionParser):
 	def format_help(self, formatter=None):
@@ -157,19 +156,6 @@ def get_input_params(radl):
 			radl = radl.replace("@input." + param_name + "@", valor)
 
 	return radl
-
-def is_tosca(yaml_string):
-	"""
-	Check if a string seems to be a tosca document
-	"""
-	try:
-		yamlo = yaml.load(yaml_string)
-		if isinstance(yamlo, dict) and 'tosca_definitions_version' in yamlo.keys():
-			return True 
-		else:
-			return False
-	except:
-		return False
 
 if __name__ == "__main__":
 	from radl import radl_parse
@@ -316,16 +302,13 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		# check for input parameters @input.[param_name]@
 		radl_data = get_input_params(radl_data)
 		
-		if is_tosca(radl_data):
-			radl = radl_data
-		else:
-			radl = radl_parse.parse_radl(radl_data)
-			radl.check()
+		radl = radl_parse.parse_radl(radl_data)
+		radl.check()
 
 		(success, inf_id) = server.CreateInfrastructure(str(radl), auth_data)
 	
 		if success:
-			print "Infrastructure created: " + str(inf_id)
+			print "Infrastructure successfully created with ID: " + str(inf_id)
 		else:
 			print "ERROR creating the infrastructure: " + inf_id
 			sys.exit(1)
@@ -468,7 +451,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, res) = server.GetInfrastructureList(auth_data)
 
 		if success:
-			print res
+			print "Infrastructure IDs: \n -%s" % ("\n -".join([str(inf_id) for inf_id in res]))
 		else:
 			print "ERROR listing then infrastructures: " + res
 			sys.exit(1)
