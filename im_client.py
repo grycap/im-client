@@ -71,7 +71,7 @@ class CmdSsh:
 			else:
 				os.execlp(ops[0], *ops)
 		except OSError as e:
-			print "Error connecting to VM: %s\nProbably 'sshpass' or 'ssh' program is not installed!" % str(e)
+			print "Error connecting to VM: %s\nProbably 'sshpass' or 'ssh' programs are not installed!" % str(e)
 			sys.exit(1)
 		except Exception as e:
 			print "Error connecting to VM: %s" % str(e)
@@ -138,12 +138,12 @@ def get_inf_id(args):
 		else:
 			return args[0]
 	else:
-		print "Inf ID not specified"
+		print "Infrastructure ID not specified"
 		sys.exit(1)
 
 def get_input_params(radl):
 	"""
-	Serch for input parameters, ask the user for the values and replace them in the RADL
+	Search for input parameters, ask the user for the values and replace them in the RADL
 	"""
 	pos = 0
 	while pos != -1:
@@ -253,9 +253,9 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, vms_id) = server.RemoveResource(inf_id, vm_list, auth_data, context)
 	
 		if success:
-			print str(vms_id) + " resources deleted: "
+			print "Resources with IDs: %s successfully deleted." % str(vms_id)
 		else:
-			print "ERROR deleting resources from the infrastructure: " + vms_id
+			print "ERROR deleting resources from the infrastructure: %s" % vms_id
 			sys.exit(1)
 	
 	elif operation == "addresource":
@@ -263,7 +263,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		context = True
 		if len(args) >= 2:
 			if not os.path.isfile(args[1]):
-				print "RADL file '" + args[1] + "' not exist"
+				print "RADL file '" + args[1] + "' does not exist"
 				sys.exit(1)
 				
 			if len(args) >= 3:
@@ -281,15 +281,15 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, vms_id) = server.AddResource(inf_id, str(radl), auth_data, context)
 			
 		if success:
-			print "Resources added: " + str(vms_id)
+			print "Resources with IDs: %s successfully added." % str(vms_id)
 		else:
-			print "ERROR adding resources to infrastructure: " + vms_id
+			print "ERROR adding resources to infrastructure: %s" % vms_id
 			sys.exit(1)
 	
 	elif operation == "create":
 		if len(args) >= 1:
 			if not os.path.isfile(args[0]):
-				print "RADL file '" + args[0] + "' not exist"
+				print "RADL file '" + args[0] + "' does not exist"
 				sys.exit(1)
 		else:
 			print "RADL file to create inf. not specified"
@@ -308,9 +308,9 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, inf_id) = server.CreateInfrastructure(str(radl), auth_data)
 	
 		if success:
-			print "Infrastructure successfully created with ID: " + str(inf_id)
+			print "Infrastructure successfully created with ID: %s" % str(inf_id)
 		else:
-			print "ERROR creating the infrastructure: " + inf_id
+			print "ERROR creating the infrastructure: %s" % inf_id
 			sys.exit(1)
 			
 	elif operation == "alter":
@@ -322,7 +322,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 			sys.exit(1)
 		if len(args) >= 3:
 			if not os.path.isfile(args[2]):
-				print "RADL file '" + args[2] + "' not exist"
+				print "RADL file '" + args[2] + "' does not exist"
 				sys.exit(1)
 		else:
 			print "RADL file to modify the VM not specified"
@@ -333,9 +333,9 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, res) = server.AlterVM(inf_id, vm_id, str(radl), auth_data)
 	
 		if success:
-			print "VM modified: " + str(res)
+			print "VM successfully modified."
 		else:
-			print "ERROR modifying the VM: " + res
+			print "ERROR modifying the VM: %s" % res
 			sys.exit(1)
 			
 	elif operation == "reconfigure":
@@ -344,7 +344,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		vm_list = None
 		if len(args) >= 2:
 			if not os.path.isfile(args[1]):
-				print "RADL file '" + args[1] + "' not exist"
+				print "RADL file '" + args[1] + "' does not exist"
 				sys.exit(1)
 			else:
 				# Read the file
@@ -359,7 +359,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, res) = server.Reconfigure(inf_id, str(radl), auth_data, vm_list)
 	
 		if success:
-			print "Infrastructure reconfigured: " + str(res)
+			print "Infrastructure successfully reconfigured."
 		else:
 			print "ERROR reconfiguring the infrastructure: " + res
 			sys.exit(1)
@@ -375,7 +375,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 			else:
 				print "No Msg Contextualizator avaliable\n"
 		else:
-			print "Error getting infrastructure contextualization message: " + cont_out
+			print "Error getting infrastructure contextualization message: %s" % cont_out
 
 	elif operation == "getstate":
 		inf_id = get_inf_id(args)
@@ -388,7 +388,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 			for vm_id, vm_state in vm_states.iteritems():
 				print "VM ID: %s is in state: %s." % (vm_id, vm_state)
 		else:
-			print "Error getting infrastructure state: " + res
+			print "Error getting infrastructure state: %s" % res
 
 	elif operation == "getvminfo":
 		inf_id = get_inf_id(args)
@@ -408,7 +408,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 			(success, info)  = server.GetVMInfo(inf_id, vm_id, auth_data)
 
 		if not success:
-			print "ERROR getting the VM info: " + vm_id
+			print "ERROR getting the VM info: %s" % vm_id
 
 		print info
 
@@ -422,7 +422,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
 		if success:
 			for vm_id in vm_ids:
-				print "Info about VM with ID: " + vm_id
+				print "Info about VM with ID: %s" % vm_id
 				
 				if propiedad:
 					(success, info)  = server.GetVMProperty(inf_id, vm_id, propiedad, auth_data)
@@ -442,9 +442,9 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, inf_id) = server.DestroyInfrastructure(inf_id, auth_data)
 
 		if success:
-			print "Infrastructure destroyed"
+			print "Infrastructure successfully destroyed"
 		else:
-			print "ERROR destroying the infrastructure: " + inf_id
+			print "ERROR destroying the infrastructure: %s" % inf_id
 			sys.exit(1)
 			
 	elif operation == "list":
@@ -453,7 +453,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		if success:
 			print "Infrastructure IDs: \n -%s" % ("\n -".join([str(inf_id) for inf_id in res]))
 		else:
-			print "ERROR listing then infrastructures: " + res
+			print "ERROR listing then infrastructures: %s" % res
 			sys.exit(1)
 
 	elif operation == "start":
@@ -461,7 +461,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, inf_id) = server.StartInfrastructure(inf_id, auth_data)
 
 		if success:
-			print "Infrastructure started"
+			print "Infrastructure successfully started"
 		else:
 			print "ERROR starting the infraestructure: " + inf_id
 			sys.exit(1)
@@ -471,7 +471,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, inf_id) = server.StopInfrastructure(inf_id, auth_data)
 
 		if success:
-			print "Infrastructure stopped"
+			print "Infrastructure successfully stopped"
 		else:
 			print "ERROR stopping the infrastructure: " + inf_id
 			sys.exit(1)
@@ -483,7 +483,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		if success:
 			print radl
 		else:
-			print "ERROR getting the infrastructure RADL: " + inf_id
+			print "ERROR getting the infrastructure RADL: %s" % inf_id
 			sys.exit(1)
 			
 	elif operation == "getvmcontmsg":
@@ -499,7 +499,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		if success:
 			print info
 		else:
-			print "Error getting VM contextualization message: " + info
+			print "Error getting VM contextualization message: %s" % info
 			sys.exit(1)
 
 
@@ -514,9 +514,9 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, info)  = server.StartVM(inf_id, vm_id, auth_data)
 		
 		if success:
-			print "VM started"
+			print "VM successfully started"
 		else:
-			print "Error starting VM: " + info
+			print "Error starting VM: %s" % info
 			sys.exit(1)
 			
 	elif operation == "stopvm":
@@ -530,9 +530,9 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, info)  = server.StopVM(inf_id, vm_id, auth_data)
 		
 		if success:
-			print "VM stopped"
+			print "VM successfully stopped"
 		else:
-			print "Error stopping VM: " + info
+			print "Error stopping VM: %s" % info
 			sys.exit(1)
 
 	elif operation == "sshvm":
@@ -549,5 +549,5 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 			radl = radl_parse.parse_radl(info)
 			CmdSsh.run(radl)
 		else:
-			print "Error accessing VM: " + info
+			print "Error accessing VM: %s" % info
 			sys.exit(1)
