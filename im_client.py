@@ -78,19 +78,44 @@ class CmdSsh:
 			sys.exit(1)
 
 	@staticmethod
+	def _get_ssh_port(radl):
+		"""
+		Get the SSH port from the RADL 
+
+		Returns: str with the port
+		"""
+		ssh_port = 22
+
+		public_net = None
+		for net in radl.networks:
+			if net.isPublic():
+				public_net = net
+				
+		if public_net:
+			outports = public_net.getOutPorts()
+			if outports:
+				for (remote_port,_,local_port,local_protocol) in outports:
+					if local_port == 22 and local_protocol == "tcp":
+						ssh_port = remote_port
+		
+		return str(ssh_port)
+
+	@staticmethod
 	def _connect_password(radl):
+		ssh_port = CmdSsh._get_ssh_port(radl)
 		s = radl.systems[0]
 		return ["sshpass", "-p%s" % s.getValue("disk.0.os.credentials.password"),
-				"ssh", "-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
+				"ssh", "-p", ssh_port, "-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
 				"%s@%s" % (s.getValue("disk.0.os.credentials.username"), radl.getPublicIP())]
 
 	@staticmethod
 	def _connect_key(radl):
+		ssh_port = CmdSsh._get_ssh_port(radl)
 		s = radl.systems[0]
 		f = tempfile.NamedTemporaryFile(mode="w", delete=False)
 		f.write(s.getValue("disk.0.os.credentials.private_key"))
 		f.close()
-		return ["ssh", "-i", f.name, "-o", "UserKnownHostsFile=/dev/null",
+		return ["ssh", "-p", ssh_port, "-i", f.name, "-o", "UserKnownHostsFile=/dev/null",
 				"-o", "StrictHostKeyChecking=no",
 				"%s@%s" % (s.getValue("disk.0.os.credentials.username"), radl.getPublicIP())]
 
@@ -451,7 +476,10 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, res) = server.GetInfrastructureList(auth_data)
 
 		if success:
-			print "Infrastructure IDs: \n -%s" % ("\n -".join([str(inf_id) for inf_id in res]))
+			if res:
+				print "Infrastructure IDs: \n  %s" % ("\n -".join([str(inf_id) for inf_id in res]))
+			else:
+				print "No Infrastructures."
 		else:
 			print "ERROR listing then infrastructures: %s" % res
 			sys.exit(1)
