@@ -477,7 +477,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
 		if success:
 			if res:
-				print "Infrastructure IDs: \n  %s" % ("\n -".join([str(inf_id) for inf_id in res]))
+				print "Infrastructure IDs: \n  %s" % ("\n  ".join([str(inf_id) for inf_id in res]))
 			else:
 				print "No Infrastructures."
 		else:
@@ -574,8 +574,12 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		(success, info)  = server.GetVMInfo(inf_id, vm_id, auth_data)
 		
 		if success:
-			radl = radl_parse.parse_radl(info)
-			CmdSsh.run(radl)
+			try:
+				radl = radl_parse.parse_radl(info)
+				CmdSsh.run(radl)
+			except Exception, ex:
+				print str(ex)
+				sys.exit(1)
 		else:
 			print "Error accessing VM: %s" % info
 			sys.exit(1)
