@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from netaddr import IPNetwork, IPAddress
 import copy
 from distutils.version import LooseVersion
 
@@ -477,7 +476,7 @@ class Features(object):
 		return prefixes
 
 class Aspect:
-	"""A network, system, deploy, configure or contextualize element in a RADL."""
+	"""A network, ansible, system, deploy, configure or contextualize element in a RADL."""
 
 	def getId(self):
 		"""Return the id of the aspect."""
@@ -652,8 +651,6 @@ class deploy(Aspect):
 
 class network(Features, Aspect):
 	"""Store a RADL ``network``."""
-	
-	private_net_masks = ["10.0.0.0/8","172.16.0.0/12","192.168.0.0/16","169.254.0.0/16","100.64.0.0/10","192.0.0.0/24","198.18.0.0/15"]
 
 	def __init__(self, name, features=None, reference=False, line=None):
 		self.id = name
@@ -662,16 +659,6 @@ class network(Features, Aspect):
 		"""True if it is only a reference and it isn't a definition."""
 		Features.__init__(self, features)
 		self.line = line
-
-	@staticmethod
-	def isPrivateIP(ip):
-		"""
-		Check if an IP address is private
-		"""
-		for mask in network.private_net_masks: 
-			if IPAddress(ip) in IPNetwork(mask):
-				return True
-		return False
 
 	def getId(self):
 		return self.id
@@ -1132,7 +1119,7 @@ class RADL:
 
 	def add(self, aspect, ifpresent="error"):
 		"""
-		Add a network, system, deploy, configure or contextualize.
+		Add a network, ansible, system, deploy, configure or contextualize.
 
 		Args:
 		- aspect(network, system, deploy, configure or contextualize): thing to add.
