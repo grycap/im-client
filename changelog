@@ -61,3 +61,5 @@ IM-client 1.4.2
     * Improve returned messages
     * Bugfix in sshvm function in VMs using a port different to 22
 
+IM-client 1.4.3
+    * Add GetVersion function

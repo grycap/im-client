@@ -23,7 +23,7 @@ import tempfile
 from optparse import OptionParser, Option, IndentedHelpFormatter
 import ConfigParser
 
-__version__ = "1.4.2"
+__version__ = "1.4.3"
 
 class PosOptionParser(OptionParser):
 	def format_help(self, formatter=None):
@@ -232,24 +232,26 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	parser.add_operation_help('startvm','<inf_id> <vm_id>')
 	parser.add_operation_help('stopvm','<inf_id> <vm_id>')
 	parser.add_operation_help('sshvm','<inf_id> <vm_id>')
+	parser.add_operation_help('getversion','')
 
 	(options, args) = parser.parse_args()
-
-	if options.auth_file is None:
-		parser.error("Auth file not specified")
-
-	auth_data = read_auth_data(options.auth_file)
-	
-	if auth_data is None:
-		parser.error("Auth file with incorrect format.")
 
 	if len(args) < 1:
 		parser.error("operation not specified. Use --help to show all the available operations.")
 	operation = args[0].lower()
 	args = args[1:]
 
-	if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start", "alter", "getcontmsg", "getvminfo", "reconfigure","getradl","getvmcontmsg","stopvm","startvm", "sshvm","getstate"]):
+	if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start", "alter", "getcontmsg", "getvminfo", "reconfigure","getradl","getvmcontmsg","stopvm","startvm", "sshvm","getstate","getversion"]):
 		parser.error("operation not recognised.  Use --help to show all the available operations")
+
+	if (operation not in ["getversion"]):
+		if options.auth_file is None:
+			parser.error("Auth file not specified")
+	
+		auth_data = read_auth_data(options.auth_file)
+		
+		if auth_data is None:
+			parser.error("Auth file with incorrect format.")
 
 	if XMLRCP_SSL:
 		print "Secure connection with: " + options.xmlrpc
@@ -582,4 +584,13 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 				sys.exit(1)
 		else:
 			print "Error accessing VM: %s" % info
+			sys.exit(1)
+
+	elif operation == "getversion":
+		(success, version) = server.GetVersion()
+
+		if success:
+			print "IM service version: %s" % version
+		else:
+			print "ERROR getting IM service version: " + version
 			sys.exit(1)
