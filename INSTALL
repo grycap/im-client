@@ -5,8 +5,8 @@
 IM is based on python, so Python 2.4 or higher runtime and standard library must
 be installed in the system.
 
-It is also required to install the Python Lex & Yacc library (http://www.dabeaz.com/ply/).
-It is available in all of the main distributions as 'python-ply' package.
+It is also required to install the RADL parser (https://github.com/grycap/radl), available in pip
+as the 'RADL' package.
 
 1.2 OPTIONAL PACKAGES
 
@@ -38,48 +38,3 @@ xmlrpc_url=http://localhost:8899
 auth_file=auth.dat
 xmlrpc_ssl=no
 xmlrpc_ssl_ca_certs=/tmp/pki/ca-chain.pem
-
-1.4.1 AUTH FILE
-
-The authorization data is used to validate access to the components in the
-infrastructure. This file is composed of a set of "key - value" pairs,
-where the user specifies the authorization data for all the components and cloud
-deployments available. File auth.dat shows examples of authorization data.
-
-The list of "key" values that must be specified for each component are:
-
-* id: An optional field used to identify the virtual deployment. It must be unique
-      in the authorization data.
-* type: The type of the component. It can be any of the components of the
-        architecture, such as the "InfrastructureManager", "VMRC" or any of
-        the cloud deployments currently supported by the IM: OpenNebula, EC2,
-        OpenStack, OCCI or LibVirt.
-* username: The name of the user for the authentication. In the EC2 and OpenStack
-            cases it refers to the Access Key ID value. password: The password for
-            the authentication. In the EC2 and OpenStack cases it refers to the
-            Secret Access Key value.
-* host: The address to the server in format "address:port" to specify the cloud
-        deployment to access. In the EC2 and in the system components (IM and VMRC)
-        this field is not used.
-
-An example of the auth file:
-
-id = one; type = OpenNebula; host = osenserve:2633; username = user; password = pass
-type = InfrastructureManager; username = user; password = pass
-type = VMRC; host = http://server:8080/vmrc; username = user; password = pass
-id = ec2; type = EC2; username = ACCESS_KEY; password = SECRET_KEY
-id = oshost; type = OpenStack; host = oshost:8773; username = ACCESS_KEY; key = SECRET_KEY
-id = occi; type = OCCI; host = occiserver:4567; username = user; password = pass
-         
-1.4.1 SECURITY
-
-Security is disabled by default, but it should be taken into account that it would
-be possible that someone that has local network access can "sniff" the traffic and
-get the messages with the IM with the authorisation data with the cloud providers.
-
-I can be activated both in the XMLRPC and REST APIs. Setting this variables:
-
-XMLRCP_SSL = True
-
-And then set the variables: XMLRCP_SSL_CA_CERTS to your CA certificates paths.
-
