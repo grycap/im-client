@@ -190,15 +190,12 @@ if __name__ == "__main__":
 
 	default_auth_file = None
 	default_xmlrpc = "http://localhost:8899"
-	XMLRCP_SSL = False
 	XMLRCP_SSL_CA_CERTS = "./pki/ca-chain.pem"
 
 	if config.has_option('im_client', "auth_file"):
 		default_auth_file = config.get('im_client', "auth_file")
 	if config.has_option('im_client', "xmlrpc_url"):
 		default_xmlrpc = config.get('im_client', "xmlrpc_url")
-	if config.has_option('im_client', "xmlrpc_ssl"):
-		XMLRCP_SSL = config.getboolean('im_client', "xmlrpc_ssl")
 	if config.has_option('im_client', "xmlrpc_ssl_ca_certs"):
 		XMLRCP_SSL_CA_CERTS = config.get('im_client', "xmlrpc_ssl_ca_certs")
 
@@ -253,7 +250,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		if auth_data is None:
 			parser.error("Auth file with incorrect format.")
 
-	if XMLRCP_SSL:
+	if options.xmlrpc.startswith("https"):
 		print "Secure connection with: " + options.xmlrpc
 		from springpython.remoting.xmlrpc import SSLClient
 		server = SSLClient(options.xmlrpc, XMLRCP_SSL_CA_CERTS)
