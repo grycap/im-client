@@ -64,3 +64,7 @@ IM-client 1.4.2
 IM-client 1.4.3
     * Add GetVersion function
     * Extract RADL as an external package
+
+IM-client 1.5.0
+    * Add Python 3 support
+    * Addapt to noew outports format in RADL 1.1.0
