@@ -67,4 +67,4 @@ IM-client 1.4.3
 
 IM-client 1.5.0
     * Add Python 3 support
-    * Addapt to noew outports format in RADL 1.1.0
+    * Addapt to new outports format in RADL 1.1.0
