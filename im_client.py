@@ -17,18 +17,18 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 try:
-    from xmlrpclib import ServerProxy
+	from xmlrpclib import ServerProxy
 except:
-    from xmlrpc.client import ServerProxy 
+	from xmlrpc.client import ServerProxy 
 
 import sys
 import os
 import tempfile
 from optparse import OptionParser, Option, IndentedHelpFormatter
 try:
-    import ConfigParser
+	import ConfigParser
 except:
-    import configparser as ConfigParser
+	import configparser as ConfigParser
 
 __version__ = "1.5.0"
 
@@ -215,9 +215,10 @@ This is free software, and you are welcome to redistribute it\n\
 under certain conditions; please read the license at \n\
 http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
-	parser = PosOptionParser(usage="%prog [-u|--xmlrpc-url <url>] [-a|--auth_file <filename>] operation op_parameters"+NOTICE, version="%prog " + __version__)
+	parser = PosOptionParser(usage="%prog [-u|--xmlrpc-url <url>] [-v|--verify-ssl] [-a|--auth_file <filename>] operation op_parameters"+NOTICE, version="%prog " + __version__)
 	parser.add_option("-a", "--auth_file", dest="auth_file", nargs=1, default=default_auth_file, help="Authentication data file", type="string")
 	parser.add_option("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=default_xmlrpc, help="URL address of the InfrastructureManager XML-RCP daemon", type="string")
+	parser.add_option("-v", "--verify-ssl", action="store_true", dest="verify", help="Verify the certificate of the InfrastructureManager XML-RCP server")
 	parser.add_operation_help('list', '')
 	parser.add_operation_help('create','<radl_file>')
 	parser.add_operation_help('destroy','<inf_id>')
@@ -259,11 +260,16 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
 	if options.xmlrpc.startswith("https"):
 		print("Secure connection with: " + options.xmlrpc)
-		from springpython.remoting.xmlrpc import SSLClient
-		server = SSLClient(options.xmlrpc, XMLRCP_SSL_CA_CERTS)
+		if not options.verify:
+			try:
+				import ssl
+				ssl._create_default_https_context = ssl._create_unverified_context
+			except:
+				pass
 	else:
 		print("Connected with: " + options.xmlrpc)
-		server = ServerProxy(options.xmlrpc,allow_none=True)
+
+	server = ServerProxy(options.xmlrpc,allow_none=True)
 
 	if operation == "removeresource":
 		inf_id = get_inf_id(args)
