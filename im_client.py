@@ -391,7 +391,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 				radl = radl_parse.parse_radl(radl_data)
 				
 				if len(args) >= 3:				
-					vm_list = [int(vm_id) for vm_id in args[3].split(",")]
+					vm_list = [int(vm_id) for vm_id in args[2].split(",")]
 	
 		(success, res) = server.Reconfigure(inf_id, str(radl), auth_data, vm_list)
 	
