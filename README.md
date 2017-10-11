@@ -13,7 +13,7 @@ fully functional infrastructure.
 usage: client.py [-u|--xmlrpc-url <url>] [-a|--auth_file <filename>] operation op_parameters
 ```
 
-1. INSTALLATION
+1 INSTALLATION
 ===============
 
 1.1 REQUISITES
