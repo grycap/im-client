@@ -237,6 +237,8 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	parser.add_operation_help('startvm','<inf_id> <vm_id>')
 	parser.add_operation_help('stopvm','<inf_id> <vm_id>')
 	parser.add_operation_help('sshvm','<inf_id> <vm_id>')
+	parser.add_operation_help('export','<inf_id> [delete]')
+	parser.add_operation_help('import','<json_file>')
 	parser.add_operation_help('getversion','')
 
 	(options, args) = parser.parse_args()
@@ -246,7 +248,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 	operation = args[0].lower()
 	args = args[1:]
 
-	if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start", "alter", "getcontmsg", "getvminfo", "reconfigure","getradl","getvmcontmsg","stopvm","startvm", "sshvm","getstate","getversion"]):
+	if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list","stop", "start", "alter", "getcontmsg", "getvminfo", "reconfigure","getradl","getvmcontmsg","stopvm","startvm", "sshvm","getstate","getversion","export","import"]):
 		parser.error("operation not recognised.  Use --help to show all the available operations")
 
 	if (operation not in ["getversion"]):
@@ -604,3 +606,39 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
 		else:
 			print("ERROR getting IM service version: " + version)
 			sys.exit(1)
+
+	elif operation == "export":
+		inf_id = get_inf_id(args)
+		delete = False
+		if len(args) >= 2:
+			delete  = bool(int(args[1]))
+
+		(success, data) = server.ExportInfrastructure(inf_id, delete, auth_data)
+
+		if success:
+			print(data)
+		else:
+			print("ERROR getting IM service version: " + data)
+			sys.exit(1)
+
+	elif operation == "import":
+		if len(args) >= 1:
+			if not os.path.isfile(args[0]):
+				print("JSON file '" + args[0] + "' does not exist")
+				sys.exit(1)
+		else:
+			print("JSON file to create inf. not specified")
+			sys.exit(1)
+
+		f = open(args[0])
+		data = "".join(f.readlines())
+		f.close()
+
+		(success, inf_id) = server.ImportInfrastructure(data, auth_data)
+
+		if success:
+			print("New Inf: " + inf_id)
+		else:
+			print("ERROR getting IM service version: " + inf_id)
+			sys.exit(1)
+			
