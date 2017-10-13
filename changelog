@@ -69,3 +69,6 @@ IM-client 1.5.0
     * Add Python 3 support
     * Addapt to new outports format in RADL 1.1.0
     * Fix error in reconfigure function passing VM list
+
+IM-client 1.5.1
+    * Add Import and Export funtions.
