@@ -38,7 +38,7 @@ def get_abs_path(file_name):
 
 class TestClient(unittest.TestCase):
     """
-    Class to test the CtxtAgent
+    Class to test the IM client
     """
 
     @patch("im_client.ServerProxy")
