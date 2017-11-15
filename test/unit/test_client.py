@@ -42,15 +42,16 @@ class TestClient(unittest.TestCase):
     """
 
     @patch("im_client.ServerProxy")
-    def test_list(self, server_proxy):
+    def test_0list(self, server_proxy):
         """
         Test list operation
         """
         proxy = MagicMock()
         proxy.GetInfrastructureList.return_value = (True, ["inf1", "inf2"])
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -68,8 +69,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.CreateInfrastructure.return_value = (True, "inf1")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -87,8 +89,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.RemoveResource.return_value = (True, ["1", "2"])
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -106,8 +109,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.AddResource.return_value = (True, ["1"])
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -125,8 +129,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.AlterVM.return_value = (True, "")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -144,8 +149,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.Reconfigure.return_value = (True, "")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -163,8 +169,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.GetInfrastructureContMsg.return_value = (True, "contmsg")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -182,8 +189,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.GetInfrastructureState.return_value = (True, {"state": "running", "vm_states": {"vm1": "running"}})
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -202,8 +210,9 @@ class TestClient(unittest.TestCase):
         proxy.GetVMInfo.return_value = (True, "radltest")
         proxy.GetVMProperty.return_value = (True, "property")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -222,8 +231,9 @@ class TestClient(unittest.TestCase):
         proxy.GetVMInfo.return_value = (True, "radltest")
         proxy.GetInfrastructureInfo.return_value = (True, ["vm1"])
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -241,8 +251,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.DestroyInfrastructure.return_value = (True, "")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -260,8 +271,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.StartInfrastructure.return_value = (True, "")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -279,8 +291,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.StopInfrastructure.return_value = (True, "")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -298,8 +311,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.GetInfrastructureRADL.return_value = (True, "radltest")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -317,8 +331,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.GetVMContMsg.return_value = (True, "getvmcontmsg")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -336,8 +351,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.StartVM.return_value = (True, "")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -355,8 +371,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.StopVM.return_value = (True, "")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -374,8 +391,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.GetVersion.return_value = (True, "1.0")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -393,8 +411,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.ExportInfrastructure.return_value = (True, "strinf")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -412,8 +431,9 @@ class TestClient(unittest.TestCase):
         proxy = MagicMock()
         proxy.ImportInfrastructure.return_value = (True, "newinfid")
         server_proxy.return_value = proxy
-        parser = get_parser()
-        (options, _) = parser.parse_args()
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
