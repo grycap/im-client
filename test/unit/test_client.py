@@ -29,6 +29,7 @@ sys.path.append(".")
 
 from im_client import main, get_parser
 from mock import patch, MagicMock
+from optparse import OptionParser
 
 
 def get_abs_path(file_name):
@@ -42,7 +43,7 @@ class TestClient(unittest.TestCase):
     """
 
     @patch("im_client.ServerProxy")
-    def test_0list(self, server_proxy):
+    def test_list(self, server_proxy):
         """
         Test list operation
         """
@@ -51,6 +52,8 @@ class TestClient(unittest.TestCase):
         server_proxy.return_value = proxy
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
+        options.xmlrpc = "https://localhost:8899"
+        options.verify = False
         parser = MagicMock()
 
         out = StringIO()
@@ -443,6 +446,81 @@ class TestClient(unittest.TestCase):
         self.assertIn("New Inf: newinfid", output)
         sys.stdout = oldstdout
 
+    @patch("im_client.ServerProxy")
+    def test_sshvm(self, server_proxy):
+        """
+        Test sshvm operation
+        """
+        proxy = MagicMock()
+
+        radl = open(get_abs_path("../files/test.radl"), 'r').read()
+        proxy.GetVMInfo.return_value = (True, radl)
+        server_proxy.return_value = proxy
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        oldstderr = sys.stderr
+        sys.stdout = out
+        sys.stderr = out
+        main("sshvm", options, ["infid", "vmid", "1"], parser)
+        output = out.getvalue().strip()
+        self.assertIn("sshpass -pyoyoyo ssh -p 1022 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
+                      "ubuntu@10.0.0.1", output)
+        sys.stdout = oldstdout
+        sys.stderr = oldstderr
+
+    @patch("im_client.ServerProxy")
+    def test_sshvm_key(self, server_proxy):
+        """
+        Test sshvm operation
+        """
+        proxy = MagicMock()
+
+        radl = open(get_abs_path("../files/test_priv.radl"), 'r').read()
+        proxy.GetVMInfo.return_value = (True, radl)
+        server_proxy.return_value = proxy
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        oldstderr = sys.stderr
+        sys.stdout = out
+        sys.stderr = out
+        main("sshvm", options, ["infid", "vmid", "1"], parser)
+        output = out.getvalue().strip()
+        self.assertIn("ssh -p 1022 -i /tmp/", output)
+        self.assertIn(" -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@10.0.0.1", output)
+        sys.stdout = oldstdout
+        sys.stderr = oldstderr
+
+    def test_parser(self):
+        """
+        Test parser
+        """
+        parser = get_parser()
+        (_, args) = parser.parse_args(["create", "test.radl"])
+        self.assertEqual(['create', 'test.radl'], args)
+
+    @patch("im_client.OptionParser.exit")
+    def test_parser_help(self, option_parser_exit):
+        """
+        Test parser help
+        """
+        option_parser_exit.return_value = True
+        parser = get_parser()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        sys.stdout = out
+        parser.parse_args(["--help"])
+        output = out.getvalue().strip()
+        self.assertIn("Usage: nosetests [-u|--xmlrpc-url <url>] [-v|--verify-ssl] [-a|--auth_file <filename>] operation op_parameters", output)
+        sys.stdout = oldstdout
 
 if __name__ == '__main__':
     unittest.main()
