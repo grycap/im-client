@@ -1,6 +1,8 @@
 IM - Infrastructure Manager client
 ==================================
 
+* Build Status [![Build Status](http://jenkins.i3m.upv.es/buildStatus/icon?job=grycap/im-client-unit)](http://jenkins.i3m.upv.es:8080/job/grycap/job/im-client-unit/)
+
 IM is a tool that ease the access and the usability of IaaS clouds by automating
 the VMI selection, deployment, configuration, software installation, monitoring
 and update of Virtual Appliances. It supports APIs from a large number of
@@ -9,7 +11,7 @@ integrates a contextualization system to enable the installation and
 configuration of all the user required applications providing the user with a
 fully functional infrastructure.
 
-```
+```sh
 usage: client.py [-u|--xmlrpc-url <url>] [-a|--auth_file <filename>] operation op_parameters
 ```
 
@@ -38,7 +40,7 @@ framework (http://springpython.webfactional.com/) must be installed.
 
 You only have to call the install command of the pip tool with the IM-client package.
 
-```
+```sh
 pip install IM-client
 ```
 
@@ -46,7 +48,7 @@ pip install IM-client
 
 You only need to install the tar-gziped file to any directoy:
 
-```
+```sh
 $ tar xvzf IM-client-X.XX.tar.gz
 ```
 
@@ -57,7 +59,7 @@ To avoid typing the parameters in all the client calls. The user can define a co
 file "im_client.cfg" in the current directory or a file ".im_client.cfg" in their 
 home directory. In the config file the user can specify the following parameters:
 
-```
+```sh
 [im_client]
 xmlrpc_url=http://localhost:8899
 auth_file=auth.dat
