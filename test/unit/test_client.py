@@ -502,7 +502,7 @@ class TestClient(unittest.TestCase):
         Test parser
         """
         parser = get_parser()
-        (options, args) = parser.parse_args(["create", "test.radl"])
+        (_, args) = parser.parse_args(["create", "test.radl"])
         self.assertEqual(['create', 'test.radl'], args)
 
 
