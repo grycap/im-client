@@ -51,6 +51,8 @@ class TestClient(unittest.TestCase):
         server_proxy.return_value = proxy
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
+        options.xmlrpc = "https://localhost:8899"
+        options.verify = False
         parser = MagicMock()
 
         out = StringIO()
@@ -464,10 +466,45 @@ class TestClient(unittest.TestCase):
         sys.stderr = out
         main("sshvm", options, ["infid", "vmid", "1"], parser)
         output = out.getvalue().strip()
-        self.assertIn("sshpass -pyoyoyo ssh -p 22 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
+        self.assertIn("sshpass -pyoyoyo ssh -p 1022 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
                       "ubuntu@10.0.0.1", output)
         sys.stdout = oldstdout
         sys.stderr = oldstderr
+
+    @patch("im_client.ServerProxy")
+    def test_sshvm_key(self, server_proxy):
+        """
+        Test sshvm operation
+        """
+        proxy = MagicMock()
+
+        radl = open(get_abs_path("../files/test_priv.radl"), 'r').read()
+        proxy.GetVMInfo.return_value = (True, radl)
+        server_proxy.return_value = proxy
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        oldstderr = sys.stderr
+        sys.stdout = out
+        sys.stderr = out
+        main("sshvm", options, ["infid", "vmid", "1"], parser)
+        output = out.getvalue().strip()
+        self.assertIn("ssh -p 1022 -i /tmp/", output)
+        self.assertIn(" -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@10.0.0.1", output)
+        sys.stdout = oldstdout
+        sys.stderr = oldstderr
+
+    def test_parser(self):
+        """
+        Test parser
+        """
+        parser = get_parser()
+        (options, args) = parser.parse_args(["create", "test.radl"])
+        self.assertEqual({'verify': None, 'xmlrpc': 'http://localhost:8899', 'auth_file': 'miauth.dat'}, options)
+        self.assertEqual(['create', 'test.radl'], args)
 
 
 if __name__ == '__main__':

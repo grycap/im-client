@@ -36,11 +36,20 @@ __version__ = "1.5.2"
 
 
 class PosOptionParser(OptionParser):
+    """
+    Class to add Help to operations
+    """
     def format_help(self, formatter=None):
+        """
+        Format help
+        """
         class Positional(object):
-            def __init__(self, args):
+            """
+            Positional argument
+            """
+            def __init__(self, arguments):
                 self.option_groups = []
-                self.option_list = args
+                self.option_list = arguments
 
         positional = Positional(self.positional)
         formatter = IndentedHelpFormatter()
@@ -53,14 +62,20 @@ class PosOptionParser(OptionParser):
         return OptionParser.format_help(self, formatter) + ''.join(output)
 
     def add_operation_help(self, arg, helpstr):
+        """
+        Add operation help
+        """
         try:
-            args = self.positional
+            arguments = self.positional
         except AttributeError:
-            args = []
-        args.append(Option('--' + arg, action='store_true', help=helpstr))
-        self.positional = args
+            arguments = []
+        arguments.append(Option('--' + arg, action='store_true', help=helpstr))
+        self.positional = arguments
 
     def set_out(self, out):
+        """
+        Set out param
+        """
         self.out = out
 
 

@@ -10,7 +10,7 @@ net_interface.1.connection = 'public' and
 net_interface.1.ip = '10.0.0.1' and
 disk.0.image.url = 'one://onecloud.i3m.upv.es/77' and
 disk.0.os.credentials.username = 'ubuntu' and
-disk.0.os.credentials.password = 'yoyoyo' and
+disk.0.os.credentials.private_key = 'private_key' and
 disk.0.os.name = 'linux'
 )
 
