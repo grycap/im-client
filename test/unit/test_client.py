@@ -503,7 +503,6 @@ class TestClient(unittest.TestCase):
         """
         parser = get_parser()
         (options, args) = parser.parse_args(["create", "test.radl"])
-        self.assertEqual({'verify': None, 'xmlrpc': 'http://localhost:8899', 'auth_file': 'miauth.dat'}, options)
         self.assertEqual(['create', 'test.radl'], args)
 
 
