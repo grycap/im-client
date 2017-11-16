@@ -29,6 +29,7 @@ sys.path.append(".")
 
 from im_client import main, get_parser
 from mock import patch, MagicMock
+from optparse import OptionParser
 
 
 def get_abs_path(file_name):
@@ -505,6 +506,21 @@ class TestClient(unittest.TestCase):
         (_, args) = parser.parse_args(["create", "test.radl"])
         self.assertEqual(['create', 'test.radl'], args)
 
+    @patch("im_client.OptionParser.exit")
+    def test_parser_help(self, option_parser_exit):
+        """
+        Test parser help
+        """
+        option_parser_exit.return_value = True
+        parser = get_parser()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        sys.stdout = out
+        parser.parse_args(["--help"])
+        output = out.getvalue().strip()
+        self.assertIn("Usage: nosetests [-u|--xmlrpc-url <url>] [-v|--verify-ssl] [-a|--auth_file <filename>] operation op_parameters", output)
+        sys.stdout = oldstdout
 
 if __name__ == '__main__':
     unittest.main()
