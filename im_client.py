@@ -531,8 +531,15 @@ def main(operation, options, args, parser):
 
     elif operation == "sshvm":
         inf_id = get_inf_id(args)
+        show_only = False
         if len(args) >= 2:
             vm_id = args[1]
+            if len(args) >= 3:
+                if args[2] in ["0", "1"]:
+                    show_only = bool(int(args[2]))
+                else:
+                    print("The show_only flag must be 0 or 1")
+                    return False
         else:
             print("VM ID to get info not specified")
             return False
@@ -542,7 +549,7 @@ def main(operation, options, args, parser):
         if success:
             try:
                 radl = radl_parse.parse_radl(info)
-                CmdSsh.run(radl)
+                CmdSsh.run(radl, show_only)
             except Exception as ex:
                 print(str(ex))
                 return False
@@ -648,7 +655,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     parser.add_operation_help('reconfigure', '<inf_id> [<radl_file>] [vm_list]')
     parser.add_operation_help('startvm', '<inf_id> <vm_id>')
     parser.add_operation_help('stopvm', '<inf_id> <vm_id>')
-    parser.add_operation_help('sshvm', '<inf_id> <vm_id>')
+    parser.add_operation_help('sshvm', '<inf_id> <vm_id> [show_only]')
     parser.add_operation_help('export', '<inf_id> [delete]')
     parser.add_operation_help('import', '<json_file>')
     parser.add_operation_help('getversion', '')

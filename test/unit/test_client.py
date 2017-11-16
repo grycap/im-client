@@ -42,7 +42,7 @@ class TestClient(unittest.TestCase):
     """
 
     @patch("im_client.ServerProxy")
-    def test_0list(self, server_proxy):
+    def test_list(self, server_proxy):
         """
         Test list operation
         """
@@ -442,6 +442,32 @@ class TestClient(unittest.TestCase):
         output = out.getvalue().strip()
         self.assertIn("New Inf: newinfid", output)
         sys.stdout = oldstdout
+
+    @patch("im_client.ServerProxy")
+    def test_sshvm(self, server_proxy):
+        """
+        Test sshvm operation
+        """
+        proxy = MagicMock()
+
+        radl = open(get_abs_path("../files/test.radl"), 'r').read()
+        proxy.GetVMInfo.return_value = (True, radl)
+        server_proxy.return_value = proxy
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        oldstderr = sys.stderr
+        sys.stdout = out
+        sys.stderr = out
+        main("sshvm", options, ["infid", "vmid", "1"], parser)
+        output = out.getvalue().strip()
+        self.assertIn("sshpass -pyoyoyo ssh -p 22 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
+                      "ubuntu@10.0.0.1", output)
+        sys.stdout = oldstdout
+        sys.stderr = oldstderr
 
 
 if __name__ == '__main__':
