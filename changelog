@@ -72,3 +72,7 @@ IM-client 1.5.0
 
 IM-client 1.5.1
     * Add Import and Export funtions.
+
+IM-client 1.5.2
+    * Fix python3 support.
+    * Add ssh function.
