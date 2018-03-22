@@ -472,6 +472,15 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
+        sys.stdout = out
+        sys.stderr = out
+        main("ssh", options, ["infid", "1"], parser)
+        output = out.getvalue().strip()
+        self.assertIn("sshpass -pyoyoyo ssh -p 1022 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
+                      "ubuntu@10.0.0.1", output)
+        sys.stdout = oldstdout
+        sys.stderr = oldstderr
+
     @patch("im_client.ServerProxy")
     def test_sshvm_key(self, server_proxy):
         """
@@ -519,7 +528,9 @@ class TestClient(unittest.TestCase):
         sys.stdout = out
         parser.parse_args(["--help"])
         output = out.getvalue().strip()
-        self.assertIn("Usage: nosetests [-u|--xmlrpc-url <url>] [-v|--verify-ssl] [-a|--auth_file <filename>] operation op_parameters", output)
+        self.assertEqual(output[:16], "Usage: nosetests")
+        self.assertIn("[-u|--xmlrpc-url <url>] [-v|--verify-ssl] [-a|--auth_file <filename>] operation op_parameters",
+                      output)
         sys.stdout = oldstdout
 
 if __name__ == '__main__':

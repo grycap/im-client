@@ -216,7 +216,7 @@ def main(operation, options, args, parser):
     """
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
                           "alter", "getcontmsg", "getvminfo", "reconfigure", "getradl", "getvmcontmsg", "stopvm",
-                          "startvm", "sshvm", "getstate", "getversion", "export", "import"]):
+                          "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import"]):
         parser.error("operation not recognised.  Use --help to show all the available operations")
 
     if (operation not in ["getversion"]):
@@ -392,7 +392,7 @@ def main(operation, options, args, parser):
             state = res['state']
             vm_states = res['vm_states']
             print("The infrastructure is in state: %s" % state)
-            for vm_id, vm_state in vm_states.iteritems():
+            for vm_id, vm_state in vm_states.items():
                 print("VM ID: %s is in state: %s." % (vm_id, vm_state))
         else:
             print("Error getting infrastructure state: %s" % res)
@@ -544,20 +544,29 @@ def main(operation, options, args, parser):
             print("Error stopping VM: %s" % info)
             return False
 
-    elif operation == "sshvm":
+    elif operation in ["sshvm", "ssh"]:
         inf_id = get_inf_id(args)
         show_only = False
-        if len(args) >= 2:
-            vm_id = args[1]
-            if len(args) >= 3:
-                if args[2] in ["0", "1"]:
-                    show_only = bool(int(args[2]))
+        if operation == "ssh":
+            vm_id = 0
+            if len(args) >= 2:
+                if args[1] in ["0", "1"]:
+                    show_only = bool(int(args[1]))
                 else:
                     print("The show_only flag must be 0 or 1")
                     return False
         else:
-            print("VM ID to get info not specified")
-            return False
+            if len(args) >= 2:
+                vm_id = args[1]
+                if len(args) >= 3:
+                    if args[2] in ["0", "1"]:
+                        show_only = bool(int(args[2]))
+                    else:
+                        print("The show_only flag must be 0 or 1")
+                        return False
+            else:
+                print("VM ID to get info not specified")
+                return False
 
         (success, info) = server.GetVMInfo(inf_id, vm_id, auth_data)
 
