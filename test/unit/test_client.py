@@ -166,6 +166,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("list", options, [], parser)
@@ -197,6 +198,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("create", options, [get_abs_path("../files/test.radl")], parser)
@@ -227,6 +229,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("removeresource", options, ["infid", "1"], parser)
@@ -257,6 +260,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("addresource", options, ["infid", get_abs_path("../files/test.radl")], parser)
@@ -287,6 +291,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("alter", options, ["infid", "vmid", get_abs_path("../files/test.radl")], parser)
@@ -317,6 +322,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("reconfigure", options, ["infid", get_abs_path("../files/test.radl")], parser)
@@ -347,6 +353,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("getcontmsg", options, ["infid"], parser)
@@ -377,6 +384,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("getstate", options, ["infid"], parser)
@@ -408,6 +416,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("getvminfo", options, ["infid", "vmid"], parser)
@@ -439,6 +448,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("getinfo", options, ["infid"], parser)
@@ -469,6 +479,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("destroy", options, ["infid"], parser)
@@ -499,6 +510,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("start", options, ["infid"], parser)
@@ -529,6 +541,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("stop", options, ["infid"], parser)
@@ -559,6 +572,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("getradl", options, ["infid"], parser)
@@ -589,6 +603,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("getvmcontmsg", options, ["infid", "vmid"], parser)
@@ -619,6 +634,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("startvm", options, ["infid", "vmid"], parser)
@@ -649,6 +665,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("stopvm", options, ["infid", "vmid"], parser)
@@ -679,6 +696,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("getversion", options, [], parser)
@@ -709,6 +727,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("export", options, ["infid"], parser)
@@ -739,6 +758,7 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
+        options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         main("import", options, [get_abs_path("../files/test.radl")], parser)

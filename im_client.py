@@ -215,6 +215,11 @@ def main(operation, options, args, parser):
     """
     Launch Client
     """
+    if options.xmlrpc:
+        options.restapi = None
+    elif options.restapi is None:    
+        options.restapi = "http://localhost:8800"
+    
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
                           "alter", "getcontmsg", "getvminfo", "reconfigure", "getradl", "getvmcontmsg", "stopvm",
                           "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import"]):
@@ -837,7 +842,7 @@ def get_parser():
     config.read(['im_client.cfg', os.path.expanduser('~/.im_client.cfg')])
 
     default_auth_file = None
-    default_xmlrpc = "http://localhost:8899"
+    default_xmlrpc = None
     default_restapi = None
     XMLRCP_SSL_CA_CERTS = "./pki/ca-chain.pem"
 
