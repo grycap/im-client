@@ -220,6 +220,7 @@ def main(operation, options, args, parser):
                           "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import"]):
         parser.error("operation not recognised.  Use --help to show all the available operations")
 
+    auth_data = None
     if (operation not in ["getversion"]):
         if options.auth_file is None:
             parser.error("Auth file not specified")
@@ -229,7 +230,8 @@ def main(operation, options, args, parser):
         if auth_data is None:
             parser.error("Auth file with incorrect format.")
 
-        if options.restapi:
+    if options.restapi:
+        if auth_data:
             rest_auth_data = ""
             for item in auth_data:
                 for key, value in item.items():
@@ -276,10 +278,13 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/%s" % (options.restapi.rstrip("/"), inf_id, vm_list)
+            url = "%s/infrastructures/%s/vms/%s" % (options.restapi.rstrip("/"), inf_id, vm_list)
             resp = requests.request("DELETE", url, verify=False, headers=headers)
             success = resp.status_code == 200
-            vms_id = resp.text
+            if success:
+                vms_id = vm_list
+            else:
+                vms_id = resp.text
         else:
             (success, vms_id) = server.RemoveResource(inf_id, vm_list, auth_data, context)
 
@@ -310,16 +315,20 @@ def main(operation, options, args, parser):
         radl = radl_parse.parse_radl(args[1])
 
         if options.restapi:
-            headers = {"Authorization": rest_auth_data}
+            headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
             url = "%s/infrastructures/%s" % (options.restapi, inf_id) 
             resp = requests.request("POST", url, verify=False, headers=headers, data=str(radl))
             success = resp.status_code == 200
-            vms_id = resp.text
+            restres = resp.text
+            if success:
+                vms_id = []
+                for elem in resp.json()["uri-list"]:
+                    vms_id.append(os.path.basename(list(elem.values())[0]))
         else:
             (success, vms_id) = server.AddResource(inf_id, str(radl), auth_data, context)
 
         if success:
-            print("Resources with IDs: %s successfully added." % str(vms_id))
+            print("Resources with IDs: %s successfully added." % ",".join(vms_id))
         else:
             print("ERROR adding resources to infrastructure: %s" % vms_id)
             return False
@@ -345,12 +354,12 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures"
+            url = "%s/infrastructures" % options.restapi
             resp = requests.request("POST", url, verify=False, headers=headers, data=str(radl))
             success = resp.status_code == 200
-            vms_id = resp.text
+            inf_id = resp.text
             if success:
-                vms_id = os.path.basename(vms_id)
+                inf_id = os.path.basename(inf_id)
         else:
             (success, inf_id) = server.CreateInfrastructure(str(radl), auth_data)
 
@@ -380,9 +389,9 @@ def main(operation, options, args, parser):
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
             url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id) 
-            resp = requests.request("POST", url, verify=False, headers=headers, data=str(radl))
+            resp = requests.request("PUT", url, verify=False, headers=headers, data=str(radl))
             success = resp.status_code == 200
-            cont_out = resp.text
+            res = resp.text
         else:
             (success, res) = server.AlterVM(inf_id, vm_id, str(radl), auth_data)
 
@@ -513,7 +522,7 @@ def main(operation, options, args, parser):
             if success:
                 vm_ids = []
                 for elem in resp.json()["uri-list"]:
-                    vm_ids.append(os.path.basename(elem.values()[0]))
+                    vm_ids.append(os.path.basename(list(elem.values())[0]))
             else:
                 vm_ids = restres
         else:
@@ -572,7 +581,7 @@ def main(operation, options, args, parser):
             if success:
                 res = []
                 for elem in resp.json()["uri-list"]:
-                    res.append(os.path.basename(elem.values()[0]))
+                    res.append(os.path.basename(list(elem.values())[0]))
         else:
             (success, res) = server.GetInfrastructureList(auth_data)
 
@@ -649,7 +658,7 @@ def main(operation, options, args, parser):
             url = "%s/infrastructures/%s/vms/%s/contmsg" % (options.restapi, inf_id, vm_id) 
             resp = requests.request("GET", url, verify=False, headers=headers)
             success = resp.status_code == 200
-            radl = resp.text
+            info = resp.text
         else:
             (success, info) = server.GetVMContMsg(inf_id, vm_id, auth_data)
 
@@ -770,7 +779,17 @@ def main(operation, options, args, parser):
         if len(args) >= 2:
             delete = bool(int(args[1]))
 
-        (success, data) = server.ExportInfrastructure(inf_id, delete, auth_data)
+        if options.restapi:
+            headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+            url = "%s/infrastructures/%s/data" % (options.restapi, inf_id) 
+            resp = requests.request("GET", url, verify=False, headers=headers)
+            success = resp.status_code == 200
+            if success:
+                data = resp.json()["data"]
+            else:
+                data = resp.text
+        else:
+            (success, data) = server.ExportInfrastructure(inf_id, delete, auth_data)
 
         if success:
             print(data)
@@ -791,7 +810,16 @@ def main(operation, options, args, parser):
         data = "".join(f.readlines())
         f.close()
 
-        (success, inf_id) = server.ImportInfrastructure(data, auth_data)
+        if options.restapi:
+            headers = {"Authorization": rest_auth_data}
+            url = "%s/infrastructures" % options.restapi 
+            resp = requests.request("PUT", url, verify=False, headers=headers, data=data)
+            success = resp.status_code == 200
+            inf_id = resp.text
+            if success:
+                inf_id = os.path.basename(inf_id)
+        else:
+            (success, inf_id) = server.ImportInfrastructure(data, auth_data)
 
         if success:
             print("New Inf: " + inf_id)
@@ -810,7 +838,7 @@ def get_parser():
 
     default_auth_file = None
     default_xmlrpc = "http://localhost:8899"
-    default_restapi = "http://localhost:8800"
+    default_restapi = None
     XMLRCP_SSL_CA_CERTS = "./pki/ca-chain.pem"
 
     if config.has_option('im_client', "auth_file"):
