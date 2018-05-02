@@ -57,8 +57,8 @@ class TestClient(unittest.TestCase):
         if method == "GET":
             if url == "/infrastructures":
                 resp.status_code = 200
-                resp.text =  ('{ "uri-list": [ { "uri" : "http://localhost/inf1" },'
-                              '{ "uri" : "http://localhost/inf2"}]}')
+                resp.text = ('{ "uri-list": [ { "uri" : "http://localhost/inf1" },'
+                             '{ "uri" : "http://localhost/inf2"}]}')
                 resp.json.return_value = json.loads(resp.text)
             elif url == "/infrastructures/infid/contmsg":
                 resp.status_code = 200
@@ -72,7 +72,7 @@ class TestClient(unittest.TestCase):
                 resp.text = "radltest"
             elif url == "/infrastructures/infid":
                 resp.status_code = 200
-                resp.text =  ('{ "uri-list": [ { "uri" : "http://localhost/infid/vms/vm1" }]}')
+                resp.text = ('{ "uri-list": [ { "uri" : "http://localhost/infid/vms/vm1" }]}')
                 resp.json.return_value = json.loads(resp.text)
             elif url == "/infrastructures/infid/vms/vm1":
                 resp.status_code = 200
@@ -163,7 +163,7 @@ class TestClient(unittest.TestCase):
         output = out.getvalue().strip()
         self.assertIn("IDs: \n  inf1\n  inf2", output)
         sys.stdout = oldstdout
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -194,7 +194,7 @@ class TestClient(unittest.TestCase):
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully created with ID: inf1", output)
         sys.stdout = oldstdout
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -254,7 +254,7 @@ class TestClient(unittest.TestCase):
         main("addresource", options, ["infid", get_abs_path("../files/test.radl")], parser)
         output = out.getvalue().strip()
         self.assertIn("Resources with IDs: 1 successfully added.", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -284,7 +284,7 @@ class TestClient(unittest.TestCase):
         main("alter", options, ["infid", "vmid", get_abs_path("../files/test.radl")], parser)
         output = out.getvalue().strip()
         self.assertIn("VM successfully modified.", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -314,7 +314,7 @@ class TestClient(unittest.TestCase):
         main("reconfigure", options, ["infid", get_abs_path("../files/test.radl")], parser)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully reconfigured.", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -344,7 +344,7 @@ class TestClient(unittest.TestCase):
         main("getcontmsg", options, ["infid"], parser)
         output = out.getvalue().strip()
         self.assertIn("Msg Contextualizator: \n\ncontmsg", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -374,7 +374,7 @@ class TestClient(unittest.TestCase):
         main("getstate", options, ["infid"], parser)
         output = out.getvalue().strip()
         self.assertIn("The infrastructure is in state: running\nVM ID: vm1 is in state: running.", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -405,7 +405,7 @@ class TestClient(unittest.TestCase):
         main("getvminfo", options, ["infid", "vmid"], parser)
         output = out.getvalue().strip()
         self.assertIn("radltest", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -436,7 +436,7 @@ class TestClient(unittest.TestCase):
         main("getinfo", options, ["infid"], parser)
         output = out.getvalue().strip()
         self.assertIn("Info about VM with ID: vm1\nradltest", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -466,7 +466,7 @@ class TestClient(unittest.TestCase):
         main("destroy", options, ["infid"], parser)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully destroyed", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -496,7 +496,7 @@ class TestClient(unittest.TestCase):
         main("start", options, ["infid"], parser)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully started", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -556,7 +556,7 @@ class TestClient(unittest.TestCase):
         main("getradl", options, ["infid"], parser)
         output = out.getvalue().strip()
         self.assertIn("radltest", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -586,7 +586,7 @@ class TestClient(unittest.TestCase):
         main("getvmcontmsg", options, ["infid", "vmid"], parser)
         output = out.getvalue().strip()
         self.assertIn("getvmcontmsg", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -616,7 +616,7 @@ class TestClient(unittest.TestCase):
         main("startvm", options, ["infid", "vmid"], parser)
         output = out.getvalue().strip()
         self.assertIn("VM successfully started", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -646,7 +646,7 @@ class TestClient(unittest.TestCase):
         main("stopvm", options, ["infid", "vmid"], parser)
         output = out.getvalue().strip()
         self.assertIn("VM successfully stopped", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -676,7 +676,7 @@ class TestClient(unittest.TestCase):
         main("getversion", options, [], parser)
         output = out.getvalue().strip()
         self.assertIn("1.0", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -706,7 +706,7 @@ class TestClient(unittest.TestCase):
         main("export", options, ["infid"], parser)
         output = out.getvalue().strip()
         self.assertIn("strinf", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"
@@ -736,7 +736,7 @@ class TestClient(unittest.TestCase):
         main("import", options, [get_abs_path("../files/test.radl")], parser)
         output = out.getvalue().strip()
         self.assertIn("New Inf: newinfid", output)
-        
+
         out = StringIO()
         sys.stdout = out
         options.restapi = "https://localhost:8800"

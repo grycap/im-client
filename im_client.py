@@ -235,7 +235,7 @@ def main(operation, options, args, parser):
             rest_auth_data = ""
             for item in auth_data:
                 for key, value in item.items():
-                    value.replace("\n","\\\\n")
+                    value.replace("\n", "\\\\n")
                     rest_auth_data += "%s = %s;" % (key, value)
                 rest_auth_data += "\\n"
 
@@ -254,7 +254,7 @@ def main(operation, options, args, parser):
                     pass
         else:
             print("Connected with: " + options.xmlrpc)
-    
+
         server = ServerProxy(options.xmlrpc, allow_none=True)
 
     if operation == "removeresource":
@@ -316,7 +316,7 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s" % (options.restapi, inf_id) 
+            url = "%s/infrastructures/%s" % (options.restapi, inf_id)
             resp = requests.request("POST", url, verify=False, headers=headers, data=str(radl))
             success = resp.status_code == 200
             restres = resp.text
@@ -388,7 +388,7 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id) 
+            url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
             resp = requests.request("PUT", url, verify=False, headers=headers, data=str(radl))
             success = resp.status_code == 200
             res = resp.text
@@ -441,7 +441,7 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/contmsg" % (options.restapi, inf_id) 
+            url = "%s/infrastructures/%s/contmsg" % (options.restapi, inf_id)
             resp = requests.request("GET", url, verify=False, headers=headers)
             success = resp.status_code == 200
             cont_out = resp.text
@@ -461,7 +461,7 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s/state" % (options.restapi, inf_id) 
+            url = "%s/infrastructures/%s/state" % (options.restapi, inf_id)
             resp = requests.request("GET", url, verify=False, headers=headers)
             success = resp.status_code == 200
             res = resp.json()['state']
@@ -492,7 +492,7 @@ def main(operation, options, args, parser):
             headers = {"Authorization": rest_auth_data}
             url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
             if propiedad:
-                url += "/" + propiedad 
+                url += "/" + propiedad
             resp = requests.request("GET", url, verify=False, headers=headers)
             success = resp.status_code == 200
             info = resp.text
@@ -515,7 +515,7 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s" % (options.restapi, inf_id) 
+            url = "%s/infrastructures/%s" % (options.restapi, inf_id)
             resp = requests.request("GET", url, verify=False, headers=headers)
             success = resp.status_code == 200
             restres = resp.text
@@ -536,7 +536,7 @@ def main(operation, options, args, parser):
                     headers = {"Authorization": rest_auth_data}
                     url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
                     if propiedad:
-                        url += "/" + propiedad 
+                        url += "/" + propiedad
                     resp = requests.request("GET", url, verify=False, headers=headers)
                     success = resp.status_code == 200
                     info = resp.text
@@ -574,7 +574,7 @@ def main(operation, options, args, parser):
     elif operation == "list":
         if options.restapi:
             headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures" % options.restapi 
+            url = "%s/infrastructures" % options.restapi
             resp = requests.request("GET", url, verify=False, headers=headers)
             success = resp.status_code == 200
             restres = resp.text
@@ -598,7 +598,7 @@ def main(operation, options, args, parser):
         inf_id = get_inf_id(args)
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/start" % (options.restapi, inf_id) 
+            url = "%s/infrastructures/%s/start" % (options.restapi, inf_id)
             resp = requests.request("PUT", url, verify=False, headers=headers)
             success = resp.status_code == 200
             inf_id = resp.text
@@ -615,7 +615,7 @@ def main(operation, options, args, parser):
         inf_id = get_inf_id(args)
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/stop" % (options.restapi, inf_id) 
+            url = "%s/infrastructures/%s/stop" % (options.restapi, inf_id)
             resp = requests.request("PUT", url, verify=False, headers=headers)
             success = resp.status_code == 200
             inf_id = resp.text
@@ -632,7 +632,7 @@ def main(operation, options, args, parser):
         inf_id = get_inf_id(args)
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/radl" % (options.restapi, inf_id) 
+            url = "%s/infrastructures/%s/radl" % (options.restapi, inf_id)
             resp = requests.request("GET", url, verify=False, headers=headers)
             success = resp.status_code == 200
             radl = resp.text
@@ -655,7 +655,7 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s/contmsg" % (options.restapi, inf_id, vm_id) 
+            url = "%s/infrastructures/%s/vms/%s/contmsg" % (options.restapi, inf_id, vm_id)
             resp = requests.request("GET", url, verify=False, headers=headers)
             success = resp.status_code == 200
             info = resp.text
@@ -678,7 +678,7 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s/start" % (options.restapi, inf_id, vm_id) 
+            url = "%s/infrastructures/%s/vms/%s/start" % (options.restapi, inf_id, vm_id)
             resp = requests.request("PUT", url, verify=False, headers=headers)
             success = resp.status_code == 200
             info = resp.text
@@ -701,7 +701,7 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s/stop" % (options.restapi, inf_id, vm_id) 
+            url = "%s/infrastructures/%s/vms/%s/stop" % (options.restapi, inf_id, vm_id)
             resp = requests.request("PUT", url, verify=False, headers=headers)
             success = resp.status_code == 200
             info = resp.text
@@ -740,7 +740,7 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id) 
+            url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
             resp = requests.request("GET", url, verify=False, headers=headers)
             success = resp.status_code == 200
             info = resp.text
@@ -760,7 +760,7 @@ def main(operation, options, args, parser):
 
     elif operation == "getversion":
         if options.restapi:
-            url = "%s/version" % options.restapi 
+            url = "%s/version" % options.restapi
             resp = requests.request("GET", url, verify=False)
             success = resp.status_code == 200
             version = resp.text
@@ -781,7 +781,7 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s/data" % (options.restapi, inf_id) 
+            url = "%s/infrastructures/%s/data" % (options.restapi, inf_id)
             resp = requests.request("GET", url, verify=False, headers=headers)
             success = resp.status_code == 200
             if success:
@@ -812,7 +812,7 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures" % options.restapi 
+            url = "%s/infrastructures" % options.restapi
             resp = requests.request("PUT", url, verify=False, headers=headers, data=data)
             success = resp.status_code == 200
             inf_id = resp.text
