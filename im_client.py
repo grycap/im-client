@@ -225,9 +225,9 @@ def main(operation, options, args, parser):
     """
     if options.xmlrpc:
         options.restapi = None
-    elif options.restapi is None:    
+    elif options.restapi is None:
         options.restapi = "http://localhost:8800"
-    
+
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
                           "alter", "getcontmsg", "getvminfo", "reconfigure", "getradl", "getvmcontmsg", "stopvm",
                           "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import"]):
