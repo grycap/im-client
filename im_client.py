@@ -337,6 +337,8 @@ def main(operation, options, args, parser):
                 vms_id = []
                 for elem in resp.json()["uri-list"]:
                     vms_id.append(os.path.basename(list(elem.values())[0]))
+            else:
+                vms_id = restres
         else:
             (success, vms_id) = server.AddResource(inf_id, str(radl), auth_data, context)
 
@@ -594,6 +596,8 @@ def main(operation, options, args, parser):
                 res = []
                 for elem in resp.json()["uri-list"]:
                     res.append(os.path.basename(list(elem.values())[0]))
+            else:
+                res = resp.text
         else:
             (success, res) = server.GetInfrastructureList(auth_data)
 
