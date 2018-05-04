@@ -6,7 +6,8 @@ IM is based on python, so Python 2.4 or higher runtime and standard library must
 be installed in the system.
 
 It is also required to install the RADL parser (https://github.com/grycap/radl), available in pip
-as the 'RADL' package.
+as the 'RADL' package. It is also required the Python Requests library (http://docs.python-requests.org/) 
+available as 'python-requests' in O.S. packages or 'requests' in pip.
 
 1.2 OPTIONAL PACKAGES
 
@@ -34,7 +35,8 @@ file "im_client.cfg" in the current directory or a file ".im_client.cfg" in thei
 home directory. In the config file the user can specify the following parameters:
 
 [im_client]
-xmlrpc_url=http://localhost:8899
+# only set one of the urls
+#xmlrpc_url=http://localhost:8899
+restapi_url==http://localhost:8800
 auth_file=auth.dat
-xmlrpc_ssl=no
 xmlrpc_ssl_ca_certs=/tmp/pki/ca-chain.pem
