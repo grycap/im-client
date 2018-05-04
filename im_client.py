@@ -337,6 +337,8 @@ def main(operation, options, args, parser):
                 vms_id = []
                 for elem in resp.json()["uri-list"]:
                     vms_id.append(os.path.basename(list(elem.values())[0]))
+            else:
+                vms_id = restres
         else:
             (success, vms_id) = server.AddResource(inf_id, str(radl), auth_data, context)
 
@@ -594,6 +596,8 @@ def main(operation, options, args, parser):
                 res = []
                 for elem in resp.json()["uri-list"]:
                     res.append(os.path.basename(list(elem.values())[0]))
+            else:
+                res = resp.text
         else:
             (success, res) = server.GetInfrastructureList(auth_data)
 
@@ -859,8 +863,8 @@ def get_parser():
         default_auth_file = config.get('im_client', "auth_file")
     if config.has_option('im_client', "xmlrpc_url"):
         default_xmlrpc = config.get('im_client', "xmlrpc_url")
-    if config.has_option('im_client', "default_restapi"):
-        default_restapi = config.get('im_client', "default_restapi")
+    if config.has_option('im_client', "restapi_url"):
+        default_restapi = config.get('im_client', "restapi_url")
     if config.has_option('im_client', "xmlrpc_ssl_ca_certs"):
         XMLRCP_SSL_CA_CERTS = config.get('im_client', "xmlrpc_ssl_ca_certs")
 
