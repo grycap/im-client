@@ -25,7 +25,8 @@ IM is based on python, so Python 2.4 or higher runtime and standard library must
 be installed in the system.
 
 It is also required to install the RADL parser (https://github.com/grycap/radl), available in pip
-as the 'RADL' package.
+as the 'RADL' package. It is also required the Python Requests library (http://docs.python-requests.org/) 
+available as 'python-requests' in O.S. packages or 'requests' in pip.
 
 1.2 OPTIONAL PACKAGES
 --------------
@@ -61,9 +62,10 @@ home directory. In the config file the user can specify the following parameters
 
 ```sh
 [im_client]
-xmlrpc_url=http://localhost:8899
+# only set one of the urls
+#xmlrpc_url=http://localhost:8899
+restapi_url==http://localhost:8800
 auth_file=auth.dat
-xmlrpc_ssl=no
 xmlrpc_ssl_ca_certs=/tmp/pki/ca-chain.pem
 ```
 
@@ -194,13 +196,18 @@ An example of the auth file:
 The :program:`im_client` is called like this:
 
 ```
-   $ im_client.py [-u|--xmlrpc-url url] [-a|--auth_file filename] operation op_parameters
+   $ im_client.py [-u|--xmlrpc-url url] [-r|--rest-url url] [-a|--auth_file filename] operation op_parameters
 ```
 
 * option: -u|--xmlrpc-url url
 
    URL to the XML-RPC service.
-   The default value is ``http://localhost:8888``.
+   This option or the ` -r` one must be specified.
+   
+.. option:: -r|--rest-url url
+
+   URL to the REST API on the IM service.
+   This option or the ` -u` one must be specified.
 
 * option: -a|--auth_file filename
 
