@@ -36,5 +36,5 @@ setup(name="IM-client", version=version,
                        "with a fully functional infrastructure.",
       description="IM is a tool to manage virtual infrastructures on Cloud deployments",
       platforms=["any"],
-      install_requires=["radl", "netaddr"]
+      install_requires=["radl", "netaddr", "requests"]
       )
