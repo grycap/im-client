@@ -76,3 +76,4 @@ IM-client 1.5.1
 IM-client 1.5.2
     * Fix python3 support.
     * Add ssh function.
+    * Enable using REST API.

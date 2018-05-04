@@ -22,6 +22,14 @@ except:
     from xmlrpc.client import ServerProxy
 
 import requests
+try:
+    # to avoid Warnings
+    import urllib3
+    urllib3.disable_warnings()
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+except:
+    pass
+
 import sys
 import os
 import tempfile
@@ -217,9 +225,9 @@ def main(operation, options, args, parser):
     """
     if options.xmlrpc:
         options.restapi = None
-    elif options.restapi is None:    
+    elif options.restapi is None:
         options.restapi = "http://localhost:8800"
-    
+
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
                           "alter", "getcontmsg", "getvminfo", "reconfigure", "getradl", "getvmcontmsg", "stopvm",
                           "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import"]):
@@ -240,7 +248,7 @@ def main(operation, options, args, parser):
             rest_auth_data = ""
             for item in auth_data:
                 for key, value in item.items():
-                    value.replace("\n", "\\\\n")
+                    value = value.replace("\n", "\\\\n")
                     rest_auth_data += "%s = %s;" % (key, value)
                 rest_auth_data += "\\n"
 
@@ -582,7 +590,6 @@ def main(operation, options, args, parser):
             url = "%s/infrastructures" % options.restapi
             resp = requests.request("GET", url, verify=False, headers=headers)
             success = resp.status_code == 200
-            restres = resp.text
             if success:
                 res = []
                 for elem in resp.json()["uri-list"]:
@@ -787,6 +794,8 @@ def main(operation, options, args, parser):
         if options.restapi:
             headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
             url = "%s/infrastructures/%s/data" % (options.restapi, inf_id)
+            if delete:
+                url += "?delete=yes"
             resp = requests.request("GET", url, verify=False, headers=headers)
             success = resp.status_code == 200
             if success:
