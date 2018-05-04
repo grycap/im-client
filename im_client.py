@@ -863,8 +863,8 @@ def get_parser():
         default_auth_file = config.get('im_client', "auth_file")
     if config.has_option('im_client', "xmlrpc_url"):
         default_xmlrpc = config.get('im_client', "xmlrpc_url")
-    if config.has_option('im_client', "default_restapi"):
-        default_restapi = config.get('im_client', "default_restapi")
+    if config.has_option('im_client', "restapi_url"):
+        default_restapi = config.get('im_client', "restapi_url")
     if config.has_option('im_client', "xmlrpc_ssl_ca_certs"):
         XMLRCP_SSL_CA_CERTS = config.get('im_client', "xmlrpc_ssl_ca_certs")
 
