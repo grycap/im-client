@@ -353,6 +353,9 @@ def main(operation, options, args, parser):
             if not os.path.isfile(args[0]):
                 print("RADL file '" + args[0] + "' does not exist")
                 return False
+            asyncr = False
+            if len(args) >= 2:
+                asyncr = bool(int(args[1]))
         else:
             print("RADL file to create inf. not specified")
             return False
@@ -370,6 +373,8 @@ def main(operation, options, args, parser):
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
             url = "%s/infrastructures" % options.restapi
+            if asyncr:
+                url += "?async=yes"
             resp = requests.request("POST", url, verify=options.verify, headers=headers, data=str(radl))
             success = resp.status_code == 200
             inf_id = resp.text
@@ -888,7 +893,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     parser.add_option("-v", "--verify-ssl", action="store_true", default=False, dest="verify", help="Verify the certificate of the "
                       "InfrastructureManager XML-RCP server")
     parser.add_operation_help('list', '')
-    parser.add_operation_help('create', '<radl_file>')
+    parser.add_operation_help('create', '<radl_file> [async_flag]')
     parser.add_operation_help('destroy', '<inf_id>')
     parser.add_operation_help('getinfo', '<inf_id> [radl_attribute]')
     parser.add_operation_help('getradl', '<inf_id>')
