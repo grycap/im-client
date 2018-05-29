@@ -230,7 +230,7 @@ def main(operation, options, args, parser):
 
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
                           "alter", "getcontmsg", "getvminfo", "reconfigure", "getradl", "getvmcontmsg", "stopvm",
-                          "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import"]):
+                          "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import", "getoutputs"]):
         parser.error("operation not recognised.  Use --help to show all the available operations")
 
     auth_data = None
@@ -361,17 +361,22 @@ def main(operation, options, args, parser):
             return False
 
         # Read the file
+        _, file_extension = os.path.splitext(args[0])
         f = open(args[0])
         radl_data = "".join(f.readlines())
         f.close()
-        # check for input parameters @input.[param_name]@
-        radl_data = get_input_params(radl_data)
-
-        radl = radl_parse.parse_radl(radl_data)
-        radl.check()
+        if file_extension in [".yaml", ".yml"]:
+            radl = radl_data
+        else:
+            # check for input parameters @input.[param_name]@
+            radl_data = get_input_params(radl_data)
+            radl = radl_parse.parse_radl(radl_data)
+            radl.check()
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
+            if file_extension in [".yaml", ".yml"]:
+                headers["Content-Type"] = "text/yaml"
             url = "%s/infrastructures" % options.restapi
             if asyncr:
                 url += "?async=yes"
@@ -484,7 +489,10 @@ def main(operation, options, args, parser):
             url = "%s/infrastructures/%s/state" % (options.restapi, inf_id)
             resp = requests.request("GET", url, verify=options.verify, headers=headers)
             success = resp.status_code == 200
-            res = resp.json()['state']
+            if success:
+                res = resp.json()['state']
+            else:
+                res = resp.text
         else:
             (success, res) = server.GetInfrastructureState(inf_id, auth_data)
         if success:
@@ -850,6 +858,27 @@ def main(operation, options, args, parser):
             print("ERROR getting IM service version: " + inf_id)
             return False
 
+    elif operation == "getoutputs":
+        inf_id = get_inf_id(args)
+
+        if options.restapi:
+            headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+            url = "%s/infrastructures/%s/outputs" % (options.restapi, inf_id)
+            resp = requests.request("GET", url, verify=options.verify, headers=headers)
+            success = resp.status_code == 200
+            if success:
+                res = resp.json()['outputs']
+            else:
+                res = resp.text
+        else:
+            print("ERROR getting the infrastructure outputs: Only available with REST API.")
+            return False
+        if success:
+            print("The infrastructure outputs:\n")
+            for key, value in res.items():
+                print("%s = %s" % (key, value))
+        else:
+            print("Error getting infrastructure outputs: %s" % res)
 
 def get_parser():
     """
@@ -912,6 +941,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     parser.add_operation_help('sshvm', '<inf_id> <vm_id> [show_only]')
     parser.add_operation_help('export', '<inf_id> [delete]')
     parser.add_operation_help('import', '<json_file>')
+    parser.add_operation_help('getoutputs', '<inf_id>')
     parser.add_operation_help('getversion', '')
 
     return parser
