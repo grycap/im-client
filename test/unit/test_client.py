@@ -859,7 +859,9 @@ class TestClient(unittest.TestCase):
         requests.side_effect = self.get_response
         main("getoutputs", options, ["infid", "vmid"], parser)
         output = out.getvalue().strip()
-        self.assertIn("The infrastructure outputs:\n\noutput2 = value2\noutput1 = value1", output)
+        self.assertIn("The infrastructure outputs:\n", output)
+        self.assertIn("\noutput2 = value2", output)
+        self.assertIn("\noutput1 = value1", output)
         sys.stdout = oldstdout
 
     @patch("im_client.OptionParser.exit")
