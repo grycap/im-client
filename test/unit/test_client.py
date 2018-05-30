@@ -63,6 +63,10 @@ class TestClient(unittest.TestCase):
             elif url == "/infrastructures/infid/contmsg":
                 resp.status_code = 200
                 resp.text = 'contmsg'
+            elif url == "/infrastructures/infid/outputs":
+                resp.status_code = 200
+                resp.text = '{"outputs": {"output1": "value1", "output2": "value2"}}'
+                resp.json.return_value = json.loads(resp.text)
             elif url == "/infrastructures/infid/state":
                 resp.status_code = 200
                 resp.text = '{"state": {"state": "running", "vm_states": {"vm1": "running"}}}'
@@ -836,6 +840,29 @@ class TestClient(unittest.TestCase):
         parser = get_parser()
         (_, args) = parser.parse_args(["create", "test.radl"])
         self.assertEqual(['create', 'test.radl'], args)
+
+    @patch('requests.request')
+    @patch("im_client.ServerProxy")
+    def test_getoutputs(self, server_proxy, requests):
+        """
+        Test getoutputs operation
+        """
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
+
+        oldstdout = sys.stdout
+        out = StringIO()
+        sys.stdout = out
+        options.xmlrpc = None
+        options.restapi = "https://localhost:8800"
+        requests.side_effect = self.get_response
+        main("getoutputs", options, ["infid", "vmid"], parser)
+        output = out.getvalue().strip()
+        self.assertIn("The infrastructure outputs:\n", output)
+        self.assertIn("\noutput2 = value2", output)
+        self.assertIn("\noutput1 = value1", output)
+        sys.stdout = oldstdout
 
     @patch("im_client.OptionParser.exit")
     def test_parser_help(self, option_parser_exit):
