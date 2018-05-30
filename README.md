@@ -204,12 +204,12 @@ The :program:`im_client` is called like this:
    URL to the XML-RPC service.
    This option or the ` -r` one must be specified.
    
-.. option:: -r|--rest-url url
+* option:: -r|--rest-url url
 
    URL to the REST API on the IM service.
    This option or the ` -u` one must be specified.
    
-.. option:: -v|--verify-ssl
+* option:: -v|--verify-ssl
 
    Verify the certificates of the SSL connection.
    The default value is `False`,
