@@ -41,7 +41,7 @@ except:
 
 from radl import radl_parse
 
-__version__ = "1.5.2"
+__version__ = "1.5.3"
 
 
 class PosOptionParser(OptionParser):
