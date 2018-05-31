@@ -69,9 +69,6 @@ auth_file=auth.dat
 xmlrpc_ssl_ca_certs=/tmp/pki/ca-chain.pem
 ```
 
-* CLIENT_DIR - must be set to the full path where the IM client is installed 
-            (e.g. /usr/local/im-client)
-            
 ### 1.4.1 AUTH FILE
 
 The authorization file stores in plain text the credentials to access the
