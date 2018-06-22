@@ -21,12 +21,11 @@ try:
 except:
     from xmlrpc.client import ServerProxy
 
-import requests
 try:
-    # to avoid Warnings
-    import urllib3
-    urllib3.disable_warnings()
-    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+    # To avoid annoying InsecureRequestWarning messages in some Connectors
+    import requests.packages
+    from requests.packages.urllib3.exceptions import InsecureRequestWarning
+    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 except:
     pass
 
@@ -305,7 +304,7 @@ def main(operation, options, args, parser):
             print("Resources with IDs: %s successfully deleted." % str(vms_id))
         else:
             print("ERROR deleting resources from the infrastructure: %s" % vms_id)
-            return False
+        return success
 
     elif operation == "addresource":
         inf_id = get_inf_id(args)
@@ -346,7 +345,7 @@ def main(operation, options, args, parser):
             print("Resources with IDs: %s successfully added." % ",".join(vms_id))
         else:
             print("ERROR adding resources to infrastructure: %s" % vms_id)
-            return False
+        return success
 
     elif operation == "create":
         if len(args) >= 1:
@@ -392,7 +391,7 @@ def main(operation, options, args, parser):
             print("Infrastructure successfully created with ID: %s" % str(inf_id))
         else:
             print("ERROR creating the infrastructure: %s" % inf_id)
-            return False
+        return success
 
     elif operation == "alter":
         inf_id = get_inf_id(args)
@@ -424,7 +423,7 @@ def main(operation, options, args, parser):
             print("VM successfully modified.")
         else:
             print("ERROR modifying the VM: %s" % res)
-            return False
+        return success
 
     elif operation == "reconfigure":
         inf_id = get_inf_id(args)
@@ -459,7 +458,7 @@ def main(operation, options, args, parser):
             print("Infrastructure successfully reconfigured.")
         else:
             print("ERROR reconfiguring the infrastructure: " + res)
-            return False
+        return success
 
     elif operation == "getcontmsg":
         inf_id = get_inf_id(args)
@@ -480,6 +479,7 @@ def main(operation, options, args, parser):
                 print("No Msg Contextualizator avaliable\n")
         else:
             print("Error getting infrastructure contextualization message: %s" % cont_out)
+        return success
 
     elif operation == "getstate":
         inf_id = get_inf_id(args)
@@ -503,6 +503,7 @@ def main(operation, options, args, parser):
                 print("VM ID: %s is in state: %s." % (vm_id, vm_state))
         else:
             print("Error getting infrastructure state: %s" % res)
+        return success
 
     elif operation == "getvminfo":
         inf_id = get_inf_id(args)
@@ -534,6 +535,7 @@ def main(operation, options, args, parser):
             print("ERROR getting the VM info: %s" % vm_id)
 
         print(info)
+        return success
 
     elif operation == "getinfo":
         inf_id = get_inf_id(args)
@@ -580,7 +582,7 @@ def main(operation, options, args, parser):
                 print(info)
         else:
             print("ERROR getting the information about the infrastructure: " + str(vm_ids))
-            return False
+        return success
 
     elif operation == "destroy":
         inf_id = get_inf_id(args)
@@ -597,7 +599,7 @@ def main(operation, options, args, parser):
             print("Infrastructure successfully destroyed")
         else:
             print("ERROR destroying the infrastructure: %s" % inf_id)
-            return False
+        return success
 
     elif operation == "list":
         if options.restapi:
@@ -621,7 +623,7 @@ def main(operation, options, args, parser):
                 print("No Infrastructures.")
         else:
             print("ERROR listing then infrastructures: %s" % res)
-            return False
+        return success
 
     elif operation == "start":
         inf_id = get_inf_id(args)
@@ -638,7 +640,7 @@ def main(operation, options, args, parser):
             print("Infrastructure successfully started")
         else:
             print("ERROR starting the infraestructure: " + inf_id)
-            return False
+        return success
 
     elif operation == "stop":
         inf_id = get_inf_id(args)
@@ -655,7 +657,7 @@ def main(operation, options, args, parser):
             print("Infrastructure successfully stopped")
         else:
             print("ERROR stopping the infrastructure: " + inf_id)
-            return False
+        return success
 
     elif operation == "getradl":
         inf_id = get_inf_id(args)
@@ -672,7 +674,7 @@ def main(operation, options, args, parser):
             print(radl)
         else:
             print("ERROR getting the infrastructure RADL: %s" % inf_id)
-            return False
+        return success
 
     elif operation == "getvmcontmsg":
         inf_id = get_inf_id(args)
@@ -695,7 +697,7 @@ def main(operation, options, args, parser):
             print(info)
         else:
             print("Error getting VM contextualization message: %s" % info)
-            return False
+        return success
 
     elif operation == "startvm":
         inf_id = get_inf_id(args)
@@ -718,7 +720,7 @@ def main(operation, options, args, parser):
             print("VM successfully started")
         else:
             print("Error starting VM: %s" % info)
-            return False
+        return success
 
     elif operation == "stopvm":
         inf_id = get_inf_id(args)
@@ -741,7 +743,7 @@ def main(operation, options, args, parser):
             print("VM successfully stopped")
         else:
             print("Error stopping VM: %s" % info)
-            return False
+        return success
 
     elif operation in ["sshvm", "ssh"]:
         inf_id = get_inf_id(args)
@@ -785,7 +787,7 @@ def main(operation, options, args, parser):
                 return False
         else:
             print("Error accessing VM: %s" % info)
-            return False
+        return success
 
     elif operation == "getversion":
         if options.restapi:
@@ -800,7 +802,7 @@ def main(operation, options, args, parser):
             print("IM service version: %s" % version)
         else:
             print("ERROR getting IM service version: " + version)
-            return False
+        return success
 
     elif operation == "export":
         inf_id = get_inf_id(args)
@@ -826,7 +828,7 @@ def main(operation, options, args, parser):
             print(data)
         else:
             print("ERROR getting IM service version: " + data)
-            return False
+        return success
 
     elif operation == "import":
         if len(args) >= 1:
@@ -856,7 +858,7 @@ def main(operation, options, args, parser):
             print("New Inf: " + inf_id)
         else:
             print("ERROR getting IM service version: " + inf_id)
-            return False
+        return success
 
     elif operation == "getoutputs":
         inf_id = get_inf_id(args)
@@ -879,6 +881,7 @@ def main(operation, options, args, parser):
                 print("%s = %s" % (key, value))
         else:
             print("Error getting infrastructure outputs: %s" % res)
+        return success
 
 def get_parser():
     """
