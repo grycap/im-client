@@ -163,8 +163,9 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("list", options, [], parser)
+        res = main("list", options, [], parser)
         output = out.getvalue().strip()
+        self.assertEquals(res, True)
         self.assertIn("IDs: \n  inf1\n  inf2", output)
         sys.stdout = oldstdout
 
@@ -173,7 +174,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("list", options, [], parser)
+        res = main("list", options, [], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("IDs: \n  inf1\n  inf2", output)
         sys.stdout = oldstdout
@@ -195,7 +197,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("create", options, [get_abs_path("../files/test.radl")], parser)
+        res = main("create", options, [get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully created with ID: inf1", output)
         sys.stdout = oldstdout
@@ -205,7 +208,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("create", options, [get_abs_path("../files/test.radl")], parser)
+        res = main("create", options, [get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully created with ID: inf1", output)
         sys.stdout = oldstdout
@@ -227,7 +231,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("removeresource", options, ["infid", "1,2"], parser)
+        res = main("removeresource", options, ["infid", "1,2"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Resources with IDs: ['1', '2'] successfully deleted.", output)
 
@@ -236,7 +241,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("removeresource", options, ["infid", "1"], parser)
+        res = main("removeresource", options, ["infid", "1"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Resources with IDs: 1 successfully deleted.", output)
         sys.stdout = oldstdout
@@ -258,7 +264,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("addresource", options, ["infid", get_abs_path("../files/test.radl")], parser)
+        res = main("addresource", options, ["infid", get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Resources with IDs: 1 successfully added.", output)
 
@@ -267,7 +274,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("addresource", options, ["infid", get_abs_path("../files/test.radl")], parser)
+        res = main("addresource", options, ["infid", get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Resources with IDs: 1 successfully added.", output)
         sys.stdout = oldstdout
@@ -289,7 +297,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("alter", options, ["infid", "vmid", get_abs_path("../files/test.radl")], parser)
+        res = main("alter", options, ["infid", "vmid", get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("VM successfully modified.", output)
 
@@ -298,7 +307,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("alter", options, ["infid", "vmid", get_abs_path("../files/test.radl")], parser)
+        res = main("alter", options, ["infid", "vmid", get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("VM successfully modified.", output)
         sys.stdout = oldstdout
@@ -320,7 +330,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("reconfigure", options, ["infid", get_abs_path("../files/test.radl")], parser)
+        res = main("reconfigure", options, ["infid", get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully reconfigured.", output)
 
@@ -329,7 +340,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("reconfigure", options, ["infid", get_abs_path("../files/test.radl")], parser)
+        res = main("reconfigure", options, ["infid", get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully reconfigured.", output)
         sys.stdout = oldstdout
@@ -351,7 +363,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("getcontmsg", options, ["infid"], parser)
+        res = main("getcontmsg", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Msg Contextualizator: \n\ncontmsg", output)
 
@@ -360,7 +373,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("getcontmsg", options, ["infid"], parser)
+        res = main("getcontmsg", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Msg Contextualizator: \n\ncontmsg", output)
         sys.stdout = oldstdout
@@ -382,7 +396,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("getstate", options, ["infid"], parser)
+        res = main("getstate", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("The infrastructure is in state: running\nVM ID: vm1 is in state: running.", output)
 
@@ -391,7 +406,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("getstate", options, ["infid"], parser)
+        res = main("getstate", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("The infrastructure is in state: running\nVM ID: vm1 is in state: running.", output)
         sys.stdout = oldstdout
@@ -414,7 +430,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("getvminfo", options, ["infid", "vmid"], parser)
+        res = main("getvminfo", options, ["infid", "vmid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("radltest", output)
 
@@ -423,7 +440,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("getvminfo", options, ["infid", "vmid"], parser)
+        res = main("getvminfo", options, ["infid", "vmid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("radltest", output)
         sys.stdout = oldstdout
@@ -446,7 +464,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("getinfo", options, ["infid"], parser)
+        res = main("getinfo", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Info about VM with ID: vm1\nradltest", output)
 
@@ -455,7 +474,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("getinfo", options, ["infid"], parser)
+        res = main("getinfo", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Info about VM with ID: vm1\nradltest", output)
         sys.stdout = oldstdout
@@ -477,7 +497,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("destroy", options, ["infid"], parser)
+        res = main("destroy", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully destroyed", output)
 
@@ -486,7 +507,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("destroy", options, ["infid"], parser)
+        res = main("destroy", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully destroyed", output)
         sys.stdout = oldstdout
@@ -508,7 +530,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("start", options, ["infid"], parser)
+        res = main("start", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully started", output)
 
@@ -517,7 +540,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("start", options, ["infid"], parser)
+        res = main("start", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully started", output)
         sys.stdout = oldstdout
@@ -539,7 +563,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("stop", options, ["infid"], parser)
+        res = main("stop", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully stopped", output)
 
@@ -548,7 +573,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("stop", options, ["infid"], parser)
+        res = main("stop", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully stopped", output)
         sys.stdout = oldstdout
@@ -570,7 +596,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("getradl", options, ["infid"], parser)
+        res = main("getradl", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("radltest", output)
 
@@ -579,7 +606,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("getradl", options, ["infid"], parser)
+        res = main("getradl", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("radltest", output)
         sys.stdout = oldstdout
@@ -601,7 +629,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("getvmcontmsg", options, ["infid", "vmid"], parser)
+        res = main("getvmcontmsg", options, ["infid", "vmid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("getvmcontmsg", output)
 
@@ -610,7 +639,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("getvmcontmsg", options, ["infid", "vmid"], parser)
+        res = main("getvmcontmsg", options, ["infid", "vmid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("getvmcontmsg", output)
         sys.stdout = oldstdout
@@ -632,7 +662,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("startvm", options, ["infid", "vmid"], parser)
+        res = main("startvm", options, ["infid", "vmid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("VM successfully started", output)
 
@@ -641,7 +672,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("startvm", options, ["infid", "vmid"], parser)
+        res = main("startvm", options, ["infid", "vmid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("VM successfully started", output)
         sys.stdout = oldstdout
@@ -663,7 +695,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("stopvm", options, ["infid", "vmid"], parser)
+        res = main("stopvm", options, ["infid", "vmid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("VM successfully stopped", output)
 
@@ -672,7 +705,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("stopvm", options, ["infid", "vmid"], parser)
+        res = main("stopvm", options, ["infid", "vmid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("VM successfully stopped", output)
         sys.stdout = oldstdout
@@ -694,7 +728,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("getversion", options, [], parser)
+        res = main("getversion", options, [], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("1.0", output)
 
@@ -703,7 +738,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("getversion", options, [], parser)
+        res = main("getversion", options, [], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("1.0", output)
         sys.stdout = oldstdout
@@ -725,7 +761,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("export", options, ["infid"], parser)
+        res = main("export", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("strinf", output)
 
@@ -734,7 +771,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("export", options, ["infid"], parser)
+        res = main("export", options, ["infid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("strinf", output)
         sys.stdout = oldstdout
@@ -756,7 +794,8 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        main("import", options, [get_abs_path("../files/test.radl")], parser)
+        res = main("import", options, [get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("New Inf: newinfid", output)
 
@@ -765,7 +804,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("import", options, [get_abs_path("../files/test.radl")], parser)
+        res = main("import", options, [get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("New Inf: newinfid", output)
         sys.stdout = oldstdout
@@ -790,7 +830,8 @@ class TestClient(unittest.TestCase):
         oldstderr = sys.stderr
         sys.stdout = out
         sys.stderr = out
-        main("sshvm", options, ["infid", "vmid", "1"], parser)
+        res = main("sshvm", options, ["infid", "vmid", "1"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("sshpass -pyoyoyo ssh -p 1022 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
                       "ubuntu@10.0.0.1", output)
@@ -799,7 +840,8 @@ class TestClient(unittest.TestCase):
 
         sys.stdout = out
         sys.stderr = out
-        main("ssh", options, ["infid", "1"], parser)
+        res = main("ssh", options, ["infid", "1"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("sshpass -pyoyoyo ssh -p 1022 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
                       "ubuntu@10.0.0.1", output)
@@ -826,7 +868,8 @@ class TestClient(unittest.TestCase):
         oldstderr = sys.stderr
         sys.stdout = out
         sys.stderr = out
-        main("sshvm", options, ["infid", "vmid", "1"], parser)
+        res = main("sshvm", options, ["infid", "vmid", "1"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("ssh -p 1022 -i /tmp/", output)
         self.assertIn(" -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@10.0.0.1", output)
@@ -857,7 +900,8 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
-        main("getoutputs", options, ["infid", "vmid"], parser)
+        res = main("getoutputs", options, ["infid", "vmid"], parser)
+        self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("The infrastructure outputs:\n", output)
         self.assertIn("\noutput2 = value2", output)
