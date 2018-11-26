@@ -16,8 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from im_client import __version__ as version
 from setuptools import setup
+
+version = "1.5.4"
 
 setup(name="IM-client", version=version,
       author='GRyCAP - Universitat Politecnica de Valencia',
