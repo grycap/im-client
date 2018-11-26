@@ -30,7 +30,6 @@ sys.path.append(".")
 
 from im_client import main, get_parser
 from mock import patch, MagicMock
-from optparse import OptionParser
 
 try:
     from urlparse import urlparse
@@ -48,11 +47,11 @@ class TestClient(unittest.TestCase):
     Class to test the IM client
     """
 
-    def get_response(self, method, url, verify, cert=None, headers={}, data=None):
+    @staticmethod
+    def get_response(method, url, verify, cert=None, headers={}, data=None):
         resp = MagicMock()
         parts = urlparse(url)
         url = parts[2]
-        params = parts[4]
 
         if method == "GET":
             if url == "/infrastructures":

@@ -892,7 +892,6 @@ def get_parser():
     default_auth_file = None
     default_xmlrpc = None
     default_restapi = None
-    XMLRCP_SSL_CA_CERTS = "./pki/ca-chain.pem"
 
     if config.has_option('im_client', "auth_file"):
         default_auth_file = config.get('im_client', "auth_file")
@@ -900,8 +899,6 @@ def get_parser():
         default_xmlrpc = config.get('im_client', "xmlrpc_url")
     if config.has_option('im_client', "restapi_url"):
         default_restapi = config.get('im_client', "restapi_url")
-    if config.has_option('im_client', "xmlrpc_ssl_ca_certs"):
-        XMLRCP_SSL_CA_CERTS = config.get('im_client', "xmlrpc_ssl_ca_certs")
 
     NOTICE = "\n\n\
 IM - Infrastructure Manager\n\
