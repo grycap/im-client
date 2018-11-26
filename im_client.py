@@ -40,8 +40,6 @@ except:
 
 from radl import radl_parse
 
-__version__ = "1.5.3"
-
 
 class PosOptionParser(OptionParser):
     """
@@ -894,7 +892,6 @@ def get_parser():
     default_auth_file = None
     default_xmlrpc = None
     default_restapi = None
-    XMLRCP_SSL_CA_CERTS = "./pki/ca-chain.pem"
 
     if config.has_option('im_client', "auth_file"):
         default_auth_file = config.get('im_client', "auth_file")
@@ -902,8 +899,6 @@ def get_parser():
         default_xmlrpc = config.get('im_client', "xmlrpc_url")
     if config.has_option('im_client', "restapi_url"):
         default_restapi = config.get('im_client', "restapi_url")
-    if config.has_option('im_client', "xmlrpc_ssl_ca_certs"):
-        XMLRCP_SSL_CA_CERTS = config.get('im_client', "xmlrpc_ssl_ca_certs")
 
     NOTICE = "\n\n\
 IM - Infrastructure Manager\n\
@@ -915,7 +910,7 @@ under certain conditions; please read the license at \n\
 http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
     parser = PosOptionParser(usage="%prog [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] [-a|--auth_file <filename>] "
-                             "operation op_parameters" + NOTICE, version="%prog " + __version__)
+                             "operation op_parameters" + NOTICE, version="%prog 1.5.4")
     parser.add_option("-a", "--auth_file", dest="auth_file", nargs=1, default=default_auth_file, help="Authentication"
                       " data file", type="string")
     parser.add_option("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=default_xmlrpc, help="URL address of the "
