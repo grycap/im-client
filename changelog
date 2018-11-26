@@ -81,3 +81,7 @@ IM-client 1.5.2
 IM-client 1.5.3
     * Enable to send TOSCA documents.
     * Add getoutputs function.
+
+IM-client 1.5.4
+    * Fix error installing with pip.
+    * Fix error returning code of 1 for successful operations in v1.5.2 & above.    
