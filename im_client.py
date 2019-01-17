@@ -227,7 +227,8 @@ def main(operation, options, args, parser):
 
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
                           "alter", "getcontmsg", "getvminfo", "reconfigure", "getradl", "getvmcontmsg", "stopvm",
-                          "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import", "getoutputs"]):
+                          "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import", "getoutputs",
+                          "rebootvm"]):
         parser.error("operation not recognised.  Use --help to show all the available operations")
 
     auth_data = None
@@ -743,6 +744,29 @@ def main(operation, options, args, parser):
             print("Error stopping VM: %s" % info)
         return success
 
+    elif operation == "rebootvm":
+        inf_id = get_inf_id(args)
+        if len(args) >= 2:
+            vm_id = args[1]
+        else:
+            print("VM ID to get info not specified")
+            return False
+
+        if options.restapi:
+            headers = {"Authorization": rest_auth_data}
+            url = "%s/infrastructures/%s/vms/%s/reboot" % (options.restapi, inf_id, vm_id)
+            resp = requests.request("PUT", url, verify=options.verify, headers=headers)
+            success = resp.status_code == 200
+            info = resp.text
+        else:
+            (success, info) = server.RebootVM(inf_id, vm_id, auth_data)
+
+        if success:
+            print("VM successfully rebooted")
+        else:
+            print("Error rebooting VM: %s" % info)
+        return success
+
     elif operation in ["sshvm", "ssh"]:
         inf_id = get_inf_id(args)
         show_only = False
@@ -910,7 +934,7 @@ under certain conditions; please read the license at \n\
 http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
     parser = PosOptionParser(usage="%prog [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] [-a|--auth_file <filename>] "
-                             "operation op_parameters" + NOTICE, version="%prog 1.5.4")
+                             "operation op_parameters" + NOTICE, version="%prog 1.5.5")
     parser.add_option("-a", "--auth_file", dest="auth_file", nargs=1, default=default_auth_file, help="Authentication"
                       " data file", type="string")
     parser.add_option("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=default_xmlrpc, help="URL address of the "

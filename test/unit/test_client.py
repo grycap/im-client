@@ -48,7 +48,7 @@ class TestClient(unittest.TestCase):
     """
 
     @staticmethod
-    def get_response(method, url, verify, cert=None, headers={}, data=None):
+    def get_response(method, url, verify, cert=None, headers=None, data=None):
         resp = MagicMock()
         parts = urlparse(url)
         url = parts[2]
@@ -131,6 +131,9 @@ class TestClient(unittest.TestCase):
                 resp.status_code = 200
                 resp.text = ""
             elif url == '/infrastructures/infid/vms/vmid/stop':
+                resp.status_code = 200
+                resp.text = ""
+            elif url == '/infrastructures/infid/vms/vmid/reboot':
                 resp.status_code = 200
                 resp.text = ""
             elif url == "/infrastructures":
@@ -708,6 +711,39 @@ class TestClient(unittest.TestCase):
         self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("VM successfully stopped", output)
+        sys.stdout = oldstdout
+
+    @patch('requests.request')
+    @patch("im_client.ServerProxy")
+    def test_rebootvm(self, server_proxy, requests):
+        """
+        Test rebootvm operation
+        """
+        proxy = MagicMock()
+        proxy.RebootVM.return_value = (True, "")
+        server_proxy.return_value = proxy
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        options.restapi = None
+        parser = MagicMock()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        sys.stdout = out
+        res = main("rebootvm", options, ["infid", "vmid"], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("VM successfully rebooted", output)
+
+        out = StringIO()
+        sys.stdout = out
+        options.xmlrpc = None
+        options.restapi = "https://localhost:8800"
+        requests.side_effect = self.get_response
+        res = main("rebootvm", options, ["infid", "vmid"], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("VM successfully rebooted", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
