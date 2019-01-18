@@ -90,7 +90,7 @@ keys are:
 * ``password`` indicates the password associated to the credential. In EC2
   it refers to the *Secret Access Key*. In GCE it refers to *Service  Private Key*
   (either in JSON or PKCS12 formats). See how to get it and how to extract the private key file from
-  `here info <https://cloud.google.com/storage/docs/authentication#service_accounts>`__).
+  [here](https://cloud.google.com/storage/docs/authentication#service_accounts).
 
 * ``tenant`` indicates the tenant associated to the credential.
   This field is only used in the OpenStack plugin.
@@ -108,12 +108,12 @@ keys are:
 * ``public_key`` indicates the content of the public key file associated to the credential.
   To refer to a file you must use the function "file(cert.pem)" as shown in the example.
   This field is used in the Azure Classic and Docker plugins. For Azure Classic see how to get it
-  `here <https://msdn.microsoft.com/en-us/library/azure/gg551722.aspx>`__
+  [here](https://msdn.microsoft.com/en-us/library/azure/gg551722.aspx).
 
 * ``private_key`` indicates the content of the private key file associated to the credential.
   To refer to a file you must use the function "file(key.pem)" as shown in the example.
   This field is used in the Azure Classic and Docker plugins. For Azure Classic see how to get it
-  `here <https://msdn.microsoft.com/en-us/library/azure/gg551722.aspx>`__
+  [here](https://msdn.microsoft.com/en-us/library/azure/gg551722.aspx).
 
 * ``id`` associates an identifier to the credential. The identifier should be
   used as the label in the *deploy* section in the RADL.
@@ -121,7 +121,7 @@ keys are:
 * ``subscription_id`` indicates the subscription_id name associated to the credential.
   This field is only used in the Azure and Azure Classic plugins. To create a user to use the Azure (ARM)
   plugin check the documentation of the Azure python SDK:
-  `here <https://azure-sdk-for-python.readthedocs.io/en/latest/quickstart_authentication.html#using-ad-user-password>`__
+  [here](https://azure-sdk-for-python.readthedocs.io/en/latest/quickstart_authentication.html#using-ad-user-password)
 
 * ``token`` indicates the OpenID token associated to the credential. This field is used in the OCCI plugin. 
 
@@ -206,7 +206,7 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
 
 * option: -a|--auth_file filename
 
-   Path to the authorization file, see `here <https://imdocs.readthedocs.io/en/latest/client.html#authorization-file>`__
+   Path to the authorization file, see [here](https://imdocs.readthedocs.io/en/latest/client.html#authorization-file).
    This option is compulsory.
 
 * operation:
