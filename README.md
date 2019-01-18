@@ -206,7 +206,7 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
 
 * option: -a|--auth_file filename
 
-   Path to the authorization file, see `here <https://imdocs.readthedocs.io/en/latest/client.html#authorization-file>`__.
+   Path to the authorization file, see `here <https://imdocs.readthedocs.io/en/latest/client.html#authorization-file>`__
    This option is compulsory.
 
 * operation:
