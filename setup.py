@@ -30,6 +30,7 @@ setup(name="IM-client", version=version,
       package_data={"": ["LICENSE", "INSTALL", "NOTICE", "auth.dat"]},
       license="GPL version 3, http://www.gnu.org/licenses/gpl-3.0.txt",
       long_description=open('README.md').read(),
+      long_description_content_type='text/markdown',
       description="IM is a tool to manage virtual infrastructures on Cloud deployments",
       platforms=["any"],
       install_requires=["radl", "netaddr", "requests"]
