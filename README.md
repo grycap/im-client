@@ -85,7 +85,7 @@ keys are:
   ``OpenStack``, ``OCCI``, ``LibCloud``, ``Docker``, ``GCE``, ``Azure``, ``AzureClassic`` and ``Kubernetes``.
 
 * ``username`` indicates the user name associated to the credential. In EC2
-  it refers to the *Access Key ID*. In GCE it refers to *Service Account’s Email Address*.
+  it refers to the *Access Key ID*. In GCE it refers to *Service Account's Email Address*.
 
 * ``password`` indicates the password associated to the credential. In EC2
   it refers to the *Secret Access Key*. In GCE it refers to *Service  Private Key*
