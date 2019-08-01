@@ -216,6 +216,17 @@ class TestClient(unittest.TestCase):
         self.assertIn("Infrastructure successfully created with ID: inf1", output)
         sys.stdout = oldstdout
 
+        out = StringIO()
+        sys.stdout = out
+        options.xmlrpc = None
+        options.restapi = "https://localhost:8800"
+        requests.side_effect = self.get_response
+        res = main("create", options, [get_abs_path("../files/tosca.yml")], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("Infrastructure successfully created with ID: inf1", output)
+        sys.stdout = oldstdout
+
     @patch('requests.request')
     @patch("im_client.ServerProxy")
     def test_removeresource(self, server_proxy, requests):
@@ -277,6 +288,17 @@ class TestClient(unittest.TestCase):
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         res = main("addresource", options, ["infid", get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("Resources with IDs: 1 successfully added.", output)
+        sys.stdout = oldstdout
+
+        out = StringIO()
+        sys.stdout = out
+        options.xmlrpc = None
+        options.restapi = "https://localhost:8800"
+        requests.side_effect = self.get_response
+        res = main("addresource", options, ["infid", get_abs_path("../files/tosca.yml")], parser)
         self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Resources with IDs: 1 successfully added.", output)
@@ -957,9 +979,10 @@ class TestClient(unittest.TestCase):
         parser.parse_args(["--help"])
         output = out.getvalue().strip()
         self.assertEqual(output[:16], "Usage: nosetests")
-        self.assertIn("[-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] [-a|--auth_file <filename>] operation op_parameters",
-                      output)
+        self.assertIn("[-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] "
+                      "[-a|--auth_file <filename>] operation op_parameters", output)
         sys.stdout = oldstdout
+
 
 if __name__ == '__main__':
     unittest.main()
