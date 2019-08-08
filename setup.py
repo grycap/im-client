@@ -18,7 +18,7 @@
 
 from setuptools import setup
 
-version = "1.5.5"
+version = "1.5.6"
 
 setup(name="IM-client", version=version,
       author='GRyCAP - Universitat Politecnica de Valencia',

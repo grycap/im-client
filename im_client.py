@@ -610,9 +610,15 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "list":
+        flt = None
+        if len(args) >= 1:
+            flt = args[0]
+
         if options.restapi:
             headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
             url = "%s/infrastructures" % options.restapi
+            if flt:
+                url += "?filter=%s" % flt
             resp = requests.request("GET", url, verify=options.verify, headers=headers)
             success = resp.status_code == 200
             if success:
@@ -622,7 +628,7 @@ def main(operation, options, args, parser):
             else:
                 res = resp.text
         else:
-            (success, res) = server.GetInfrastructureList(auth_data)
+            (success, res) = server.GetInfrastructureList(auth_data, flt)
 
         if success:
             if res:
