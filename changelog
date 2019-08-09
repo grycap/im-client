@@ -91,3 +91,6 @@ IM-client 1.5.5
 
 IM-client 1.5.6
     * Add support to create infrastructures using a TOSCA input file.
+
+IM-client 1.5.7
+    * Add filter to the list operation.
