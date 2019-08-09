@@ -610,9 +610,15 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "list":
+        flt = None
+        if len(args) >= 1:
+            flt = args[0]
+
         if options.restapi:
             headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
             url = "%s/infrastructures" % options.restapi
+            if flt:
+                url += "?filter=%s" % flt
             resp = requests.request("GET", url, verify=options.verify, headers=headers)
             success = resp.status_code == 200
             if success:
@@ -622,7 +628,7 @@ def main(operation, options, args, parser):
             else:
                 res = resp.text
         else:
-            (success, res) = server.GetInfrastructureList(auth_data)
+            (success, res) = server.GetInfrastructureList(auth_data, flt)
 
         if success:
             if res:
@@ -944,7 +950,7 @@ under certain conditions; please read the license at \n\
 http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
     parser = PosOptionParser(usage="%prog [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] "
-                             "[-a|--auth_file <filename>] operation op_parameters" + NOTICE, version="%prog 1.5.6")
+                             "[-a|--auth_file <filename>] operation op_parameters" + NOTICE, version="%prog 1.5.7")
     parser.add_option("-a", "--auth_file", dest="auth_file", nargs=1, default=default_auth_file, help="Authentication"
                       " data file", type="string")
     parser.add_option("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=default_xmlrpc, help="URL address of the "

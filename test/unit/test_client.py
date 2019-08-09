@@ -172,11 +172,31 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
         out = StringIO()
+        oldstdout = sys.stdout
+        sys.stdout = out
+        res = main("list", options, [".*hadoop.*"], parser)
+        output = out.getvalue().strip()
+        self.assertEquals(res, True)
+        self.assertIn("IDs: \n  inf1\n  inf2", output)
+        sys.stdout = oldstdout
+
+        out = StringIO()
         sys.stdout = out
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         res = main("list", options, [], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("IDs: \n  inf1\n  inf2", output)
+        sys.stdout = oldstdout
+
+        out = StringIO()
+        sys.stdout = out
+        options.xmlrpc = None
+        options.restapi = "https://localhost:8800"
+        requests.side_effect = self.get_response
+        res = main("list", options, [".*hadoop.*"], parser)
         self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("IDs: \n  inf1\n  inf2", output)
