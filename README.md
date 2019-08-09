@@ -216,8 +216,9 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
 
 * operation:
 
-   ``list``:
-      List the infrastructure IDs created by the user.
+   ``list [filter]``:
+      List the infrastructure IDs created by the user. The ``filter`` parameter is
+      optional and is a regex that will be used to filter the list of infrastructures.
 
    ``create <radlfile> [async_flag]``
       Create an infrastructure using RADL specified in the file with path
