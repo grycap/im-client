@@ -557,6 +557,18 @@ class TestClient(unittest.TestCase):
         self.assertIn("Infrastructure successfully destroyed", output)
         sys.stdout = oldstdout
 
+        out = StringIO()
+        sys.stdout = out
+        options.force = True
+        options.xmlrpc = None
+        options.restapi = "https://localhost:8800"
+        requests.side_effect = self.get_response
+        res = main("destroy", options, ["infid"], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("Infrastructure successfully destroyed", output)
+        sys.stdout = oldstdout
+
     @patch('requests.request')
     @patch("im_client.ServerProxy")
     def test_start(self, server_proxy, requests):

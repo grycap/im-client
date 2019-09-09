@@ -597,11 +597,13 @@ def main(operation, options, args, parser):
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
             url = "%s/infrastructures/%s" % (options.restapi, inf_id)
+            if options.force:
+                url += "?force=yes"
             resp = requests.request("DELETE", url, verify=options.verify, headers=headers)
             success = resp.status_code == 200
             inf_id = resp.text
         else:
-            (success, inf_id) = server.DestroyInfrastructure(inf_id, auth_data)
+            (success, inf_id) = server.DestroyInfrastructure(inf_id, auth_data, options.force)
 
         if success:
             print("Infrastructure successfully destroyed")
@@ -959,6 +961,8 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
                       "InfrastructureManager REST API", type="string")
     parser.add_option("-v", "--verify-ssl", action="store_true", default=False, dest="verify",
                       help="Verify the certificate of the InfrastructureManager XML-RCP server")
+    parser.add_option("-f", "--force", action="store_true", default=False, dest="force",
+                      help="Force the deletion of the infrastructure")
     parser.add_operation_help('list', '')
     parser.add_operation_help('create', '<radl_file> [async_flag]')
     parser.add_operation_help('destroy', '<inf_id>')
