@@ -132,12 +132,78 @@ class CmdSsh:
         return str(ssh_port)
 
     @staticmethod
+    def get_user_pass_host_port(url):
+        """
+        Returns a tuple parsing values for this kind of urls:
+        username:pass@servername.com:port
+        """
+        username = None
+        password = None
+        port = None
+        if "@" in url:
+            parts = url.split("@")
+            user_pass = parts[0]
+            server_port = parts[1]
+            user_pass = user_pass.split(':')
+            username = user_pass[0]
+            if len(user_pass) > 1:
+                password = user_pass[1]
+        else:
+            server_port = url
+
+        server_port = server_port.split(':')
+        server = server_port[0]
+        if len(server_port) > 1:
+            port = int(server_port[1])
+
+        return username, password, server, port
+
+    @staticmethod
+    def _get_proxy_host(radl):
+        """
+        Return the proxy_host data if available
+        """
+        for netid in radl.systems[0].getNetworkIDs():
+            net = radl.get_network_by_id(netid)
+            if net.getValue("proxy_host"):
+                user, passwd, ip, port = CmdSsh.get_user_pass_host_port(net.getValue("proxy_host"))
+                if not port:
+                    port = 22
+                return ip, user, passwd, net.getValue("proxy_key"), port
+        return None
+
+    @staticmethod
+    def _get_proxy_command(radl, ip):
+        proxy_ip, proxy_user, proxy_pass, _, proxy_port = CmdSsh._get_proxy_host(radl)
+        proxy_command = "sshpass -p %s ssh -p %d %s %s@%s nc %s %d" % (proxy_pass,
+                                                                       proxy_port,
+                                                                       "-o StrictHostKeyChecking=no",
+                                                                       proxy_user,
+                                                                       proxy_ip,
+                                                                       ip,
+                                                                       proxy_port)
+        return proxy_command
+
+    @staticmethod
     def _connect_password(radl):
         ssh_port = CmdSsh._get_ssh_port(radl)
         s = radl.systems[0]
-        return ["sshpass", "-p%s" % s.getValue("disk.0.os.credentials.password"),
-                "ssh", "-p", ssh_port, "-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
-                "%s@%s" % (s.getValue("disk.0.os.credentials.username"), radl.getPublicIP())]
+        ip = radl.getPublicIP()
+        ssh_args = None
+        if not ip:
+            ip = radl.getPrivateIP()
+            if CmdSsh._get_proxy_host(radl):
+                proxy_command = CmdSsh._get_proxy_command(radl, ip)
+                ssh_args = ["-o", "ProxyCommand=%s" % proxy_command]
+
+        res = ["sshpass", "-p%s" % s.getValue("disk.0.os.credentials.password"),
+               "ssh", "-p", ssh_port, "-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
+               "%s@%s" % (s.getValue("disk.0.os.credentials.username"), ip)]
+
+        if ssh_args:
+            res.extend(ssh_args)
+
+        return res
 
     @staticmethod
     def _connect_key(radl):
@@ -146,9 +212,23 @@ class CmdSsh:
         f = tempfile.NamedTemporaryFile(mode="w", delete=False)
         f.write(s.getValue("disk.0.os.credentials.private_key"))
         f.close()
-        return ["ssh", "-p", ssh_port, "-i", f.name, "-o", "UserKnownHostsFile=/dev/null",
-                "-o", "StrictHostKeyChecking=no",
-                "%s@%s" % (s.getValue("disk.0.os.credentials.username"), radl.getPublicIP())]
+
+        ip = radl.getPublicIP()
+        ssh_args = None
+        if not ip:
+            ip = radl.getPrivateIP()
+            if CmdSsh._get_proxy_host(radl):
+                proxy_command = CmdSsh._get_proxy_command(radl, ip)
+                ssh_args = ["-o", "ProxyCommand=%s" % proxy_command]
+
+        res = ["ssh", "-p", ssh_port, "-i", f.name, "-o", "UserKnownHostsFile=/dev/null",
+               "-o", "StrictHostKeyChecking=no",
+               "%s@%s" % (s.getValue("disk.0.os.credentials.username"), ip)]
+
+        if ssh_args:
+            res.extend(ssh_args)
+
+        return res
 
 
 # From IM.auth
