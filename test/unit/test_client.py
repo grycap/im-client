@@ -937,6 +937,24 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
+        # test proxy host
+        radl = open(get_abs_path("../files/test_proxy.radl"), 'r').read()
+        proxy.GetVMInfo.return_value = (True, radl)
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        oldstderr = sys.stderr
+        sys.stdout = out
+        sys.stderr = out
+        res = main("sshvm", options, ["infid", "vmid", "1"], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("sshpass -pyoyoyo ssh -p 22 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
+                      "ubuntu@10.0.0.1 -o ProxyCommand=sshpass -p passwd ssh -p 22 -o StrictHostKeyChecking=no"
+                      " username@someserver.com nc 10.0.0.1 22", output)
+        sys.stdout = oldstdout
+        sys.stderr = oldstderr
+
     @patch("im_client.ServerProxy")
     def test_sshvm_key(self, server_proxy):
         """
