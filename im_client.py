@@ -178,7 +178,7 @@ class CmdSsh:
             proxy_ip, proxy_user, proxy_pass, proxy_key, proxy_port = CmdSsh._get_proxy_host(radl)
             if proxy_key:
                 # we assume that IM has copied it to the proxy host
-                proxy_key_filename = "/var/tmp/%s_%s.pem" % (username, ip)
+                proxy_key_filename = "/var/tmp/%s_%s_%s.pem" % (proxy_user, username, ip)
                 proxy_command = "ssh -i %s -p %d %s %s@%s nc %s %d" % (proxy_key_filename,
                                                                        proxy_port,
                                                                        "-o StrictHostKeyChecking=no",
