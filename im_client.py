@@ -173,16 +173,27 @@ class CmdSsh:
         return None
 
     @staticmethod
-    def _get_proxy_command(radl, ip):
+    def _get_proxy_command(radl, ip, username):
         if CmdSsh._get_proxy_host(radl):
-            proxy_ip, proxy_user, proxy_pass, _, proxy_port = CmdSsh._get_proxy_host(radl)
-            proxy_command = "sshpass -p %s ssh -p %d %s %s@%s nc %s %d" % (proxy_pass,
-                                                                           proxy_port,
-                                                                           "-o StrictHostKeyChecking=no",
-                                                                           proxy_user,
-                                                                           proxy_ip,
-                                                                           ip,
-                                                                           proxy_port)
+            proxy_ip, proxy_user, proxy_pass, proxy_key, proxy_port = CmdSsh._get_proxy_host(radl)
+            if proxy_key:
+                # we assume that IM has copied it to the proxy host
+                proxy_key_filename = "/var/tmp/%s_%s.pem" % (username, ip)
+                proxy_command = "ssh -i %s -p %d %s %s@%s nc %s %d" % (proxy_key_filename,
+                                                                       proxy_port,
+                                                                       "-o StrictHostKeyChecking=no",
+                                                                       proxy_user,
+                                                                       proxy_ip,
+                                                                       ip,
+                                                                       proxy_port)
+            else:
+                proxy_command = "sshpass -p %s ssh -p %d %s %s@%s nc %s %d" % (proxy_pass,
+                                                                               proxy_port,
+                                                                               "-o StrictHostKeyChecking=no",
+                                                                               proxy_user,
+                                                                               proxy_ip,
+                                                                               ip,
+                                                                               proxy_port)
             ssh_args = ["-o", "ProxyCommand=%s" % proxy_command]
 
         return ssh_args
@@ -195,7 +206,7 @@ class CmdSsh:
         ssh_args = None
         if not ip:
             ip = radl.getPrivateIP()
-            ssh_args = CmdSsh._get_proxy_command(radl, ip)
+            ssh_args = CmdSsh._get_proxy_command(radl, ip, s.getValue("disk.0.os.credentials.username"))
 
         res = ["sshpass", "-p%s" % s.getValue("disk.0.os.credentials.password"),
                "ssh", "-p", ssh_port, "-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
@@ -218,7 +229,7 @@ class CmdSsh:
         ssh_args = None
         if not ip:
             ip = radl.getPrivateIP()
-            ssh_args = CmdSsh._get_proxy_command(radl, ip)
+            ssh_args = CmdSsh._get_proxy_command(radl, ip, s.getValue("disk.0.os.credentials.username"))
 
         res = ["ssh", "-p", ssh_port, "-i", f.name, "-o", "UserKnownHostsFile=/dev/null",
                "-o", "StrictHostKeyChecking=no",
