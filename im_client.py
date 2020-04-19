@@ -179,21 +179,17 @@ class CmdSsh:
             if proxy_key:
                 # we assume that IM has copied it to the proxy host
                 proxy_key_filename = "/var/tmp/%s_%s_%s.pem" % (proxy_user, username, ip)
-                proxy_command = "ssh -i %s -p %d %s %s@%s nc %s %d" % (proxy_key_filename,
-                                                                       proxy_port,
-                                                                       "-o StrictHostKeyChecking=no",
-                                                                       proxy_user,
-                                                                       proxy_ip,
-                                                                       ip,
-                                                                       proxy_port)
+                proxy_command = "ssh -W %%h:%%p -i %s -p %d %s %s@%s" % (proxy_key_filename,
+                                                                         proxy_port,
+                                                                         "-o StrictHostKeyChecking=no",
+                                                                         proxy_user,
+                                                                         proxy_ip)
             else:
-                proxy_command = "sshpass -p %s ssh -p %d %s %s@%s nc %s %d" % (proxy_pass,
-                                                                               proxy_port,
-                                                                               "-o StrictHostKeyChecking=no",
-                                                                               proxy_user,
-                                                                               proxy_ip,
-                                                                               ip,
-                                                                               proxy_port)
+                proxy_command = "sshpass -p %s ssh -W %%h:%%p -p %d %s %s@%s" % (proxy_pass,
+                                                                                 proxy_port,
+                                                                                 "-o StrictHostKeyChecking=no",
+                                                                                 proxy_user,
+                                                                                 proxy_ip)
             ssh_args = ["-o", "ProxyCommand=%s" % proxy_command]
 
         return ssh_args

@@ -950,8 +950,8 @@ class TestClient(unittest.TestCase):
         self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("sshpass -pyoyoyo ssh -p 22 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
-                      "ubuntu@10.0.0.1 -o ProxyCommand=sshpass -p passwd ssh -p 22 -o StrictHostKeyChecking=no"
-                      " username@someserver.com nc 10.0.0.1 22", output)
+                      "ubuntu@10.0.0.1 -o ProxyCommand=sshpass -p passwd ssh -W %h:%p -p 22"
+                      " -o StrictHostKeyChecking=no username@someserver.com", output)
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
