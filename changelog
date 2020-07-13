@@ -94,4 +94,6 @@ IM-client 1.5.6
 
 IM-client 1.5.7
     * Add filter to the list operation.
-    * Add support to SSH Proxy command.
+    * Add support for ProxyCommand ssh.
+    * Add force option to delete operation.
+
