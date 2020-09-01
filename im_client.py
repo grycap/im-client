@@ -31,6 +31,7 @@ except:
 
 import sys
 import os
+import subprocess
 import tempfile
 from optparse import OptionParser, Option, IndentedHelpFormatter
 try:
@@ -258,7 +259,12 @@ def read_auth_data(filename):
                 if len(key_value) != 2:
                     break
                 else:
+                    key = key_value[0].strip()
                     value = key_value[1].strip().replace("\\n", "\n")
+                    # Evals the token command if 'bearer_token_command'
+                    if key == 'bearer_token_command':
+                        key = 'token'
+                        value = fetch_bearer_token(value)
                     # Enable to specify a filename and set the contents of it
                     if value.startswith("file(") and value.endswith(")"):
                         filename = value[5:len(value) - 1]
@@ -268,10 +274,22 @@ def read_auth_data(filename):
                             value_file.close()
                         except:
                             pass
-                    auth[key_value[0].strip()] = value
+
+                    auth[key] = value
             res.append(auth)
 
     return res
+
+
+# fetch the bearer token using the command
+def fetch_bearer_token(cmd):
+    result = subprocess.run(cmd.split(' '), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode != 0:
+        Error_msg = result.stderr
+        if Error_msg == "":
+            Error_msg = result.stdout
+        raise Exception("Failed to get bearer token using %s: %s" % (cmd, Error_msg.decode('utf-8')))
+    return result.stdout.decode('utf-8')
 
 
 def get_inf_id(args):
