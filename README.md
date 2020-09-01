@@ -130,6 +130,9 @@ keys are:
 
 * ``token`` indicates the OpenID token associated to the credential. This field is used in the OCCI plugin. 
 
+* ``bearer_token_command`` command used to obtain the access token when the token is not specified. 
+  This command is useful when the lifetime of the token is short, avoiding editing the authentication file each time. 
+
 ##### OpenStack addicional fields
 
 OpenStack has a set of addicional fields to access a cloud site:
