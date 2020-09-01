@@ -1,5 +1,7 @@
 id = one; type = OpenNebula; host = server:2633; username = user; password = pass
 type = InfrastructureManager; username = user; password = pass
+type = InfrastructureManager; token = user-token
+type = InfrastructureManager; bearer_token_command = oidc-token OIDC_ACCOUNT
 type = VMRC; host = http://server:8080/vmrc; username = user; password = pass
 id = ec2; type = EC2; username = ACESS_KEY; password = SECRET_KEY
 id = gce; type = GCE; username = CLIENT_ID; password = CLIENT_SECRET; project = project-name
