@@ -64,7 +64,7 @@ home directory. In the config file the user can specify the following parameters
 [im_client]
 # only set one of the urls
 #xmlrpc_url=http://localhost:8899
-restapi_url==http://localhost:8800
+restapi_url=http://localhost:8800
 auth_file=auth.dat
 xmlrpc_ssl_ca_certs=/tmp/pki/ca-chain.pem
 ```
@@ -129,6 +129,9 @@ keys are:
   [here](https://azure-sdk-for-python.readthedocs.io/en/latest/quickstart_authentication.html#using-ad-user-password)
 
 * ``token`` indicates the OpenID token associated to the credential. This field is used in the OCCI plugin. 
+
+* ``bearer_token_command`` command used to obtain the access token when the token is not specified. 
+  This command is useful when the lifetime of the token is short, avoiding editing the authentication file each time. 
 
 ##### OpenStack addicional fields
 
