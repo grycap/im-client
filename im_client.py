@@ -285,19 +285,12 @@ def read_auth_data(filename):
 def fetch_bearer_token(cmd):
     proc = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, 
                                             stderr=subprocess.PIPE)
-    try:
-        outs, errs = proc.communicate(timeout=15)
-        if proc.returncode != 0:
-            if errs == b'':
-                errs = outs
-            raise Exception("Failed to get bearer token using %s: %s" % (cmd, errs.decode('utf-8')))
-        return outs.decode('utf-8').replace('\n', '')
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        outs, errs = proc.communicate()
+    outs, errs = proc.communicate()
+    if proc.returncode != 0:
         if errs == b'':
             errs = outs
-        raise Exception("Timeout when getting bearer token using %s: %s" % (cmd, errs.decode('utf-8')))
+        raise Exception("Failed to get bearer token using %s: %s" % (cmd, errs.decode('utf-8')))
+    return outs.decode('utf-8').replace('\n', '')
 
 
 def get_inf_id(args):
