@@ -175,6 +175,7 @@ class CmdSsh:
 
     @staticmethod
     def _get_proxy_command(radl, ip, username):
+        ssh_args = None
         if CmdSsh._get_proxy_host(radl):
             proxy_ip, proxy_user, proxy_pass, proxy_key, proxy_port = CmdSsh._get_proxy_host(radl)
             if proxy_key:
@@ -395,6 +396,8 @@ def main(operation, options, args, parser):
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
             url = "%s/infrastructures/%s/vms/%s" % (options.restapi.rstrip("/"), inf_id, vm_list)
+            if not context:
+                url += "?context=0"
             resp = requests.request("DELETE", url, verify=options.verify, headers=headers)
             success = resp.status_code == 200
             if success:
@@ -442,6 +445,8 @@ def main(operation, options, args, parser):
             if file_extension in [".yaml", ".yml"]:
                 headers["Content-Type"] = "text/yaml"
             url = "%s/infrastructures/%s" % (options.restapi, inf_id)
+            if not context:
+                url += "?context=0"
             resp = requests.request("POST", url, verify=options.verify, headers=headers, data=str(radl))
             success = resp.status_code == 200
             restres = resp.text
