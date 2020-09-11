@@ -928,15 +928,56 @@ def main(operation, options, args, parser):
             (success, info) = server.GetVMInfo(inf_id, vm_id, auth_data)
 
         if success:
-            try:
-                radl = radl_parse.parse_radl(info)
-                CmdSsh.run(radl, show_only)
-            except Exception as ex:
-                print(str(ex))
-                return False
+            radl = radl_parse.parse_radl(info)
         else:
             print("Error accessing VM: %s" % info)
-        return success
+            return success
+
+        if not radl.getPublicIP() and vm_id != 0:
+            print("VM ID %s does not has public IP, try to access via VM ID 0." % vm_id)
+            vm_id = 0
+            if options.restapi:
+                headers = {"Authorization": rest_auth_data}
+                url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
+                resp = requests.request("GET", url, verify=options.verify, headers=headers)
+                success = resp.status_code == 200
+                info = resp.text
+            else:
+                (success, info) = server.GetVMInfo(inf_id, vm_id, auth_data)
+
+            if success:
+                radl2 = radl_parse.parse_radl(info)
+                host = radl2.getPublicIP()
+                username = radl2.systems[0].getValue("disk.0.os.credentials.username")
+                password = radl2.systems[0].getValue("disk.0.os.credentials.password")
+                priv_key = radl2.systems[0].getValue("disk.0.os.credentials.private_key")
+
+                for netid in radl.systems[0].getNetworkIDs():
+                    net = radl.get_network_by_id(netid)
+                    if password:
+                        proxy_host = "%s:%s@%s" % (username, password, host)
+                    elif priv_key:
+                        proxy_host = "%s@%s" % (username, host)
+                        net.setValue('proxy_key', priv_key)
+                        proxy_key_filename = "/var/tmp/%s_%s_%s.pem" % (username, username, radl.getPrivateIP())
+                        with open(proxy_key_filename, "w") as f:
+                            f.write(priv_key)
+                        os.chmod(proxy_key_filename, 0o600)
+                    else:
+                        print("Error, no valid credentials in VM 0")
+                        return False
+                    net.setValue('proxy_host', proxy_host)
+            else:
+                print("Error accessing VM: %s" % info)
+                return success
+
+        try:
+            CmdSsh.run(radl, show_only)
+        except Exception as ex:
+            print(str(ex))
+            return False
+
+        return True
 
     elif operation == "getversion":
         if options.restapi:
