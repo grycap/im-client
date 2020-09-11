@@ -933,7 +933,13 @@ def main(operation, options, args, parser):
             print("Error accessing VM: %s" % info)
             return success
 
-        if not radl.getPublicIP() and vm_id != 0:
+        proxy_host = False
+        for netid in radl.systems[0].getNetworkIDs():
+            net = radl.get_network_by_id(netid)
+            if net.getValue("proxy_host"):
+                proxy_host = True
+
+        if not radl.getPublicIP() and vm_id != 0 and not proxy_host:
             print("VM ID %s does not has public IP, try to access via VM ID 0." % vm_id)
             vm_id = 0
             if options.restapi:
