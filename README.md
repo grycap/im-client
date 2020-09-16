@@ -54,6 +54,17 @@ You only need to install the tar-gziped file to any directoy:
 $ tar xvzf IM-client-X.XX.tar.gz
 ```
 
+#### 1.3.3 IM-Client Docker image
+The IM Client has an official Docker container image available in Docker Hub that can be used instead of installing the CLI. You can download it by typing:
+
+$ sudo docker pull grycap/im-client
+You can exploit all the potential of the IM Client as if you download the CLI and run it on your computer:
+
+```sh
+$ docker run --rm -ti -v "$PWD:/tmp/im" grycap/im-client -r https://server.com:8800 -a /tmp/im/auth.dat list
+$ docker run --rm -ti -v "$PWD:/tmp/im" grycap/im-client -r https://server.com:8800 -a /tmp/im/auth.dat create /tmp/im/some_file.radl
+```
+
 ### 1.4 CONFIGURATION
 
 To avoid typing the parameters in all the client calls. The user can define a config
