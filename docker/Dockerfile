@@ -6,7 +6,7 @@ LABEL description="Container image to run the IM client. (http://www.grycap.upv.
 EXPOSE 8899 8800
 
 # Install python3
-RUN  apk add --no-cache python3
+RUN  apk add --no-cache python3 py3-requests 
 
 # Install IM client
 RUN  apk add --no-cache py3-pip  && \
