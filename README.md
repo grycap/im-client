@@ -311,7 +311,14 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
 
    ``sshvm <infId> <vmId> [show_only]``
       Connect with SSH with the specified virtual machine ``vmId`` associated to the infrastructure with ID
-      infrastructure with ID ``infId``. 
+      infrastructure with ID ``infId``. In case that the specified VM does not have public IP the client
+      will try to connect using the virtual machine with ID ``0`` as SSH proxy.
+      The ``show_only`` parameter is optional
+      and is a flag to specify if ssh command will only be shown in stdout instead of executed.
+
+   ``ssh <infId> [show_only]``
+      Connect with SSH with the virtual machine with ID ``0`` associated to the infrastructure with ID
+      infrastructure with ID ``infId``.
       The ``show_only`` parameter is optional
       and is a flag to specify if ssh command will only be shown in stdout instead of executed.
 
