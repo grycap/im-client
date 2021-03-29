@@ -97,3 +97,7 @@ IM-client 1.5.7
     * Add support for ProxyCommand ssh.
     * Add force option to delete operation.
 
+IM-client 1.5.8
+    * Fix error where context flag ignored in add and remove resource in case of REST APA.
+    * Add Bearer token command.
+    * Add support for ProxyCommand ssh to internal VMs using master VM as proxy.

@@ -1193,6 +1193,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     parser.add_operation_help('stopvm', '<inf_id> <vm_id>')
     parser.add_operation_help('rebootvm', '<inf_id> <vm_id>')
     parser.add_operation_help('sshvm', '<inf_id> <vm_id> [show_only]')
+    parser.add_operation_help('ssh', '<inf_id> [show_only]')
     parser.add_operation_help('export', '<inf_id> [delete]')
     parser.add_operation_help('import', '<json_file>')
     parser.add_operation_help('getoutputs', '<inf_id>')
