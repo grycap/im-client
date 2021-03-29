@@ -107,6 +107,8 @@ keys are:
   it refers to the *Secret Access Key*. In GCE it refers to *Service  Private Key*
   (either in JSON or PKCS12 formats). See how to get it and how to extract the private key file from
   [here](https://cloud.google.com/storage/docs/authentication#service_accounts).
+  In OpenStack sites using 3.x_oidc_access_token authentication it indicates the OIDC
+  access token.
 
 * ``tenant`` indicates the tenant associated to the credential.
   This field is only used in the OpenStack plugin.
@@ -139,10 +141,9 @@ keys are:
   plugin check the documentation of the Azure python SDK:
   [here](https://azure-sdk-for-python.readthedocs.io/en/latest/quickstart_authentication.html#using-ad-user-password)
 
-* ``token`` indicates the OpenID token associated to the credential. This field is used in the OCCI plugin. 
-
-* ``bearer_token_command`` command used to obtain the access token when the token is not specified. 
-  This command is useful when the lifetime of the token is short, avoiding editing the authentication file each time. 
+* ``token`` indicates the OpenID token associated to the credential. This field is used in the OCCI
+  and also to authenticate with the InfrastructureManager. To refer to the output of a command you must
+  use the function "command(command)" as shown in the examples.
 
 ##### OpenStack addicional fields
 
@@ -174,6 +175,8 @@ id = one; type = OpenNebula; host = osenserver:2633; username = user; password =
 id = ost; type = OpenStack; host = https://ostserver:5000; username = user; password = pass; tenant = tenant
 # OpenStack site using VOMS proxy authentication
 id = ostvoms; type = OpenStack; proxy = file(/tmp/proxy.pem); host = https://keystone:5000; tenant = tname
+# OpenStack site using OIDC authentication for EGI Sites
+id = ost; type = OpenStack; host = https://ostserver:5000; username = egi.eu; tenant = openid; password = comman(oidc-token OIDC_ACCOUNT); auth_version = 3.x_oidc_access_token; domain = project_name_or_id
 # IM auth data 
 id = im; type = InfrastructureManager; username = user; password = pass
 # VMRC auth data

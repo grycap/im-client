@@ -93,6 +93,15 @@ class TestClient(unittest.TestCase):
                 resp.status_code = 200
                 resp.text = '{"data": "strinf"}'
                 resp.json.return_value = json.loads(resp.text)
+            elif url == "/clouds/one/quotas":
+                resp.status_code = 200
+                resp.text = ('{"quotas": {"cores": {"used": 5, "limit": -1}}}')
+                resp.json.return_value = json.loads(resp.text)
+            elif url == "/clouds/one/images":
+                resp.status_code = 200
+                resp.text = ('{"images": [{"uri": "one://oneserver/1","name": "image1"},'
+                             '{"uri": "one://oneserver:2","name": "image2"}]}')
+                resp.json.return_value = json.loads(resp.text)
             else:
                 resp.status_code = 404
         elif method == "POST":
@@ -1031,6 +1040,55 @@ class TestClient(unittest.TestCase):
         self.assertEqual(output[:16], "Usage: nosetests")
         self.assertIn("[-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] "
                       "[-a|--auth_file <filename>] operation op_parameters", output)
+        sys.stdout = oldstdout
+
+    @patch('requests.request')
+    @patch("im_client.ServerProxy")
+    def test_getcloudimages(self, server_proxy, requests):
+        """
+        Test cloudimages operation
+        """
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
+
+        oldstdout = sys.stdout
+        out = StringIO()
+        sys.stdout = out
+        options.xmlrpc = None
+        options.restapi = "https://localhost:8800"
+        requests.side_effect = self.get_response
+
+        res = main("cloudimages", options, ["one"], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn('"uri": "one://oneserver/1"', output)
+        self.assertIn('"name": "image1"', output)
+        self.assertIn('"uri": "one://oneserver:2"', output)
+        self.assertIn('"name": "image2"', output)
+        sys.stdout = oldstdout
+
+    @patch('requests.request')
+    @patch("im_client.ServerProxy")
+    def test_getcloudusage(self, server_proxy, requests):
+        """
+        Test cloudusage operation
+        """
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        parser = MagicMock()
+
+        oldstdout = sys.stdout
+        out = StringIO()
+        sys.stdout = out
+        options.xmlrpc = None
+        options.restapi = "https://localhost:8800"
+        requests.side_effect = self.get_response
+
+        res = main("cloudusage", options, ["one"], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn('{\n    "cores": {\n        "used": 5,\n        "limit": -1\n    }\n}', output)
         sys.stdout = oldstdout
 
 

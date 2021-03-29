@@ -29,6 +29,7 @@ try:
 except:
     pass
 
+import json
 import sys
 import os
 import subprocess
@@ -262,10 +263,10 @@ def read_auth_data(filename):
                 else:
                     key = key_value[0].strip()
                     value = key_value[1].strip().replace("\\n", "\n")
-                    # Evals the token command if 'bearer_token_command'
-                    if key == 'bearer_token_command':
-                        key = 'token'
-                        value = fetch_bearer_token(value)
+                    # Enable to specify a commnad and set the contents of the output
+                    if value.startswith("command(") and value.endswith(")"):
+                        command = value[8:len(value) - 1]
+                        value = run_command(command)
                     # Enable to specify a filename and set the contents of it
                     if value.startswith("file(") and value.endswith(")"):
                         filename = value[5:len(value) - 1]
@@ -282,15 +283,15 @@ def read_auth_data(filename):
     return res
 
 
-# fetch the bearer token using the command
-def fetch_bearer_token(cmd):
-    proc = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, 
-                                            stderr=subprocess.PIPE)
+# fetch the output using the command
+def run_command(cmd):
+    proc = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE)
     outs, errs = proc.communicate()
     if proc.returncode != 0:
         if errs == b'':
             errs = outs
-        raise Exception("Failed to get bearer token using %s: %s" % (cmd, errs.decode('utf-8')))
+        raise Exception("Failed to get auth value using command %s: %s" % (cmd, errs.decode('utf-8')))
     return outs.decode('utf-8').replace('\n', '')
 
 
@@ -322,6 +323,10 @@ def get_input_params(radl):
     return radl
 
 
+def get_master_vm_id(inf_id):
+    return 0
+
+
 def main(operation, options, args, parser):
     """
     Launch Client
@@ -334,7 +339,7 @@ def main(operation, options, args, parser):
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
                           "alter", "getcontmsg", "getvminfo", "reconfigure", "getradl", "getvmcontmsg", "stopvm",
                           "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import", "getoutputs",
-                          "rebootvm"]):
+                          "rebootvm", "cloudusage", "cloudimages"]):
         parser.error("operation not recognised.  Use --help to show all the available operations")
 
     auth_data = None
@@ -482,7 +487,7 @@ def main(operation, options, args, parser):
         f = open(args[0])
         radl_data = "".join(f.readlines())
         f.close()
-        if file_extension in [".yaml", ".yml"]:
+        if file_extension in [".yaml", ".yml", ".json", ".jsn"]:
             radl = radl_data
         else:
             # check for input parameters @input.[param_name]@
@@ -492,7 +497,9 @@ def main(operation, options, args, parser):
 
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
-            if file_extension in [".yaml", ".yml"]:
+            if file_extension in [".json", ".jsn"]:
+                headers["Content-Type"] = "application/json"
+            elif file_extension in [".yaml", ".yml"]:
                 headers["Content-Type"] = "text/yaml"
             url = "%s/infrastructures" % options.restapi
             if asyncr:
@@ -897,8 +904,10 @@ def main(operation, options, args, parser):
     elif operation in ["sshvm", "ssh"]:
         inf_id = get_inf_id(args)
         show_only = False
+        master_vm_id = None
         if operation == "ssh":
-            vm_id = 0
+            master_vm_id = get_master_vm_id(inf_id)
+            vm_id = master_vm_id
             if len(args) >= 2:
                 if args[1] in ["0", "1"]:
                     show_only = bool(int(args[1]))
@@ -939,9 +948,9 @@ def main(operation, options, args, parser):
             if net.getValue("proxy_host"):
                 proxy_host = True
 
-        if not radl.getPublicIP() and vm_id != 0 and not proxy_host:
+        if not radl.getPublicIP() and master_vm_id is None and not proxy_host:
+            vm_id = get_master_vm_id(inf_id)
             print("VM ID %s does not has public IP, try to access via VM ID 0." % vm_id)
-            vm_id = 0
             if options.restapi:
                 headers = {"Authorization": rest_auth_data}
                 url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
@@ -1023,7 +1032,7 @@ def main(operation, options, args, parser):
         if success:
             print(data)
         else:
-            print("ERROR getting IM service version: " + data)
+            print("ERROR exporting data: " + data)
         return success
 
     elif operation == "import":
@@ -1053,7 +1062,7 @@ def main(operation, options, args, parser):
         if success:
             print("New Inf: " + inf_id)
         else:
-            print("ERROR getting IM service version: " + inf_id)
+            print("ERROR importing data: " + inf_id)
         return success
 
     elif operation == "getoutputs":
@@ -1078,6 +1087,51 @@ def main(operation, options, args, parser):
         else:
             print("Error getting infrastructure outputs: %s" % res)
         return success
+
+    elif operation == "cloudimages":
+        if len(args) >= 1:
+            cloud_id = args[0]
+            if options.restapi:
+                headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+                url = "%s/clouds/%s/images" % (options.restapi, cloud_id)
+                resp = requests.request("GET", url, verify=options.verify, headers=headers)
+                success = resp.status_code == 200
+                if success:
+                    data = resp.json()["images"]
+                else:
+                    data = resp.text
+            else:
+                (success, data) = server.GetCloudImageList(cloud_id, auth_data)
+
+            if success:
+                print(json.dumps(data, indent=4))
+            else:
+                print("ERROR getting cloud image list: " + data)
+            return success
+        else:
+            raise Exception("Cloud ID not specified")
+    elif operation == "cloudusage":
+        if len(args) >= 1:
+            cloud_id = args[0]
+            if options.restapi:
+                headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+                url = "%s/clouds/%s/quotas" % (options.restapi, cloud_id)
+                resp = requests.request("GET", url, verify=options.verify, headers=headers)
+                success = resp.status_code == 200
+                if success:
+                    data = resp.json()["quotas"]
+                else:
+                    data = resp.text
+            else:
+                (success, data) = server.GetCloudImageList(cloud_id, auth_data)
+
+            if success:
+                print(json.dumps(data, indent=4))
+            else:
+                print("ERROR getting cloud image list: " + data)
+            return success
+        else:
+            raise Exception("Cloud ID not specified")
 
 
 def get_parser():
@@ -1109,7 +1163,7 @@ under certain conditions; please read the license at \n\
 http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
     parser = PosOptionParser(usage="%prog [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] "
-                             "[-a|--auth_file <filename>] operation op_parameters" + NOTICE, version="%prog 1.5.7")
+                             "[-a|--auth_file <filename>] operation op_parameters" + NOTICE, version="%prog 1.5.9")
     parser.add_option("-a", "--auth_file", dest="auth_file", nargs=1, default=default_auth_file, help="Authentication"
                       " data file", type="string")
     parser.add_option("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=default_xmlrpc, help="URL address of the "
@@ -1143,6 +1197,8 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     parser.add_operation_help('export', '<inf_id> [delete]')
     parser.add_operation_help('import', '<json_file>')
     parser.add_operation_help('getoutputs', '<inf_id>')
+    parser.add_operation_help('cloudusage', '<cloud_id>')
+    parser.add_operation_help('cloudimages', '<cloud_id>')
     parser.add_operation_help('getversion', '')
 
     return parser

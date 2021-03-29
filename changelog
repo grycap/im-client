@@ -101,3 +101,7 @@ IM-client 1.5.8
     * Fix error where context flag ignored in add and remove resource in case of REST APA.
     * Add Bearer token command.
     * Add support for ProxyCommand ssh to internal VMs using master VM as proxy.
+
+IM-client 1.5.9
+    * Generalize Bearer token command.
+    * Add new IM cloud functions.
