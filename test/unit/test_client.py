@@ -1091,6 +1091,28 @@ class TestClient(unittest.TestCase):
         self.assertIn('{\n    "cores": {\n        "used": 5,\n        "limit": -1\n    }\n}', output)
         sys.stdout = oldstdout
 
+    @patch('requests.request')
+    @patch("im_client.ServerProxy")
+    def test_wait(self, server_proxy, requests):
+        """
+        Test wait operation
+        """
+        proxy = MagicMock()
+        proxy.GetInfrastructureState.return_value = (True, {"state": "configured", "vm_states": {"vm1": "configured"}})
+        server_proxy.return_value = proxy
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        options.restapi = None
+        parser = MagicMock()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        sys.stdout = out
+        res = main("wait", options, ["infid"], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("The infrastructure is in state: configured", output)
+
 
 if __name__ == '__main__':
     unittest.main()
