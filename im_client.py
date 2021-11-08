@@ -34,6 +34,7 @@ import sys
 import os
 import subprocess
 import tempfile
+import time
 from optparse import OptionParser, Option, IndentedHelpFormatter
 try:
     import ConfigParser
@@ -339,7 +340,7 @@ def main(operation, options, args, parser):
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
                           "alter", "getcontmsg", "getvminfo", "reconfigure", "getradl", "getvmcontmsg", "stopvm",
                           "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import", "getoutputs",
-                          "rebootvm", "cloudusage", "cloudimages"]):
+                          "rebootvm", "cloudusage", "cloudimages", "wait"]):
         parser.error("operation not recognised.  Use --help to show all the available operations")
 
     auth_data = None
@@ -352,9 +353,9 @@ def main(operation, options, args, parser):
         if auth_data is None:
             parser.error("Auth file with incorrect format.")
 
+    rest_auth_data = ""
     if options.restapi:
         if auth_data:
-            rest_auth_data = ""
             for item in auth_data:
                 for key, value in item.items():
                     value = value.replace("\n", "\\\\n")
@@ -452,7 +453,8 @@ def main(operation, options, args, parser):
             url = "%s/infrastructures/%s" % (options.restapi, inf_id)
             if not context:
                 url += "?context=0"
-            resp = requests.request("POST", url, verify=options.verify, headers=headers, data=str(radl))
+            resp = requests.request("POST", url, verify=options.verify, headers=headers,
+                                    data=str(radl))
             success = resp.status_code == 200
             restres = resp.text
             if success:
@@ -504,7 +506,8 @@ def main(operation, options, args, parser):
             url = "%s/infrastructures" % options.restapi
             if asyncr:
                 url += "?async=yes"
-            resp = requests.request("POST", url, verify=options.verify, headers=headers, data=str(radl))
+            resp = requests.request("POST", url, verify=options.verify, headers=headers,
+                                    data=str(radl))
             success = resp.status_code == 200
             inf_id = resp.text
             if success:
@@ -1110,6 +1113,7 @@ def main(operation, options, args, parser):
             return success
         else:
             raise Exception("Cloud ID not specified")
+
     elif operation == "cloudusage":
         if len(args) >= 1:
             cloud_id = args[0]
@@ -1133,6 +1137,42 @@ def main(operation, options, args, parser):
         else:
             raise Exception("Cloud ID not specified")
 
+    elif operation == "wait":
+        inf_id = get_inf_id(args)
+
+        unknown_count = 0
+        state = "pending"
+        while state in ["pending", "running", "unknown"] and unknown_count < 3:
+            if options.restapi:
+                headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+                url = "%s/infrastructures/%s/state" % (options.restapi, inf_id)
+                resp = requests.request("GET", url, verify=options.verify, headers=headers)
+                success = resp.status_code == 200
+                if success:
+                    res = resp.json()['state']
+                else:
+                    res = resp.text
+            else:
+                (success, res) = server.GetInfrastructureState(inf_id, auth_data)
+
+            if success:
+                state = res['state']
+            else:
+                state = "unknown"
+            
+            if state == "unknown":
+                unknown_count += 1
+
+            if state in ["pending", "running", "unknown"]:
+                print("The infrastructure is in state: %s. Wait ..." % state)
+                time.sleep(30)
+
+        if state == "configured":
+            print("The infrastructure is in state: %s" % state)
+            return True
+        else:
+            print("The infrastructure is in state: %s" % state)
+            return False
 
 def get_parser():
     """
@@ -1163,7 +1203,7 @@ under certain conditions; please read the license at \n\
 http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
     parser = PosOptionParser(usage="%prog [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] "
-                             "[-a|--auth_file <filename>] operation op_parameters" + NOTICE, version="%prog 1.5.9")
+                             "[-a|--auth_file <filename>] operation op_parameters" + NOTICE, version="%prog 1.5.10")
     parser.add_option("-a", "--auth_file", dest="auth_file", nargs=1, default=default_auth_file, help="Authentication"
                       " data file", type="string")
     parser.add_option("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=default_xmlrpc, help="URL address of the "
@@ -1200,6 +1240,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     parser.add_operation_help('cloudusage', '<cloud_id>')
     parser.add_operation_help('cloudimages', '<cloud_id>')
     parser.add_operation_help('getversion', '')
+    parser.add_operation_help('wait', '<inf_id>')
 
     return parser
 
