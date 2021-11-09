@@ -333,3 +333,8 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
    ``import <json_file>``
       Import the data of an infrastructure previously exported with the previous function.
       The ``json_file`` is a file with the data generated with the  ``export`` function.
+
+   ``wait <infId> <maxTime>``
+      Wait the infrastructure with ID ``infId`` to be be in a final state ("configured", "unconfigured" or "failed").
+      It has an optional parameter ``maxTime`` with the max time to wait. It returns 0 if the infrastructure ends
+      with a "configured" state or 1 otherwise.
