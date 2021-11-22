@@ -1139,10 +1139,13 @@ def main(operation, options, args, parser):
 
     elif operation == "wait":
         inf_id = get_inf_id(args)
-
+        max_time = 36000 # 10h
+        if len(args) >= 2:
+            max_time = int(args[1])
         unknown_count = 0
+        wait = 0
         state = "pending"
-        while state in ["pending", "running", "unknown"] and unknown_count < 3:
+        while state in ["pending", "running", "unknown"] and unknown_count < 3 and wait < max_time:
             if options.restapi:
                 headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
                 url = "%s/infrastructures/%s/state" % (options.restapi, inf_id)
@@ -1166,10 +1169,14 @@ def main(operation, options, args, parser):
             if state in ["pending", "running", "unknown"]:
                 print("The infrastructure is in state: %s. Wait ..." % state)
                 time.sleep(30)
+                wait += 30
 
         if state == "configured":
             print("The infrastructure is in state: %s" % state)
             return True
+        elif wait >= max_time:
+            print("Timeout waiting.")
+            return False
         else:
             print("The infrastructure is in state: %s" % state)
             return False
@@ -1240,7 +1247,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     parser.add_operation_help('cloudusage', '<cloud_id>')
     parser.add_operation_help('cloudimages', '<cloud_id>')
     parser.add_operation_help('getversion', '')
-    parser.add_operation_help('wait', '<inf_id>')
+    parser.add_operation_help('wait', '<inf_id> <max_time>')
 
     return parser
 
