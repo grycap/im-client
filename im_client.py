@@ -1174,6 +1174,9 @@ def main(operation, options, args, parser):
         if state == "configured":
             print("The infrastructure is in state: %s" % state)
             return True
+        elif wait >= max_time:
+            print("Timeout waiting.")
+            return False
         else:
             print("The infrastructure is in state: %s" % state)
             return False
