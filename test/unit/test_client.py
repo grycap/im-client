@@ -1112,6 +1112,7 @@ class TestClient(unittest.TestCase):
         self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("The infrastructure is in state: configured", output)
+        sys.stdout = oldstdout
 
 
 if __name__ == '__main__':
