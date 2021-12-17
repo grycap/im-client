@@ -372,12 +372,7 @@ def create(server, options, args, auth_data, rest_auth_data):
     else:
         (success, inf_id) = server.CreateInfrastructure(str(radl), auth_data)
 
-    if success:
-        if not options.quiet:
-            print("Infrastructure successfully created with ID: %s" % str(inf_id))
-        else:
-            print(inf_id)
-    else:
+    if not success:
         print("ERROR creating the infrastructure: %s" % inf_id)
     return inf_id
 
@@ -1088,8 +1083,10 @@ def getoutputs(server, options, args, auth_data, rest_auth_data):
     if success:
         if not options.quiet:
             print("The infrastructure outputs:\n")
-        for key, value in res.items():
-            print("%s = %s" % (key, value))
+            for key, value in res.items():
+                print("%s = %s" % (key, value))
+        else:
+            print(json.dumps(res))
     else:
         print("Error getting infrastructure outputs: %s" % res)
     return success
@@ -1254,7 +1251,12 @@ def main(operation, options, args, parser):
         return addresource(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "create":
-        return create(server, options, args, auth_data, rest_auth_data)
+        inf_id = create(server, options, args, auth_data, rest_auth_data)
+        if not options.quiet:
+            print("Infrastructure successfully created with ID: %s" % str(inf_id))
+        else:
+            print(inf_id)
+        return inf_id
 
     elif operation == "alter":
         return alter(server, options, args, auth_data, rest_auth_data)

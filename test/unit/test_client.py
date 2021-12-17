@@ -62,13 +62,17 @@ class TestClient(unittest.TestCase):
             elif url == "/infrastructures/infid/contmsg":
                 resp.status_code = 200
                 resp.text = 'contmsg'
-            elif url == "/infrastructures/infid/outputs":
+            elif url in ["/infrastructures/infid/outputs", "/infrastructures/inf1/outputs"]:
                 resp.status_code = 200
                 resp.text = '{"outputs": {"output1": "value1", "output2": "value2"}}'
                 resp.json.return_value = json.loads(resp.text)
             elif url == "/infrastructures/infid/state":
                 resp.status_code = 200
                 resp.text = '{"state": {"state": "running", "vm_states": {"vm1": "running"}}}'
+                resp.json.return_value = json.loads(resp.text)
+            elif url == "/infrastructures/inf1/state":
+                resp.status_code = 200
+                resp.text = '{"state": {"state": "configured", "vm_states": {"vm1": "configured"}}}'
                 resp.json.return_value = json.loads(resp.text)
             elif url == "/infrastructures/infid/vms/vmid":
                 resp.status_code = 200
@@ -231,7 +235,7 @@ class TestClient(unittest.TestCase):
         oldstdout = sys.stdout
         sys.stdout = out
         res = main("create", options, [get_abs_path("../files/test.radl")], parser)
-        self.assertEquals(res, True)
+        self.assertIsNotNone(res)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully created with ID: inf1", output)
         sys.stdout = oldstdout
@@ -242,7 +246,7 @@ class TestClient(unittest.TestCase):
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         res = main("create", options, [get_abs_path("../files/test.radl")], parser)
-        self.assertEquals(res, True)
+        self.assertIsNotNone(res)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully created with ID: inf1", output)
         sys.stdout = oldstdout
@@ -253,7 +257,7 @@ class TestClient(unittest.TestCase):
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         res = main("create", options, [get_abs_path("../files/tosca.yml")], parser)
-        self.assertEquals(res, True)
+        self.assertIsNotNone(res)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully created with ID: inf1", output)
         sys.stdout = oldstdout
@@ -1111,9 +1115,8 @@ class TestClient(unittest.TestCase):
         self.assertIn('{\n    "cores": {\n        "used": 5,\n        "limit": -1\n    }\n}', output)
         sys.stdout = oldstdout
 
-    @patch('requests.request')
     @patch("im_client.ServerProxy")
-    def test_wait(self, server_proxy, requests):
+    def test_wait(self, server_proxy):
         """
         Test wait operation
         """
@@ -1134,6 +1137,31 @@ class TestClient(unittest.TestCase):
         output = out.getvalue().strip()
         self.assertIn("The infrastructure is in state: configured", output)
         sys.stdout = oldstdout
+
+    @patch('requests.request')
+    @patch("im_client.ServerProxy")
+    def test_create_wait_outputs(self, server_proxy, requests):
+        """
+        Test create_wait_outputs operation
+        """
+        proxy = MagicMock()
+        requests.side_effect = self.get_response
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        options.restapi = "https://localhost:8800"
+        options.xmlrpc = None
+        options.quiet = True
+        parser = MagicMock()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        sys.stdout = out
+        res = main("create_wait_outputs", options, [get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
+        output = json.loads(out.getvalue().strip())
+        self.assertEqual(output, {"output1": "value1" , "output2": "value2"})
+        sys.stdout = oldstdout
+
 
 
 if __name__ == '__main__':
