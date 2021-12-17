@@ -105,3 +105,7 @@ IM-client 1.5.8
 IM-client 1.5.9
     * Generalize Bearer token command.
     * Add new IM cloud functions.
+
+IM-client 1.5.10
+    * Add wait function enhancement.
+
