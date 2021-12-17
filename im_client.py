@@ -353,6 +353,7 @@ def create(server, options, args, auth_data, rest_auth_data):
         radl = radl_parse.parse_radl(radl_data)
         radl.check()
 
+    inf_id = None
     if options.restapi:
         headers = {"Authorization": rest_auth_data}
         if file_extension in [".json", ".jsn"]:
@@ -372,10 +373,13 @@ def create(server, options, args, auth_data, rest_auth_data):
         (success, inf_id) = server.CreateInfrastructure(str(radl), auth_data)
 
     if success:
-        print("Infrastructure successfully created with ID: %s" % str(inf_id))
+        if not options.quiet:
+            print("Infrastructure successfully created with ID: %s" % str(inf_id))
+        else:
+            print(inf_id)
     else:
         print("ERROR creating the infrastructure: %s" % inf_id)
-    return success
+    return inf_id
 
 
 def removeresource(server, options, args, auth_data, rest_auth_data):
@@ -412,7 +416,8 @@ def removeresource(server, options, args, auth_data, rest_auth_data):
         (success, vms_id) = server.RemoveResource(inf_id, vm_list, auth_data, context)
 
     if success:
-        print("Resources with IDs: %s successfully deleted." % str(vms_id))
+        if not options.quiet:
+            print("Resources with IDs: %s successfully deleted." % str(vms_id))
     else:
         print("ERROR deleting resources from the infrastructure: %s" % vms_id)
     return success
@@ -466,7 +471,10 @@ def addresource(server, options, args, auth_data, rest_auth_data):
         (success, vms_id) = server.AddResource(inf_id, str(radl), auth_data, context)
 
     if success:
-        print("Resources with IDs: %s successfully added." % ",".join(vms_id))
+        if not options.quiet:
+            print("Resources with IDs: %s successfully added." % ",".join(vms_id))
+        else:
+            print("\n".join(vms_id))
     else:
         print("ERROR adding resources to infrastructure: %s" % vms_id)
     return success
@@ -499,7 +507,8 @@ def alter(server, options, args, auth_data, rest_auth_data):
         (success, res) = server.AlterVM(inf_id, vm_id, str(radl), auth_data)
 
     if success:
-        print("VM successfully modified.")
+        if not options.quiet:
+            print("VM successfully modified.")
     else:
         print("ERROR modifying the VM: %s" % res)
     return success
@@ -535,7 +544,8 @@ def reconfigure(server, options, args, auth_data, rest_auth_data):
         (success, res) = server.Reconfigure(inf_id, str(radl), auth_data, vm_list)
 
     if success:
-        print("Infrastructure successfully reconfigured.")
+        if not options.quiet:
+            print("Infrastructure successfully reconfigured.")
     else:
         print("ERROR reconfiguring the infrastructure: " + res)
     return success
@@ -554,9 +564,10 @@ def getcontmsg(server, options, args, auth_data, rest_auth_data):
         (success, cont_out) = server.GetInfrastructureContMsg(inf_id, auth_data)
     if success:
         if len(cont_out) > 0:
-            print("Msg Contextualizator: \n")
+            if not options.quiet:
+                print("Msg Contextualizator: \n")
             print(cont_out)
-        else:
+        elif not options.quiet:
             print("No Msg Contextualizator avaliable\n")
     else:
         print("Error getting infrastructure contextualization message: %s" % cont_out)
@@ -578,11 +589,14 @@ def getstate(server, options, args, auth_data, rest_auth_data):
     else:
         (success, res) = server.GetInfrastructureState(inf_id, auth_data)
     if success:
-        state = res['state']
-        vm_states = res['vm_states']
-        print("The infrastructure is in state: %s" % state)
-        for vm_id, vm_state in vm_states.items():
-            print("VM ID: %s is in state: %s." % (vm_id, vm_state))
+        if not options.quiet:
+            state = res['state']
+            vm_states = res['vm_states']
+            print("The infrastructure is in state: %s" % state)
+            for vm_id, vm_state in vm_states.items():
+                print("VM ID: %s is in state: %s." % (vm_id, vm_state))
+        else:
+            print(json.dumps(res))
     else:
         print("Error getting infrastructure state: %s" % res)
     return success
@@ -644,7 +658,8 @@ def getinfo(server, options, args, auth_data, rest_auth_data):
 
     if success:
         for vm_id in vm_ids:
-            print("Info about VM with ID: %s" % vm_id)
+            if not options.quiet:
+                print("Info about VM with ID: %s" % vm_id)
 
             if options.restapi:
                 headers = {"Authorization": rest_auth_data}
@@ -683,7 +698,8 @@ def destroy(server, options, args, auth_data, rest_auth_data):
         (success, inf_id) = server.DestroyInfrastructure(inf_id, auth_data, options.force)
 
     if success:
-        print("Infrastructure successfully destroyed")
+        if not options.quiet:
+            print("Infrastructure successfully destroyed")
     else:
         print("ERROR destroying the infrastructure: %s" % inf_id)
     return success
@@ -712,9 +728,13 @@ def list_infras(server, options, args, auth_data, rest_auth_data):
 
     if success:
         if res:
-            print("Infrastructure IDs: \n  %s" % ("\n  ".join([str(inf_id) for inf_id in res])))
+            if not options.quiet:
+                print("Infrastructure IDs: \n  %s" % ("\n  ".join([str(inf_id) for inf_id in res])))
+            else:
+                print("\n".join([str(inf_id) for inf_id in res]))
         else:
-            print("No Infrastructures.")
+            if not options.quiet:
+                print("No Infrastructures.")
     else:
         print("ERROR listing then infrastructures: %s" % res)
     return success
@@ -732,7 +752,8 @@ def start(server, options, args, auth_data, rest_auth_data):
         (success, inf_id) = server.StartInfrastructure(inf_id, auth_data)
 
     if success:
-        print("Infrastructure successfully started")
+        if not options.quiet:
+            print("Infrastructure successfully started")
     else:
         print("ERROR starting the infraestructure: " + inf_id)
     return success
@@ -750,7 +771,8 @@ def stop(server, options, args, auth_data, rest_auth_data):
         (success, inf_id) = server.StopInfrastructure(inf_id, auth_data)
 
     if success:
-        print("Infrastructure successfully stopped")
+        if not options.quiet:
+            print("Infrastructure successfully stopped")
     else:
         print("ERROR stopping the infrastructure: " + inf_id)
     return success
@@ -816,7 +838,8 @@ def startvm(server, options, args, auth_data, rest_auth_data):
         (success, info) = server.StartVM(inf_id, vm_id, auth_data)
 
     if success:
-        print("VM successfully started")
+        if not options.quiet:
+            print("VM successfully started")
     else:
         print("Error starting VM: %s" % info)
     return success
@@ -840,7 +863,8 @@ def stopvm(server, options, args, auth_data, rest_auth_data):
         (success, info) = server.StopVM(inf_id, vm_id, auth_data)
 
     if success:
-        print("VM successfully stopped")
+        if not options.quiet:
+            print("VM successfully stopped")
     else:
         print("Error stopping VM: %s" % info)
     return success
@@ -864,7 +888,8 @@ def rebootvm(server, options, args, auth_data, rest_auth_data):
         (success, info) = server.RebootVM(inf_id, vm_id, auth_data)
 
     if success:
-        print("VM successfully rebooted")
+        if not options.quiet:
+            print("VM successfully rebooted")
     else:
         print("Error rebooting VM: %s" % info)
     return success
@@ -919,7 +944,8 @@ def ssh(operation, server, options, args, auth_data, rest_auth_data):
 
     if not radl.getPublicIP() and master_vm_id is None and not proxy_host:
         vm_id = get_master_vm_id(inf_id)
-        print("VM ID %s does not has public IP, try to access via VM ID 0." % vm_id)
+        if not options.quiet:
+            print("VM ID %s does not has public IP, try to access via VM ID 0." % vm_id)
         if options.restapi:
             headers = {"Authorization": rest_auth_data}
             url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
@@ -974,7 +1000,10 @@ def getversion(server, options, args, auth_data, rest_auth_data):
         (success, version) = server.GetVersion()
 
     if success:
-        print("IM service version: %s" % version)
+        if not options.quiet:
+            print("IM service version: %s" % version)
+        else:
+            print(version)
     else:
         print("ERROR getting IM service version: " + version)
     return success
@@ -1032,7 +1061,10 @@ def import_data(server, options, args, auth_data, rest_auth_data):
         (success, inf_id) = server.ImportInfrastructure(data, auth_data)
 
     if success:
-        print("New Inf: " + inf_id)
+        if not options.quiet:
+            print("New Inf: " + inf_id)
+        else:
+            print(inf_id)
     else:
         print("ERROR importing data: " + inf_id)
     return success
@@ -1054,7 +1086,8 @@ def getoutputs(server, options, args, auth_data, rest_auth_data):
         print("ERROR getting the infrastructure outputs: Only available with REST API.")
         return False
     if success:
-        print("The infrastructure outputs:\n")
+        if not options.quiet:
+            print("The infrastructure outputs:\n")
         for key, value in res.items():
             print("%s = %s" % (key, value))
     else:
@@ -1140,18 +1173,22 @@ def wait(server, options, args, auth_data, rest_auth_data):
             unknown_count += 1
 
         if state in ["pending", "running", "unknown"]:
-            print("The infrastructure is in state: %s. Wait ..." % state)
+            if not options.quiet:
+                print("The infrastructure is in state: %s. Wait ..." % state)
             time.sleep(30)
             wait += 30
 
     if state == "configured":
-        print("The infrastructure is in state: %s" % state)
+        if not options.quiet:
+            print("The infrastructure is in state: %s" % state)
         return True
     elif wait >= max_time:
-        print("Timeout waiting.")
+        if not options.quiet:
+            print("Timeout waiting.")
         return False
     else:
-        print("The infrastructure is in state: %s" % state)
+        if not options.quiet:
+            print("The infrastructure is in state: %s" % state)
         return False
 
 
@@ -1167,7 +1204,7 @@ def main(operation, options, args, parser):
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
                           "alter", "getcontmsg", "getvminfo", "reconfigure", "getradl", "getvmcontmsg", "stopvm",
                           "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import", "getoutputs",
-                          "rebootvm", "cloudusage", "cloudimages", "wait"]):
+                          "rebootvm", "cloudusage", "cloudimages", "wait", "create_wait_outputs"]):
         parser.error("operation not recognised.  Use --help to show all the available operations")
 
     auth_data = None
@@ -1190,21 +1227,23 @@ def main(operation, options, args, parser):
                     rest_auth_data += "%s = %s;" % (key, value)
                 rest_auth_data += "\\n"
 
-        if options.restapi.startswith("https"):
-            print("Secure connection with: " + options.restapi)
-        else:
-            print("Connected with: " + options.restapi)
+        if not options.quiet:
+            if options.restapi.startswith("https"):
+                print("Secure connection with: " + options.restapi)
+            else:
+                print("Connected with: " + options.restapi)
     else:
-        if options.xmlrpc.startswith("https"):
-            print("Secure connection with: " + options.xmlrpc)
-            if not options.verify:
-                try:
-                    import ssl
-                    ssl._create_default_https_context = ssl._create_unverified_context
-                except Exception:
-                    pass
-        else:
-            print("Connected with: " + options.xmlrpc)
+        if not options.quiet:
+            if options.xmlrpc.startswith("https"):
+                print("Secure connection with: " + options.xmlrpc)
+                if not options.verify:
+                    try:
+                        import ssl
+                        ssl._create_default_https_context = ssl._create_unverified_context
+                    except Exception:
+                        pass
+            else:
+                print("Connected with: " + options.xmlrpc)
 
         server = ServerProxy(options.xmlrpc, allow_none=True)
 
@@ -1286,6 +1325,15 @@ def main(operation, options, args, parser):
     elif operation == "wait":
         return wait(server, options, args, auth_data, rest_auth_data)
 
+    elif operation == "create_wait_outputs":
+        inf_id = create(server, options, args, auth_data, rest_auth_data)
+        if not inf_id:
+            return False
+        success = wait(server, options, [inf_id], auth_data, rest_auth_data)
+        if not success:
+            return False
+        return getoutputs(server, options, [inf_id], auth_data, rest_auth_data)
+
 
 def get_parser():
     """
@@ -1327,6 +1375,8 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
                       help="Verify the certificate of the InfrastructureManager XML-RCP server")
     parser.add_option("-f", "--force", action="store_true", default=False, dest="force",
                       help="Force the deletion of the infrastructure")
+    parser.add_option("-q", "--quiet", action="store_true", default=False, dest="quiet",
+                      help="Work in quiet mode")
     parser.add_operation_help('list', '')
     parser.add_operation_help('create', '<radl_file> [async_flag]')
     parser.add_operation_help('destroy', '<inf_id>')
@@ -1354,6 +1404,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     parser.add_operation_help('cloudimages', '<cloud_id>')
     parser.add_operation_help('getversion', '')
     parser.add_operation_help('wait', '<inf_id> <max_time>')
+    parser.add_operation_help('create_wait_outputs', '<radl_file>')
 
     return parser
 
