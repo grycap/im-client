@@ -18,7 +18,7 @@
 
 try:
     from xmlrpclib import ServerProxy
-except:
+except ImportError:
     from xmlrpc.client import ServerProxy
 
 try:
@@ -26,7 +26,7 @@ try:
     import requests.packages
     from requests.packages.urllib3.exceptions import InsecureRequestWarning
     requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-except:
+except ImportError:
     pass
 
 import json
@@ -38,7 +38,7 @@ import time
 from optparse import OptionParser, Option, IndentedHelpFormatter
 try:
     import ConfigParser
-except:
+except ImportError:
     import configparser as ConfigParser
 
 from radl import radl_parse
@@ -275,7 +275,7 @@ def read_auth_data(filename):
                             value_file = open(filename, 'r')
                             value = value_file.read()
                             value_file.close()
-                        except:
+                        except Exception:
                             pass
 
                     auth[key] = value
@@ -328,6 +328,833 @@ def get_master_vm_id(inf_id):
     return 0
 
 
+def create(server, options, args, auth_data, rest_auth_data):
+    if len(args) >= 1:
+        if not os.path.isfile(args[0]):
+            print("RADL file '" + args[0] + "' does not exist")
+            return False
+        asyncr = False
+        if len(args) >= 2:
+            asyncr = bool(int(args[1]))
+    else:
+        print("RADL file to create inf. not specified")
+        return False
+
+    # Read the file
+    _, file_extension = os.path.splitext(args[0])
+    f = open(args[0])
+    radl_data = "".join(f.readlines())
+    f.close()
+    if file_extension in [".yaml", ".yml", ".json", ".jsn"]:
+        radl = radl_data
+    else:
+        # check for input parameters @input.[param_name]@
+        radl_data = get_input_params(radl_data)
+        radl = radl_parse.parse_radl(radl_data)
+        radl.check()
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        if file_extension in [".json", ".jsn"]:
+            headers["Content-Type"] = "application/json"
+        elif file_extension in [".yaml", ".yml"]:
+            headers["Content-Type"] = "text/yaml"
+        url = "%s/infrastructures" % options.restapi
+        if asyncr:
+            url += "?async=yes"
+        resp = requests.request("POST", url, verify=options.verify, headers=headers,
+                                data=str(radl))
+        success = resp.status_code == 200
+        inf_id = resp.text
+        if success:
+            inf_id = os.path.basename(inf_id)
+    else:
+        (success, inf_id) = server.CreateInfrastructure(str(radl), auth_data)
+
+    if success:
+        print("Infrastructure successfully created with ID: %s" % str(inf_id))
+    else:
+        print("ERROR creating the infrastructure: %s" % inf_id)
+    return success
+
+
+def removeresource(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    context = True
+    if len(args) >= 2:
+        vm_list = args[1]
+
+        if len(args) >= 3:
+            if args[2] in ["0", "1"]:
+                context = bool(int(args[2]))
+            else:
+                print("The ctxt flag must be 0 or 1")
+                return False
+    else:
+        if options.restapi:
+            print("VM ID to remove not specified")
+        else:
+            print("Coma separated VM list to remove not specified")
+        return False
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/vms/%s" % (options.restapi.rstrip("/"), inf_id, vm_list)
+        if not context:
+            url += "?context=0"
+        resp = requests.request("DELETE", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        if success:
+            vms_id = vm_list
+        else:
+            vms_id = resp.text
+    else:
+        (success, vms_id) = server.RemoveResource(inf_id, vm_list, auth_data, context)
+
+    if success:
+        print("Resources with IDs: %s successfully deleted." % str(vms_id))
+    else:
+        print("ERROR deleting resources from the infrastructure: %s" % vms_id)
+    return success
+
+
+def addresource(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    context = True
+    if len(args) >= 2:
+        if not os.path.isfile(args[1]):
+            print("RADL file '" + args[1] + "' does not exist")
+            return False
+
+        if len(args) >= 3:
+            if args[2] in ["0", "1"]:
+                context = bool(int(args[2]))
+            else:
+                print("The ctxt flag must be 0 or 1")
+                return False
+    else:
+        print("RADL file to add resources not specified")
+        return False
+
+    _, file_extension = os.path.splitext(args[1])
+    if file_extension in [".yaml", ".yml"]:
+        f = open(args[1])
+        radl = "".join(f.readlines())
+        f.close()
+    else:
+        radl = radl_parse.parse_radl(args[1])
+        radl.check()
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+        if file_extension in [".yaml", ".yml"]:
+            headers["Content-Type"] = "text/yaml"
+        url = "%s/infrastructures/%s" % (options.restapi, inf_id)
+        if not context:
+            url += "?context=0"
+        resp = requests.request("POST", url, verify=options.verify, headers=headers,
+                                data=str(radl))
+        success = resp.status_code == 200
+        restres = resp.text
+        if success:
+            vms_id = []
+            for elem in resp.json()["uri-list"]:
+                vms_id.append(os.path.basename(list(elem.values())[0]))
+        else:
+            vms_id = restres
+    else:
+        (success, vms_id) = server.AddResource(inf_id, str(radl), auth_data, context)
+
+    if success:
+        print("Resources with IDs: %s successfully added." % ",".join(vms_id))
+    else:
+        print("ERROR adding resources to infrastructure: %s" % vms_id)
+    return success
+
+
+def alter(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    if len(args) >= 2:
+        vm_id = args[1]
+    else:
+        print("VM ID to Modify not specified")
+        return False
+    if len(args) >= 3:
+        if not os.path.isfile(args[2]):
+            print("RADL file '" + args[2] + "' does not exist")
+            return False
+    else:
+        print("RADL file to modify the VM not specified")
+        return False
+
+    radl = radl_parse.parse_radl(args[2])
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
+        resp = requests.request("PUT", url, verify=options.verify, headers=headers, data=str(radl))
+        success = resp.status_code == 200
+        res = resp.text
+    else:
+        (success, res) = server.AlterVM(inf_id, vm_id, str(radl), auth_data)
+
+    if success:
+        print("VM successfully modified.")
+    else:
+        print("ERROR modifying the VM: %s" % res)
+    return success
+
+
+def reconfigure(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    radl = ""
+    vm_list = None
+    if len(args) >= 2:
+        if not os.path.isfile(args[1]):
+            print("RADL file '" + args[1] + "' does not exist")
+            return False
+        else:
+            # Read the file
+            f = open(args[1])
+            radl_data = "".join(f.readlines())
+            f.close()
+            radl = radl_parse.parse_radl(radl_data)
+
+            if len(args) >= 3:
+                vm_list = [int(vm_id) for vm_id in args[2].split(",")]
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/reconfigure" % (options.restapi, inf_id)
+        if len(args) >= 3:
+            url += "?vm_list=" + args[2]
+        resp = requests.request("PUT", url, verify=options.verify, headers=headers, data=str(radl))
+        success = resp.status_code == 200
+        res = resp.text
+    else:
+        (success, res) = server.Reconfigure(inf_id, str(radl), auth_data, vm_list)
+
+    if success:
+        print("Infrastructure successfully reconfigured.")
+    else:
+        print("ERROR reconfiguring the infrastructure: " + res)
+    return success
+
+
+def getcontmsg(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/contmsg" % (options.restapi, inf_id)
+        resp = requests.request("GET", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        cont_out = resp.text
+    else:
+        (success, cont_out) = server.GetInfrastructureContMsg(inf_id, auth_data)
+    if success:
+        if len(cont_out) > 0:
+            print("Msg Contextualizator: \n")
+            print(cont_out)
+        else:
+            print("No Msg Contextualizator avaliable\n")
+    else:
+        print("Error getting infrastructure contextualization message: %s" % cont_out)
+    return success
+
+
+def getstate(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+        url = "%s/infrastructures/%s/state" % (options.restapi, inf_id)
+        resp = requests.request("GET", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        if success:
+            res = resp.json()['state']
+        else:
+            res = resp.text
+    else:
+        (success, res) = server.GetInfrastructureState(inf_id, auth_data)
+    if success:
+        state = res['state']
+        vm_states = res['vm_states']
+        print("The infrastructure is in state: %s" % state)
+        for vm_id, vm_state in vm_states.items():
+            print("VM ID: %s is in state: %s." % (vm_id, vm_state))
+    else:
+        print("Error getting infrastructure state: %s" % res)
+    return success
+
+
+def getvminfo(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    if len(args) >= 2:
+        vm_id = args[1]
+    else:
+        print("VM ID to get info not specified")
+        return False
+
+    propiedad = None
+    if len(args) >= 3:
+        propiedad = args[2]
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
+        if propiedad:
+            url += "/" + propiedad
+        resp = requests.request("GET", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        info = resp.text
+    else:
+        if propiedad:
+            (success, info) = server.GetVMProperty(inf_id, vm_id, propiedad, auth_data)
+        else:
+            (success, info) = server.GetVMInfo(inf_id, vm_id, auth_data)
+
+    if not success:
+        print("ERROR getting the VM info: %s" % vm_id)
+
+    print(info)
+    return success
+
+
+def getinfo(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    propiedad = None
+    if len(args) >= 2:
+        propiedad = args[1]
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+        url = "%s/infrastructures/%s" % (options.restapi, inf_id)
+        resp = requests.request("GET", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        restres = resp.text
+        if success:
+            vm_ids = []
+            for elem in resp.json()["uri-list"]:
+                vm_ids.append(os.path.basename(list(elem.values())[0]))
+        else:
+            vm_ids = restres
+    else:
+        (success, vm_ids) = server.GetInfrastructureInfo(inf_id, auth_data)
+
+    if success:
+        for vm_id in vm_ids:
+            print("Info about VM with ID: %s" % vm_id)
+
+            if options.restapi:
+                headers = {"Authorization": rest_auth_data}
+                url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
+                if propiedad:
+                    url += "/" + propiedad
+                resp = requests.request("GET", url, verify=options.verify, headers=headers)
+                success = resp.status_code == 200
+                info = resp.text
+            else:
+                if propiedad:
+                    (success, info) = server.GetVMProperty(inf_id, vm_id, propiedad, auth_data)
+                else:
+                    (success, info) = server.GetVMInfo(inf_id, vm_id, auth_data)
+
+            if not success:
+                print("ERROR getting the information about the VM: " + vm_id)
+
+            print(info)
+    else:
+        print("ERROR getting the information about the infrastructure: " + str(vm_ids))
+    return success
+
+
+def destroy(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s" % (options.restapi, inf_id)
+        if options.force:
+            url += "?force=yes"
+        resp = requests.request("DELETE", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        inf_id = resp.text
+    else:
+        (success, inf_id) = server.DestroyInfrastructure(inf_id, auth_data, options.force)
+
+    if success:
+        print("Infrastructure successfully destroyed")
+    else:
+        print("ERROR destroying the infrastructure: %s" % inf_id)
+    return success
+
+
+def list_infras(server, options, args, auth_data, rest_auth_data):
+    flt = None
+    if len(args) >= 1:
+        flt = args[0]
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+        url = "%s/infrastructures" % options.restapi
+        if flt:
+            url += "?filter=%s" % flt
+        resp = requests.request("GET", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        if success:
+            res = []
+            for elem in resp.json()["uri-list"]:
+                res.append(os.path.basename(list(elem.values())[0]))
+        else:
+            res = resp.text
+    else:
+        (success, res) = server.GetInfrastructureList(auth_data, flt)
+
+    if success:
+        if res:
+            print("Infrastructure IDs: \n  %s" % ("\n  ".join([str(inf_id) for inf_id in res])))
+        else:
+            print("No Infrastructures.")
+    else:
+        print("ERROR listing then infrastructures: %s" % res)
+    return success
+
+
+def start(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/start" % (options.restapi, inf_id)
+        resp = requests.request("PUT", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        inf_id = resp.text
+    else:
+        (success, inf_id) = server.StartInfrastructure(inf_id, auth_data)
+
+    if success:
+        print("Infrastructure successfully started")
+    else:
+        print("ERROR starting the infraestructure: " + inf_id)
+    return success
+
+
+def stop(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/stop" % (options.restapi, inf_id)
+        resp = requests.request("PUT", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        inf_id = resp.text
+    else:
+        (success, inf_id) = server.StopInfrastructure(inf_id, auth_data)
+
+    if success:
+        print("Infrastructure successfully stopped")
+    else:
+        print("ERROR stopping the infrastructure: " + inf_id)
+    return success
+
+
+def getradl(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/radl" % (options.restapi, inf_id)
+        resp = requests.request("GET", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        radl = resp.text
+    else:
+        (success, radl) = server.GetInfrastructureRADL(inf_id, auth_data)
+
+    if success:
+        print(radl)
+    else:
+        print("ERROR getting the infrastructure RADL: %s" % inf_id)
+    return success
+
+
+def getvmcontmsg(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    if len(args) >= 2:
+        vm_id = args[1]
+    else:
+        print("VM ID to get info not specified")
+        return False
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/vms/%s/contmsg" % (options.restapi, inf_id, vm_id)
+        resp = requests.request("GET", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        info = resp.text
+    else:
+        (success, info) = server.GetVMContMsg(inf_id, vm_id, auth_data)
+
+    if success:
+        print(info)
+    else:
+        print("Error getting VM contextualization message: %s" % info)
+    return success
+
+
+def startvm(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    if len(args) >= 2:
+        vm_id = args[1]
+    else:
+        print("VM ID to get info not specified")
+        return False
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/vms/%s/start" % (options.restapi, inf_id, vm_id)
+        resp = requests.request("PUT", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        info = resp.text
+    else:
+        (success, info) = server.StartVM(inf_id, vm_id, auth_data)
+
+    if success:
+        print("VM successfully started")
+    else:
+        print("Error starting VM: %s" % info)
+    return success
+
+
+def stopvm(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    if len(args) >= 2:
+        vm_id = args[1]
+    else:
+        print("VM ID to get info not specified")
+        return False
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/vms/%s/stop" % (options.restapi, inf_id, vm_id)
+        resp = requests.request("PUT", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        info = resp.text
+    else:
+        (success, info) = server.StopVM(inf_id, vm_id, auth_data)
+
+    if success:
+        print("VM successfully stopped")
+    else:
+        print("Error stopping VM: %s" % info)
+    return success
+
+
+def rebootvm(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    if len(args) >= 2:
+        vm_id = args[1]
+    else:
+        print("VM ID to get info not specified")
+        return False
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/vms/%s/reboot" % (options.restapi, inf_id, vm_id)
+        resp = requests.request("PUT", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        info = resp.text
+    else:
+        (success, info) = server.RebootVM(inf_id, vm_id, auth_data)
+
+    if success:
+        print("VM successfully rebooted")
+    else:
+        print("Error rebooting VM: %s" % info)
+    return success
+
+
+def ssh(operation, server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    show_only = False
+    master_vm_id = None
+    if operation == "ssh":
+        master_vm_id = get_master_vm_id(inf_id)
+        vm_id = master_vm_id
+        if len(args) >= 2:
+            if args[1] in ["0", "1"]:
+                show_only = bool(int(args[1]))
+            else:
+                print("The show_only flag must be 0 or 1")
+                return False
+    else:
+        if len(args) >= 2:
+            vm_id = args[1]
+            if len(args) >= 3:
+                if args[2] in ["0", "1"]:
+                    show_only = bool(int(args[2]))
+                else:
+                    print("The show_only flag must be 0 or 1")
+                    return False
+        else:
+            print("VM ID to get info not specified")
+            return False
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
+        resp = requests.request("GET", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        info = resp.text
+    else:
+        (success, info) = server.GetVMInfo(inf_id, vm_id, auth_data)
+
+    if success:
+        radl = radl_parse.parse_radl(info)
+    else:
+        print("Error accessing VM: %s" % info)
+        return success
+
+    proxy_host = False
+    for netid in radl.systems[0].getNetworkIDs():
+        net = radl.get_network_by_id(netid)
+        if net.getValue("proxy_host"):
+            proxy_host = True
+
+    if not radl.getPublicIP() and master_vm_id is None and not proxy_host:
+        vm_id = get_master_vm_id(inf_id)
+        print("VM ID %s does not has public IP, try to access via VM ID 0." % vm_id)
+        if options.restapi:
+            headers = {"Authorization": rest_auth_data}
+            url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
+            resp = requests.request("GET", url, verify=options.verify, headers=headers)
+            success = resp.status_code == 200
+            info = resp.text
+        else:
+            (success, info) = server.GetVMInfo(inf_id, vm_id, auth_data)
+
+        if success:
+            radl2 = radl_parse.parse_radl(info)
+            host = radl2.getPublicIP()
+            username = radl2.systems[0].getValue("disk.0.os.credentials.username")
+            password = radl2.systems[0].getValue("disk.0.os.credentials.password")
+            priv_key = radl2.systems[0].getValue("disk.0.os.credentials.private_key")
+
+            for netid in radl.systems[0].getNetworkIDs():
+                net = radl.get_network_by_id(netid)
+                if password:
+                    proxy_host = "%s:%s@%s" % (username, password, host)
+                elif priv_key:
+                    proxy_host = "%s@%s" % (username, host)
+                    net.setValue('proxy_key', priv_key)
+                    proxy_key_filename = "/var/tmp/%s_%s_%s.pem" % (username, username, radl.getPrivateIP())
+                    with open(proxy_key_filename, "w") as f:
+                        f.write(priv_key)
+                    os.chmod(proxy_key_filename, 0o600)
+                else:
+                    print("Error, no valid credentials in VM 0")
+                    return False
+                net.setValue('proxy_host', proxy_host)
+        else:
+            print("Error accessing VM: %s" % info)
+            return success
+
+    try:
+        CmdSsh.run(radl, show_only)
+    except Exception as ex:
+        print(str(ex))
+        return False
+
+    return True
+
+
+def getversion(server, options, args, auth_data, rest_auth_data):
+    if options.restapi:
+        url = "%s/version" % options.restapi
+        resp = requests.request("GET", url, verify=options.verify)
+        success = resp.status_code == 200
+        version = resp.text
+    else:
+        (success, version) = server.GetVersion()
+
+    if success:
+        print("IM service version: %s" % version)
+    else:
+        print("ERROR getting IM service version: " + version)
+    return success
+
+
+def export(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    delete = False
+    if len(args) >= 2:
+        delete = bool(int(args[1]))
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+        url = "%s/infrastructures/%s/data" % (options.restapi, inf_id)
+        if delete:
+            url += "?delete=yes"
+        resp = requests.request("GET", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        if success:
+            data = resp.json()["data"]
+        else:
+            data = resp.text
+    else:
+        (success, data) = server.ExportInfrastructure(inf_id, delete, auth_data)
+
+    if success:
+        print(data)
+    else:
+        print("ERROR exporting data: " + data)
+    return success
+
+
+def import_data(server, options, args, auth_data, rest_auth_data):
+    if len(args) >= 1:
+        if not os.path.isfile(args[0]):
+            print("JSON file '" + args[0] + "' does not exist")
+            return False
+    else:
+        print("JSON file to create inf. not specified")
+        return False
+
+    f = open(args[0])
+    data = "".join(f.readlines())
+    f.close()
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data}
+        url = "%s/infrastructures" % options.restapi
+        resp = requests.request("PUT", url, verify=options.verify, headers=headers, data=data)
+        success = resp.status_code == 200
+        inf_id = resp.text
+        if success:
+            inf_id = os.path.basename(inf_id)
+    else:
+        (success, inf_id) = server.ImportInfrastructure(data, auth_data)
+
+    if success:
+        print("New Inf: " + inf_id)
+    else:
+        print("ERROR importing data: " + inf_id)
+    return success
+
+
+def getoutputs(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+
+    if options.restapi:
+        headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+        url = "%s/infrastructures/%s/outputs" % (options.restapi, inf_id)
+        resp = requests.request("GET", url, verify=options.verify, headers=headers)
+        success = resp.status_code == 200
+        if success:
+            res = resp.json()['outputs']
+        else:
+            res = resp.text
+    else:
+        print("ERROR getting the infrastructure outputs: Only available with REST API.")
+        return False
+    if success:
+        print("The infrastructure outputs:\n")
+        for key, value in res.items():
+            print("%s = %s" % (key, value))
+    else:
+        print("Error getting infrastructure outputs: %s" % res)
+    return success
+
+
+def cloudimages(server, options, args, auth_data, rest_auth_data):
+    if len(args) >= 1:
+        cloud_id = args[0]
+        if options.restapi:
+            headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+            url = "%s/clouds/%s/images" % (options.restapi, cloud_id)
+            resp = requests.request("GET", url, verify=options.verify, headers=headers)
+            success = resp.status_code == 200
+            if success:
+                data = resp.json()["images"]
+            else:
+                data = resp.text
+        else:
+            (success, data) = server.GetCloudImageList(cloud_id, auth_data)
+
+        if success:
+            print(json.dumps(data, indent=4))
+        else:
+            print("ERROR getting cloud image list: " + data)
+        return success
+    else:
+        raise Exception("Cloud ID not specified")
+
+
+def cloudusage(server, options, args, auth_data, rest_auth_data):
+    if len(args) >= 1:
+        cloud_id = args[0]
+        if options.restapi:
+            headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+            url = "%s/clouds/%s/quotas" % (options.restapi, cloud_id)
+            resp = requests.request("GET", url, verify=options.verify, headers=headers)
+            success = resp.status_code == 200
+            if success:
+                data = resp.json()["quotas"]
+            else:
+                data = resp.text
+        else:
+            (success, data) = server.GetCloudImageList(cloud_id, auth_data)
+
+        if success:
+            print(json.dumps(data, indent=4))
+        else:
+            print("ERROR getting cloud image list: " + data)
+        return success
+    else:
+        raise Exception("Cloud ID not specified")
+
+
+def wait(server, options, args, auth_data, rest_auth_data):
+    inf_id = get_inf_id(args)
+    max_time = 36000  # 10h
+    if len(args) >= 2:
+        max_time = int(args[1])
+    unknown_count = 0
+    wait = 0
+    state = "pending"
+    while state in ["pending", "running", "unknown"] and unknown_count < 3 and wait < max_time:
+        if options.restapi:
+            headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
+            url = "%s/infrastructures/%s/state" % (options.restapi, inf_id)
+            resp = requests.request("GET", url, verify=options.verify, headers=headers)
+            success = resp.status_code == 200
+            if success:
+                res = resp.json()['state']
+            else:
+                res = resp.text
+        else:
+            (success, res) = server.GetInfrastructureState(inf_id, auth_data)
+
+        if success:
+            state = res['state']
+        else:
+            state = "unknown"
+
+        if state == "unknown":
+            unknown_count += 1
+
+        if state in ["pending", "running", "unknown"]:
+            print("The infrastructure is in state: %s. Wait ..." % state)
+            time.sleep(30)
+            wait += 30
+
+    if state == "configured":
+        print("The infrastructure is in state: %s" % state)
+        return True
+    elif wait >= max_time:
+        print("Timeout waiting.")
+        return False
+    else:
+        print("The infrastructure is in state: %s" % state)
+        return False
+
+
 def main(operation, options, args, parser):
     """
     Launch Client
@@ -353,6 +1180,7 @@ def main(operation, options, args, parser):
         if auth_data is None:
             parser.error("Auth file with incorrect format.")
 
+    server = None
     rest_auth_data = ""
     if options.restapi:
         if auth_data:
@@ -373,7 +1201,7 @@ def main(operation, options, args, parser):
                 try:
                     import ssl
                     ssl._create_default_https_context = ssl._create_unverified_context
-                except:
+                except Exception:
                     pass
         else:
             print("Connected with: " + options.xmlrpc)
@@ -381,805 +1209,83 @@ def main(operation, options, args, parser):
         server = ServerProxy(options.xmlrpc, allow_none=True)
 
     if operation == "removeresource":
-        inf_id = get_inf_id(args)
-        context = True
-        if len(args) >= 2:
-            vm_list = args[1]
-
-            if len(args) >= 3:
-                if args[2] in ["0", "1"]:
-                    context = bool(int(args[2]))
-                else:
-                    print("The ctxt flag must be 0 or 1")
-                    return False
-        else:
-            if options.restapi:
-                print("VM ID to remove not specified")
-            else:
-                print("Coma separated VM list to remove not specified")
-            return False
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s" % (options.restapi.rstrip("/"), inf_id, vm_list)
-            if not context:
-                url += "?context=0"
-            resp = requests.request("DELETE", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            if success:
-                vms_id = vm_list
-            else:
-                vms_id = resp.text
-        else:
-            (success, vms_id) = server.RemoveResource(inf_id, vm_list, auth_data, context)
-
-        if success:
-            print("Resources with IDs: %s successfully deleted." % str(vms_id))
-        else:
-            print("ERROR deleting resources from the infrastructure: %s" % vms_id)
-        return success
+        return removeresource(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "addresource":
-        inf_id = get_inf_id(args)
-        context = True
-        if len(args) >= 2:
-            if not os.path.isfile(args[1]):
-                print("RADL file '" + args[1] + "' does not exist")
-                return False
-
-            if len(args) >= 3:
-                if args[2] in ["0", "1"]:
-                    context = bool(int(args[2]))
-                else:
-                    print("The ctxt flag must be 0 or 1")
-                    return False
-        else:
-            print("RADL file to add resources not specified")
-            return False
-
-        _, file_extension = os.path.splitext(args[1])
-        if file_extension in [".yaml", ".yml"]:
-            f = open(args[1])
-            radl = "".join(f.readlines())
-            f.close()
-        else:
-            radl = radl_parse.parse_radl(args[1])
-            radl.check()
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-            if file_extension in [".yaml", ".yml"]:
-                headers["Content-Type"] = "text/yaml"
-            url = "%s/infrastructures/%s" % (options.restapi, inf_id)
-            if not context:
-                url += "?context=0"
-            resp = requests.request("POST", url, verify=options.verify, headers=headers,
-                                    data=str(radl))
-            success = resp.status_code == 200
-            restres = resp.text
-            if success:
-                vms_id = []
-                for elem in resp.json()["uri-list"]:
-                    vms_id.append(os.path.basename(list(elem.values())[0]))
-            else:
-                vms_id = restres
-        else:
-            (success, vms_id) = server.AddResource(inf_id, str(radl), auth_data, context)
-
-        if success:
-            print("Resources with IDs: %s successfully added." % ",".join(vms_id))
-        else:
-            print("ERROR adding resources to infrastructure: %s" % vms_id)
-        return success
+        return addresource(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "create":
-        if len(args) >= 1:
-            if not os.path.isfile(args[0]):
-                print("RADL file '" + args[0] + "' does not exist")
-                return False
-            asyncr = False
-            if len(args) >= 2:
-                asyncr = bool(int(args[1]))
-        else:
-            print("RADL file to create inf. not specified")
-            return False
-
-        # Read the file
-        _, file_extension = os.path.splitext(args[0])
-        f = open(args[0])
-        radl_data = "".join(f.readlines())
-        f.close()
-        if file_extension in [".yaml", ".yml", ".json", ".jsn"]:
-            radl = radl_data
-        else:
-            # check for input parameters @input.[param_name]@
-            radl_data = get_input_params(radl_data)
-            radl = radl_parse.parse_radl(radl_data)
-            radl.check()
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            if file_extension in [".json", ".jsn"]:
-                headers["Content-Type"] = "application/json"
-            elif file_extension in [".yaml", ".yml"]:
-                headers["Content-Type"] = "text/yaml"
-            url = "%s/infrastructures" % options.restapi
-            if asyncr:
-                url += "?async=yes"
-            resp = requests.request("POST", url, verify=options.verify, headers=headers,
-                                    data=str(radl))
-            success = resp.status_code == 200
-            inf_id = resp.text
-            if success:
-                inf_id = os.path.basename(inf_id)
-        else:
-            (success, inf_id) = server.CreateInfrastructure(str(radl), auth_data)
-
-        if success:
-            print("Infrastructure successfully created with ID: %s" % str(inf_id))
-        else:
-            print("ERROR creating the infrastructure: %s" % inf_id)
-        return success
+        return create(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "alter":
-        inf_id = get_inf_id(args)
-        if len(args) >= 2:
-            vm_id = args[1]
-        else:
-            print("VM ID to Modify not specified")
-            return False
-        if len(args) >= 3:
-            if not os.path.isfile(args[2]):
-                print("RADL file '" + args[2] + "' does not exist")
-                return False
-        else:
-            print("RADL file to modify the VM not specified")
-            return False
-
-        radl = radl_parse.parse_radl(args[2])
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
-            resp = requests.request("PUT", url, verify=options.verify, headers=headers, data=str(radl))
-            success = resp.status_code == 200
-            res = resp.text
-        else:
-            (success, res) = server.AlterVM(inf_id, vm_id, str(radl), auth_data)
-
-        if success:
-            print("VM successfully modified.")
-        else:
-            print("ERROR modifying the VM: %s" % res)
-        return success
+        return alter(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "reconfigure":
-        inf_id = get_inf_id(args)
-        radl = ""
-        vm_list = None
-        if len(args) >= 2:
-            if not os.path.isfile(args[1]):
-                print("RADL file '" + args[1] + "' does not exist")
-                return False
-            else:
-                # Read the file
-                f = open(args[1])
-                radl_data = "".join(f.readlines())
-                f.close()
-                radl = radl_parse.parse_radl(radl_data)
-
-                if len(args) >= 3:
-                    vm_list = [int(vm_id) for vm_id in args[2].split(",")]
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/reconfigure" % (options.restapi, inf_id)
-            if len(args) >= 3:
-                url += "?vm_list=" + args[2]
-            resp = requests.request("PUT", url, verify=options.verify, headers=headers, data=str(radl))
-            success = resp.status_code == 200
-            res = resp.text
-        else:
-            (success, res) = server.Reconfigure(inf_id, str(radl), auth_data, vm_list)
-
-        if success:
-            print("Infrastructure successfully reconfigured.")
-        else:
-            print("ERROR reconfiguring the infrastructure: " + res)
-        return success
+        return reconfigure(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "getcontmsg":
-        inf_id = get_inf_id(args)
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/contmsg" % (options.restapi, inf_id)
-            resp = requests.request("GET", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            cont_out = resp.text
-        else:
-            (success, cont_out) = server.GetInfrastructureContMsg(inf_id, auth_data)
-        if success:
-            if len(cont_out) > 0:
-                print("Msg Contextualizator: \n")
-                print(cont_out)
-            else:
-                print("No Msg Contextualizator avaliable\n")
-        else:
-            print("Error getting infrastructure contextualization message: %s" % cont_out)
-        return success
+        return getcontmsg(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "getstate":
-        inf_id = get_inf_id(args)
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s/state" % (options.restapi, inf_id)
-            resp = requests.request("GET", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            if success:
-                res = resp.json()['state']
-            else:
-                res = resp.text
-        else:
-            (success, res) = server.GetInfrastructureState(inf_id, auth_data)
-        if success:
-            state = res['state']
-            vm_states = res['vm_states']
-            print("The infrastructure is in state: %s" % state)
-            for vm_id, vm_state in vm_states.items():
-                print("VM ID: %s is in state: %s." % (vm_id, vm_state))
-        else:
-            print("Error getting infrastructure state: %s" % res)
-        return success
+        return getstate(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "getvminfo":
-        inf_id = get_inf_id(args)
-        if len(args) >= 2:
-            vm_id = args[1]
-        else:
-            print("VM ID to get info not specified")
-            return False
-
-        propiedad = None
-        if len(args) >= 3:
-            propiedad = args[2]
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
-            if propiedad:
-                url += "/" + propiedad
-            resp = requests.request("GET", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            info = resp.text
-        else:
-            if propiedad:
-                (success, info) = server.GetVMProperty(inf_id, vm_id, propiedad, auth_data)
-            else:
-                (success, info) = server.GetVMInfo(inf_id, vm_id, auth_data)
-
-        if not success:
-            print("ERROR getting the VM info: %s" % vm_id)
-
-        print(info)
-        return success
+        return getvminfo(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "getinfo":
-        inf_id = get_inf_id(args)
-        propiedad = None
-        if len(args) >= 2:
-            propiedad = args[1]
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s" % (options.restapi, inf_id)
-            resp = requests.request("GET", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            restres = resp.text
-            if success:
-                vm_ids = []
-                for elem in resp.json()["uri-list"]:
-                    vm_ids.append(os.path.basename(list(elem.values())[0]))
-            else:
-                vm_ids = restres
-        else:
-            (success, vm_ids) = server.GetInfrastructureInfo(inf_id, auth_data)
-
-        if success:
-            for vm_id in vm_ids:
-                print("Info about VM with ID: %s" % vm_id)
-
-                if options.restapi:
-                    headers = {"Authorization": rest_auth_data}
-                    url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
-                    if propiedad:
-                        url += "/" + propiedad
-                    resp = requests.request("GET", url, verify=options.verify, headers=headers)
-                    success = resp.status_code == 200
-                    info = resp.text
-                else:
-                    if propiedad:
-                        (success, info) = server.GetVMProperty(inf_id, vm_id, propiedad, auth_data)
-                    else:
-                        (success, info) = server.GetVMInfo(inf_id, vm_id, auth_data)
-
-                if not success:
-                    print("ERROR getting the information about the VM: " + vm_id)
-
-                print(info)
-        else:
-            print("ERROR getting the information about the infrastructure: " + str(vm_ids))
-        return success
+        return getinfo(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "destroy":
-        inf_id = get_inf_id(args)
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s" % (options.restapi, inf_id)
-            if options.force:
-                url += "?force=yes"
-            resp = requests.request("DELETE", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            inf_id = resp.text
-        else:
-            (success, inf_id) = server.DestroyInfrastructure(inf_id, auth_data, options.force)
-
-        if success:
-            print("Infrastructure successfully destroyed")
-        else:
-            print("ERROR destroying the infrastructure: %s" % inf_id)
-        return success
+        return destroy(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "list":
-        flt = None
-        if len(args) >= 1:
-            flt = args[0]
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures" % options.restapi
-            if flt:
-                url += "?filter=%s" % flt
-            resp = requests.request("GET", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            if success:
-                res = []
-                for elem in resp.json()["uri-list"]:
-                    res.append(os.path.basename(list(elem.values())[0]))
-            else:
-                res = resp.text
-        else:
-            (success, res) = server.GetInfrastructureList(auth_data, flt)
-
-        if success:
-            if res:
-                print("Infrastructure IDs: \n  %s" % ("\n  ".join([str(inf_id) for inf_id in res])))
-            else:
-                print("No Infrastructures.")
-        else:
-            print("ERROR listing then infrastructures: %s" % res)
-        return success
+        return list_infras(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "start":
-        inf_id = get_inf_id(args)
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/start" % (options.restapi, inf_id)
-            resp = requests.request("PUT", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            inf_id = resp.text
-        else:
-            (success, inf_id) = server.StartInfrastructure(inf_id, auth_data)
-
-        if success:
-            print("Infrastructure successfully started")
-        else:
-            print("ERROR starting the infraestructure: " + inf_id)
-        return success
+        return start(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "stop":
-        inf_id = get_inf_id(args)
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/stop" % (options.restapi, inf_id)
-            resp = requests.request("PUT", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            inf_id = resp.text
-        else:
-            (success, inf_id) = server.StopInfrastructure(inf_id, auth_data)
-
-        if success:
-            print("Infrastructure successfully stopped")
-        else:
-            print("ERROR stopping the infrastructure: " + inf_id)
-        return success
+        return stop(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "getradl":
-        inf_id = get_inf_id(args)
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/radl" % (options.restapi, inf_id)
-            resp = requests.request("GET", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            radl = resp.text
-        else:
-            (success, radl) = server.GetInfrastructureRADL(inf_id, auth_data)
-
-        if success:
-            print(radl)
-        else:
-            print("ERROR getting the infrastructure RADL: %s" % inf_id)
-        return success
+        return getradl(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "getvmcontmsg":
-        inf_id = get_inf_id(args)
-        if len(args) >= 2:
-            vm_id = args[1]
-        else:
-            print("VM ID to get info not specified")
-            return False
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s/contmsg" % (options.restapi, inf_id, vm_id)
-            resp = requests.request("GET", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            info = resp.text
-        else:
-            (success, info) = server.GetVMContMsg(inf_id, vm_id, auth_data)
-
-        if success:
-            print(info)
-        else:
-            print("Error getting VM contextualization message: %s" % info)
-        return success
+        return getvmcontmsg(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "startvm":
-        inf_id = get_inf_id(args)
-        if len(args) >= 2:
-            vm_id = args[1]
-        else:
-            print("VM ID to get info not specified")
-            return False
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s/start" % (options.restapi, inf_id, vm_id)
-            resp = requests.request("PUT", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            info = resp.text
-        else:
-            (success, info) = server.StartVM(inf_id, vm_id, auth_data)
-
-        if success:
-            print("VM successfully started")
-        else:
-            print("Error starting VM: %s" % info)
-        return success
+        return startvm(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "stopvm":
-        inf_id = get_inf_id(args)
-        if len(args) >= 2:
-            vm_id = args[1]
-        else:
-            print("VM ID to get info not specified")
-            return False
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s/stop" % (options.restapi, inf_id, vm_id)
-            resp = requests.request("PUT", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            info = resp.text
-        else:
-            (success, info) = server.StopVM(inf_id, vm_id, auth_data)
-
-        if success:
-            print("VM successfully stopped")
-        else:
-            print("Error stopping VM: %s" % info)
-        return success
+        return stopvm(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "rebootvm":
-        inf_id = get_inf_id(args)
-        if len(args) >= 2:
-            vm_id = args[1]
-        else:
-            print("VM ID to get info not specified")
-            return False
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s/reboot" % (options.restapi, inf_id, vm_id)
-            resp = requests.request("PUT", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            info = resp.text
-        else:
-            (success, info) = server.RebootVM(inf_id, vm_id, auth_data)
-
-        if success:
-            print("VM successfully rebooted")
-        else:
-            print("Error rebooting VM: %s" % info)
-        return success
+        return rebootvm(server, options, args, auth_data, rest_auth_data)
 
     elif operation in ["sshvm", "ssh"]:
-        inf_id = get_inf_id(args)
-        show_only = False
-        master_vm_id = None
-        if operation == "ssh":
-            master_vm_id = get_master_vm_id(inf_id)
-            vm_id = master_vm_id
-            if len(args) >= 2:
-                if args[1] in ["0", "1"]:
-                    show_only = bool(int(args[1]))
-                else:
-                    print("The show_only flag must be 0 or 1")
-                    return False
-        else:
-            if len(args) >= 2:
-                vm_id = args[1]
-                if len(args) >= 3:
-                    if args[2] in ["0", "1"]:
-                        show_only = bool(int(args[2]))
-                    else:
-                        print("The show_only flag must be 0 or 1")
-                        return False
-            else:
-                print("VM ID to get info not specified")
-                return False
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
-            resp = requests.request("GET", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            info = resp.text
-        else:
-            (success, info) = server.GetVMInfo(inf_id, vm_id, auth_data)
-
-        if success:
-            radl = radl_parse.parse_radl(info)
-        else:
-            print("Error accessing VM: %s" % info)
-            return success
-
-        proxy_host = False
-        for netid in radl.systems[0].getNetworkIDs():
-            net = radl.get_network_by_id(netid)
-            if net.getValue("proxy_host"):
-                proxy_host = True
-
-        if not radl.getPublicIP() and master_vm_id is None and not proxy_host:
-            vm_id = get_master_vm_id(inf_id)
-            print("VM ID %s does not has public IP, try to access via VM ID 0." % vm_id)
-            if options.restapi:
-                headers = {"Authorization": rest_auth_data}
-                url = "%s/infrastructures/%s/vms/%s" % (options.restapi, inf_id, vm_id)
-                resp = requests.request("GET", url, verify=options.verify, headers=headers)
-                success = resp.status_code == 200
-                info = resp.text
-            else:
-                (success, info) = server.GetVMInfo(inf_id, vm_id, auth_data)
-
-            if success:
-                radl2 = radl_parse.parse_radl(info)
-                host = radl2.getPublicIP()
-                username = radl2.systems[0].getValue("disk.0.os.credentials.username")
-                password = radl2.systems[0].getValue("disk.0.os.credentials.password")
-                priv_key = radl2.systems[0].getValue("disk.0.os.credentials.private_key")
-
-                for netid in radl.systems[0].getNetworkIDs():
-                    net = radl.get_network_by_id(netid)
-                    if password:
-                        proxy_host = "%s:%s@%s" % (username, password, host)
-                    elif priv_key:
-                        proxy_host = "%s@%s" % (username, host)
-                        net.setValue('proxy_key', priv_key)
-                        proxy_key_filename = "/var/tmp/%s_%s_%s.pem" % (username, username, radl.getPrivateIP())
-                        with open(proxy_key_filename, "w") as f:
-                            f.write(priv_key)
-                        os.chmod(proxy_key_filename, 0o600)
-                    else:
-                        print("Error, no valid credentials in VM 0")
-                        return False
-                    net.setValue('proxy_host', proxy_host)
-            else:
-                print("Error accessing VM: %s" % info)
-                return success
-
-        try:
-            CmdSsh.run(radl, show_only)
-        except Exception as ex:
-            print(str(ex))
-            return False
-
-        return True
+        return ssh(operation, server, options, args, auth_data, rest_auth_data)
 
     elif operation == "getversion":
-        if options.restapi:
-            url = "%s/version" % options.restapi
-            resp = requests.request("GET", url, verify=options.verify)
-            success = resp.status_code == 200
-            version = resp.text
-        else:
-            (success, version) = server.GetVersion()
-
-        if success:
-            print("IM service version: %s" % version)
-        else:
-            print("ERROR getting IM service version: " + version)
-        return success
+        return getversion(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "export":
-        inf_id = get_inf_id(args)
-        delete = False
-        if len(args) >= 2:
-            delete = bool(int(args[1]))
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s/data" % (options.restapi, inf_id)
-            if delete:
-                url += "?delete=yes"
-            resp = requests.request("GET", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            if success:
-                data = resp.json()["data"]
-            else:
-                data = resp.text
-        else:
-            (success, data) = server.ExportInfrastructure(inf_id, delete, auth_data)
-
-        if success:
-            print(data)
-        else:
-            print("ERROR exporting data: " + data)
-        return success
+        return export(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "import":
-        if len(args) >= 1:
-            if not os.path.isfile(args[0]):
-                print("JSON file '" + args[0] + "' does not exist")
-                return False
-        else:
-            print("JSON file to create inf. not specified")
-            return False
-
-        f = open(args[0])
-        data = "".join(f.readlines())
-        f.close()
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data}
-            url = "%s/infrastructures" % options.restapi
-            resp = requests.request("PUT", url, verify=options.verify, headers=headers, data=data)
-            success = resp.status_code == 200
-            inf_id = resp.text
-            if success:
-                inf_id = os.path.basename(inf_id)
-        else:
-            (success, inf_id) = server.ImportInfrastructure(data, auth_data)
-
-        if success:
-            print("New Inf: " + inf_id)
-        else:
-            print("ERROR importing data: " + inf_id)
-        return success
+        return import_data(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "getoutputs":
-        inf_id = get_inf_id(args)
-
-        if options.restapi:
-            headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s/outputs" % (options.restapi, inf_id)
-            resp = requests.request("GET", url, verify=options.verify, headers=headers)
-            success = resp.status_code == 200
-            if success:
-                res = resp.json()['outputs']
-            else:
-                res = resp.text
-        else:
-            print("ERROR getting the infrastructure outputs: Only available with REST API.")
-            return False
-        if success:
-            print("The infrastructure outputs:\n")
-            for key, value in res.items():
-                print("%s = %s" % (key, value))
-        else:
-            print("Error getting infrastructure outputs: %s" % res)
-        return success
+        return getoutputs(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "cloudimages":
-        if len(args) >= 1:
-            cloud_id = args[0]
-            if options.restapi:
-                headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-                url = "%s/clouds/%s/images" % (options.restapi, cloud_id)
-                resp = requests.request("GET", url, verify=options.verify, headers=headers)
-                success = resp.status_code == 200
-                if success:
-                    data = resp.json()["images"]
-                else:
-                    data = resp.text
-            else:
-                (success, data) = server.GetCloudImageList(cloud_id, auth_data)
-
-            if success:
-                print(json.dumps(data, indent=4))
-            else:
-                print("ERROR getting cloud image list: " + data)
-            return success
-        else:
-            raise Exception("Cloud ID not specified")
+        return cloudimages(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "cloudusage":
-        if len(args) >= 1:
-            cloud_id = args[0]
-            if options.restapi:
-                headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-                url = "%s/clouds/%s/quotas" % (options.restapi, cloud_id)
-                resp = requests.request("GET", url, verify=options.verify, headers=headers)
-                success = resp.status_code == 200
-                if success:
-                    data = resp.json()["quotas"]
-                else:
-                    data = resp.text
-            else:
-                (success, data) = server.GetCloudImageList(cloud_id, auth_data)
-
-            if success:
-                print(json.dumps(data, indent=4))
-            else:
-                print("ERROR getting cloud image list: " + data)
-            return success
-        else:
-            raise Exception("Cloud ID not specified")
+        return cloudusage(server, options, args, auth_data, rest_auth_data)
 
     elif operation == "wait":
-        inf_id = get_inf_id(args)
-        max_time = 36000 # 10h
-        if len(args) >= 2:
-            max_time = int(args[1])
-        unknown_count = 0
-        wait = 0
-        state = "pending"
-        while state in ["pending", "running", "unknown"] and unknown_count < 3 and wait < max_time:
-            if options.restapi:
-                headers = {"Authorization": rest_auth_data, "Accept": "application/json"}
-                url = "%s/infrastructures/%s/state" % (options.restapi, inf_id)
-                resp = requests.request("GET", url, verify=options.verify, headers=headers)
-                success = resp.status_code == 200
-                if success:
-                    res = resp.json()['state']
-                else:
-                    res = resp.text
-            else:
-                (success, res) = server.GetInfrastructureState(inf_id, auth_data)
+        return wait(server, options, args, auth_data, rest_auth_data)
 
-            if success:
-                state = res['state']
-            else:
-                state = "unknown"
-            
-            if state == "unknown":
-                unknown_count += 1
-
-            if state in ["pending", "running", "unknown"]:
-                print("The infrastructure is in state: %s. Wait ..." % state)
-                time.sleep(30)
-                wait += 30
-
-        if state == "configured":
-            print("The infrastructure is in state: %s" % state)
-            return True
-        elif wait >= max_time:
-            print("Timeout waiting.")
-            return False
-        else:
-            print("The infrastructure is in state: %s" % state)
-            return False
 
 def get_parser():
     """
