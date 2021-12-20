@@ -1,0 +1,17 @@
+network privada ()
+
+system wn (
+cpu.arch='x86_64' and
+cpu.count>=1 and
+memory.size>=512m and
+net_interface.0.connection = 'privada' and
+net_interface.0.ip = '10.0.0.2' and
+disk.0.image.url = 'one://onecloud.i3m.upv.es/77' and
+disk.0.os.credentials.username = 'ubuntu' and
+disk.0.os.credentials.private_key = 'private_key' and
+disk.0.os.name = 'linux'
+)
+
+contextualize ()
+
+deploy wn 1 
