@@ -534,34 +534,27 @@ class IMClient:
 
         return success, res
 
-    def getcontmsg(self):
-        inf_id = self.get_inf_id()
-
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/contmsg" % (self.options.restapi, inf_id)
-            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            cont_out = resp.text
-        else:
-            (success, cont_out) = self.server.GetInfrastructureContMsg(inf_id, self.auth_data)
-
-        return success, cont_out
-
-    def getstate(self):
+    def get_infra_property(self, property):
         inf_id = self.get_inf_id()
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s/state" % (self.options.restapi, inf_id)
+            url = "%s/infrastructures/%s/%s" % (self.options.restapi, inf_id, property)
             resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
             success = resp.status_code == 200
             if success:
-                res = resp.json()['state']
+                res = resp.json()[property]
             else:
                 res = resp.text
         else:
-            (success, res) = self.server.GetInfrastructureState(inf_id, self.auth_data)
+            if property == "state":
+                (success, res) = self.server.GetInfrastructureState(inf_id, self.auth_data)
+            elif property == "contmsg":
+                (success, res) = self.server.GetInfrastructureContMsg(inf_id, self.auth_data)
+            elif property == "radl":
+                (success, res) = self.server.GetInfrastructureRADL(inf_id, self.auth_data)
+            else:
+                return False, "Invalid Operation."
 
         return success, res
 
@@ -667,44 +660,22 @@ class IMClient:
 
         return success, res
 
-    def start(self):
+    def infra_op(self, operation):
         inf_id = self.get_inf_id()
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/start" % (self.options.restapi, inf_id)
+            url = "%s/infrastructures/%s/%s" % (self.options.restapi, inf_id, operation)
             resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
             success = resp.status_code == 200
             res = resp.text
         else:
-            (success, res) = self.server.StartInfrastructure(inf_id, self.auth_data)
-
+            if operation == "stop":
+                (success, res) = self.server.StopInfrastructure(inf_id, self.auth_data)
+            elif operation == "start":
+                (success, res) = self.server.StartInfrastructure(inf_id, self.auth_data)
+            else:
+                return False, "Invalid Operation."
         return success, res
-
-    def stop(self):
-        inf_id = self.get_inf_id()
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/stop" % (self.options.restapi, inf_id)
-            resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            res = resp.text
-        else:
-            (success, res) = self.server.StopInfrastructure(inf_id, self.auth_data)
-
-        return success, res
-
-    def getradl(self):
-        inf_id = self.get_inf_id()
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/radl" % (self.options.restapi, inf_id)
-            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            radl = resp.text
-        else:
-            (success, radl) = self.server.GetInfrastructureRADL(inf_id, self.auth_data)
-
-        return success, radl
 
     def getvmcontmsg(self):
         inf_id = self.get_inf_id()
@@ -724,7 +695,7 @@ class IMClient:
 
         return success, info
 
-    def startvm(self):
+    def vm_op(self, operation):
         inf_id = self.get_inf_id()
         if len(self.args) >= 2:
             vm_id = self.args[1]
@@ -733,48 +704,19 @@ class IMClient:
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s/start" % (self.options.restapi, inf_id, vm_id)
+            url = "%s/infrastructures/%s/vms/%s/%s" % (self.options.restapi, inf_id, vm_id, operation)
             resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
             success = resp.status_code == 200
             info = resp.text
         else:
-            (success, info) = self.server.StartVM(inf_id, vm_id, self.auth_data)
-
-        return success, info
-
-    def stopvm(self):
-        inf_id = self.get_inf_id()
-        if len(self.args) >= 2:
-            vm_id = self.args[1]
-        else:
-            return False, "VM ID to get info not specified"
-
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s/stop" % (self.options.restapi, inf_id, vm_id)
-            resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            info = resp.text
-        else:
-            (success, info) = self.server.StopVM(inf_id, vm_id, self.auth_data)
-
-        return success, info
-
-    def rebootvm(self):
-        inf_id = self.get_inf_id()
-        if len(self.args) >= 2:
-            vm_id = self.args[1]
-        else:
-            return False, "VM ID to get info not specified"
-
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s/reboot" % (self.options.restapi, inf_id, vm_id)
-            resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            info = resp.text
-        else:
-            (success, info) = self.server.RebootVM(inf_id, vm_id, self.auth_data)
+            if operation == "start":
+                (success, info) = self.server.StartVM(inf_id, vm_id, self.auth_data)
+            elif operation == "stop":
+                (success, info) = self.server.StopVM(inf_id, vm_id, self.auth_data)
+            elif operation == "reboot":
+                (success, info) = self.server.RebootVM(inf_id, vm_id, self.auth_data)
+            else:
+                return False, "Invalid Operation."
 
         return success, info
 
@@ -946,41 +888,27 @@ class IMClient:
 
         return success, res
 
-    def cloudimages(self):
+    def get_cloud_info(self, operation):
         if not len(self.args) >= 1:
             return False, "Cloud ID not specified"
 
         cloud_id = self.args[0]
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-            url = "%s/clouds/%s/images" % (self.options.restapi, cloud_id)
+            url = "%s/clouds/%s/%s" % (self.options.restapi, cloud_id, operation)
             resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
             success = resp.status_code == 200
             if success:
-                data = resp.json()["images"]
+                data = resp.json()[operation]
             else:
                 data = resp.text
         else:
-            (success, data) = self.server.GetCloudImageList(cloud_id, self.auth_data)
-
-        return success, data
-
-    def cloudusage(self):
-        if not len(self.args) >= 1:
-            return False, "Cloud ID not specified"
-
-        cloud_id = self.args[0]
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-            url = "%s/clouds/%s/quotas" % (self.options.restapi, cloud_id)
-            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            if success:
-                data = resp.json()["quotas"]
+            if operation == "images":
+                (success, data) = self.server.GetCloudImageList(cloud_id, self.auth_data)
+            elif operation == "quotas":
+                (success, data) = self.server.GetCloudQuotas(cloud_id, self.auth_data)
             else:
-                data = resp.text
-        else:
-            (success, data) = self.server.GetCloudImageList(cloud_id, self.auth_data)
+                return False, "Invalid Operation."
 
         return success, data
 
@@ -1116,7 +1044,7 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "getcontmsg":
-        success, cont_out = imclient.getcontmsg()
+        success, cont_out = imclient.get_infra_property("contmsg")
         if success:
             if len(cont_out) > 0:
                 if not options.quiet:
@@ -1129,7 +1057,7 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "getstate":
-        success, res = imclient.getstate()
+        success, res = imclient.get_infra_property("state")
         if success:
             if not options.quiet:
                 state = res['state']
@@ -1178,7 +1106,7 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "start":
-        success, res = imclient.start()
+        success, res = imclient.infra_op(operation)
         if success:
             if not options.quiet:
                 print("Infrastructure successfully started")
@@ -1187,7 +1115,7 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "stop":
-        success, res = imclient.stop()
+        success, res = imclient.infra_op(operation)
         if success:
             if not options.quiet:
                 print("Infrastructure successfully stopped")
@@ -1196,7 +1124,7 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "getradl":
-        success, radl = imclient.getradl()
+        success, radl = imclient.get_infra_property("radl")
         if success:
             print(radl)
         else:
@@ -1212,7 +1140,7 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "startvm":
-        success, info = imclient.startvm()
+        success, info = imclient.vm_op("start")
         if success:
             if not options.quiet:
                 print("VM successfully started")
@@ -1222,7 +1150,7 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "stopvm":
-        success, info = imclient.stopvm()
+        success, info = imclient.vm_op("stop")
         if success:
             if not options.quiet:
                 print("VM successfully stopped")
@@ -1231,7 +1159,7 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "rebootvm":
-        success, info = imclient.rebootvm()
+        success, info = imclient.vm_op("reboot")
         if success:
             if not options.quiet:
                 print("VM successfully rebooted")
@@ -1284,7 +1212,7 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "cloudimages":
-        success, data = imclient.cloudimages()
+        success, data = imclient.get_cloud_info("images")
         if success:
             print(json.dumps(data, indent=4))
         else:
@@ -1292,7 +1220,7 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "cloudusage":
-        success, data = imclient.cloudusage()
+        success, data = imclient.get_cloud_info("quotas")
         if success:
             print(json.dumps(data, indent=4))
         else:

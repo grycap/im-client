@@ -61,7 +61,7 @@ class TestClient(unittest.TestCase):
                 resp.json.return_value = json.loads(resp.text)
             elif url == "/infrastructures/infid/contmsg":
                 resp.status_code = 200
-                resp.text = 'contmsg'
+                resp.json.return_value = {"contmsg": "contmsg"}
             elif url in ["/infrastructures/infid/outputs", "/infrastructures/inf1/outputs"]:
                 resp.status_code = 200
                 resp.text = '{"outputs": {"output1": "value1", "output2": "value2"}}'
@@ -86,7 +86,7 @@ class TestClient(unittest.TestCase):
                 resp.text = "radltest"
             elif url == "/infrastructures/infid/radl":
                 resp.status_code = 200
-                resp.text = "radltest"
+                resp.json.return_value = {"radl": "radltest"}
             elif url == "/infrastructures/infid/vms/vmid/contmsg":
                 resp.status_code = 200
                 resp.text = 'getvmcontmsg'
