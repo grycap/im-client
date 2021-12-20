@@ -61,14 +61,18 @@ class TestClient(unittest.TestCase):
                 resp.json.return_value = json.loads(resp.text)
             elif url == "/infrastructures/infid/contmsg":
                 resp.status_code = 200
-                resp.text = 'contmsg'
-            elif url == "/infrastructures/infid/outputs":
+                resp.json.return_value = {"contmsg": "contmsg"}
+            elif url in ["/infrastructures/infid/outputs", "/infrastructures/inf1/outputs"]:
                 resp.status_code = 200
                 resp.text = '{"outputs": {"output1": "value1", "output2": "value2"}}'
                 resp.json.return_value = json.loads(resp.text)
             elif url == "/infrastructures/infid/state":
                 resp.status_code = 200
                 resp.text = '{"state": {"state": "running", "vm_states": {"vm1": "running"}}}'
+                resp.json.return_value = json.loads(resp.text)
+            elif url == "/infrastructures/inf1/state":
+                resp.status_code = 200
+                resp.text = '{"state": {"state": "configured", "vm_states": {"vm1": "configured"}}}'
                 resp.json.return_value = json.loads(resp.text)
             elif url == "/infrastructures/infid/vms/vmid":
                 resp.status_code = 200
@@ -82,7 +86,7 @@ class TestClient(unittest.TestCase):
                 resp.text = "radltest"
             elif url == "/infrastructures/infid/radl":
                 resp.status_code = 200
-                resp.text = "radltest"
+                resp.json.return_value = {"radl": "radltest"}
             elif url == "/infrastructures/infid/vms/vmid/contmsg":
                 resp.status_code = 200
                 resp.text = 'getvmcontmsg'
@@ -169,6 +173,7 @@ class TestClient(unittest.TestCase):
         options.xmlrpc = "https://localhost:8899"
         options.restapi = None
         options.verify = False
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -223,13 +228,14 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
         res = main("create", options, [get_abs_path("../files/test.radl")], parser)
-        self.assertEquals(res, True)
+        self.assertTrue(res)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully created with ID: inf1", output)
         sys.stdout = oldstdout
@@ -240,7 +246,7 @@ class TestClient(unittest.TestCase):
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         res = main("create", options, [get_abs_path("../files/test.radl")], parser)
-        self.assertEquals(res, True)
+        self.assertIsNotNone(res)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully created with ID: inf1", output)
         sys.stdout = oldstdout
@@ -251,7 +257,7 @@ class TestClient(unittest.TestCase):
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         res = main("create", options, [get_abs_path("../files/tosca.yml")], parser)
-        self.assertEquals(res, True)
+        self.assertIsNotNone(res)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully created with ID: inf1", output)
         sys.stdout = oldstdout
@@ -267,6 +273,7 @@ class TestClient(unittest.TestCase):
         server_proxy.return_value = proxy
         options = MagicMock()
         options.restapi = None
+        options.quiet = False
         options.auth_file = get_abs_path("../../auth.dat")
         parser = MagicMock()
 
@@ -301,6 +308,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -345,6 +353,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -378,6 +387,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -411,6 +421,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -444,6 +455,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -512,6 +524,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -545,6 +558,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -590,6 +604,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -623,6 +638,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -720,6 +736,7 @@ class TestClient(unittest.TestCase):
         proxy.StartVM.return_value = (True, "")
         server_proxy.return_value = proxy
         options = MagicMock()
+        options.quiet = False
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
         parser = MagicMock()
@@ -735,6 +752,7 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         sys.stdout = out
         options.xmlrpc = None
+        options.quiet = False
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
         res = main("startvm", options, ["infid", "vmid"], parser)
@@ -755,6 +773,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -788,6 +807,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -887,6 +907,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -992,6 +1013,37 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
+    @patch("im_client.ServerProxy")
+    def test_sshvm_via_master(self, server_proxy):
+        """
+        Test sshvm operation via master VM
+        """
+        proxy = MagicMock()
+
+        radl_master = open(get_abs_path("../files/test_ssh_master.radl"), 'r').read()
+        radl_wn = open(get_abs_path("../files/test_ssh_wn.radl"), 'r').read()
+        proxy.GetVMInfo.side_effect = [(True, radl_wn), (True, radl_master)]
+        server_proxy.return_value = proxy
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        options.restapi = None
+        parser = MagicMock()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        oldstderr = sys.stderr
+        sys.stdout = out
+        sys.stderr = out
+        res = main("sshvm", options, ["infid", "vmid", "1"], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("ssh -p 22 -i /tmp/", output)
+        self.assertIn(" -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@10.0.0.2"
+                      " -o ProxyCommand=ssh -W %h:%p -i /var/tmp/ubuntu_ubuntu_10.0.0.2.pem -p 22"
+                      " -o StrictHostKeyChecking=no ubuntu@8.8.8.8", output)
+        sys.stdout = oldstdout
+        sys.stderr = oldstderr
+
     def test_parser(self):
         """
         Test parser
@@ -1013,6 +1065,7 @@ class TestClient(unittest.TestCase):
         oldstdout = sys.stdout
         out = StringIO()
         sys.stdout = out
+        options.quiet = False
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
@@ -1056,6 +1109,7 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         sys.stdout = out
         options.xmlrpc = None
+        options.quiet = False
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
 
@@ -1082,18 +1136,18 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         sys.stdout = out
         options.xmlrpc = None
+        options.quiet = True
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
 
         res = main("cloudusage", options, ["one"], parser)
         self.assertEquals(res, True)
-        output = out.getvalue().strip()
-        self.assertIn('{\n    "cores": {\n        "used": 5,\n        "limit": -1\n    }\n}', output)
+        output = json.loads(out.getvalue().strip())
+        self.assertEqual({'cores': {'used': 5, 'limit': -1}}, output)
         sys.stdout = oldstdout
 
-    @patch('requests.request')
     @patch("im_client.ServerProxy")
-    def test_wait(self, server_proxy, requests):
+    def test_wait(self, server_proxy):
         """
         Test wait operation
         """
@@ -1103,6 +1157,7 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = None
+        options.quiet = False
         parser = MagicMock()
 
         out = StringIO()
@@ -1113,6 +1168,29 @@ class TestClient(unittest.TestCase):
         output = out.getvalue().strip()
         self.assertIn("The infrastructure is in state: configured", output)
         sys.stdout = oldstdout
+
+    @patch('requests.request')
+    def test_create_wait_outputs(self, requests):
+        """
+        Test create_wait_outputs operation
+        """
+        requests.side_effect = self.get_response
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        options.restapi = "https://localhost:8800"
+        options.xmlrpc = None
+        options.quiet = True
+        parser = MagicMock()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        sys.stdout = out
+        res = main("create_wait_outputs", options, [get_abs_path("../files/test.radl")], parser)
+        self.assertEquals(res, True)
+        output = json.loads(out.getvalue().strip())
+        self.assertEqual(output, {"infid": "inf1", "output1": "value1" , "output2": "value2"})
+        sys.stdout = oldstdout
+
 
 
 if __name__ == '__main__':
