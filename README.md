@@ -338,3 +338,9 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
       Wait the infrastructure with ID ``infId`` to be be in a final state ("configured", "unconfigured" or "failed").
       It has an optional parameter ``maxTime`` with the max time to wait. It returns 0 if the infrastructure ends
       with a "configured" state or 1 otherwise.
+
+   ``create_wait_outputs <radlfile>``
+      This operation is a combination of the create, wait and getoutputs functions. First create the infrastructure,
+      then waits for it to be configured, and finally get the TOSCA outputs. In case of failure in infrastructure
+      creation none will be returned. In case of error waiting or getting the outputs only the infrastructure ID
+      will be returned.
