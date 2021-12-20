@@ -30,6 +30,7 @@ except ImportError:
     pass
 
 import json
+from re import S
 import sys
 import os
 import subprocess
@@ -323,16 +324,6 @@ class IMClient:
             raise Exception("Failed to get auth value using command %s: %s" % (cmd, errs.decode('utf-8')))
         return outs.decode('utf-8').replace('\n', '')
 
-    def get_inf_id(self):
-        if len(self.args) >= 1:
-            if self.args[0].isdigit():
-                inf_id = int(self.args[0])
-                return inf_id
-            else:
-                return self.args[0]
-        else:
-            raise Exception("Infrastructure ID not specified")
-
     @staticmethod
     def get_input_params(radl):
         """
@@ -354,17 +345,25 @@ class IMClient:
     def get_master_vm_id(inf_id):
         return 0
 
+    def get_inf_id(self):
+        if len(self.args) >= 1:
+            if self.args[0].isdigit():
+                inf_id = int(self.args[0])
+                return inf_id
+            else:
+                return self.args[0]
+        else:
+            raise Exception("Infrastructure ID not specified")
+
     def create(self):
         if len(self.args) >= 1:
             if not os.path.isfile(self.args[0]):
-                print("RADL file '" + self.args[0] + "' does not exist")
-                return False
+                return False, "RADL file '" + self.args[0] + "' does not exist"
             asyncr = False
             if len(self.args) >= 2:
                 asyncr = bool(int(self.args[1]))
         else:
-            print("RADL file to create inf. not specified")
-            return False
+            return False, "RADL file to create inf. not specified"
 
         # Read the file
         _, file_extension = os.path.splitext(self.args[0])
@@ -398,10 +397,7 @@ class IMClient:
         else:
             (success, inf_id) = self.server.CreateInfrastructure(str(radl), self.auth_data)
 
-        if not success:
-            print("ERROR creating the infrastructure: %s" % inf_id)
-
-        return inf_id
+        return success, inf_id
 
     def removeresource(self):
         inf_id = self.get_inf_id()
@@ -413,14 +409,13 @@ class IMClient:
                 if self.args[2] in ["0", "1"]:
                     context = bool(int(self.args[2]))
                 else:
-                    print("The ctxt flag must be 0 or 1")
-                    return False
+                    return False, "The ctxt flag must be 0 or 1"
         else:
             if self.options.restapi:
-                print("VM ID to remove not specified")
+                msg = "VM ID to remove not specified"
             else:
-                print("Coma separated VM list to remove not specified")
-            return False
+                msg = "Coma separated VM list to remove not specified"
+            return False, msg
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
@@ -436,30 +431,22 @@ class IMClient:
         else:
             (success, vms_id) = self.server.RemoveResource(inf_id, vm_list, self.auth_data, context)
 
-        if success:
-            if not self.options.quiet:
-                print("Resources with IDs: %s successfully deleted." % str(vms_id))
-        else:
-            print("ERROR deleting resources from the infrastructure: %s" % vms_id)
-        return success
+        return True, vms_id
 
     def addresource(self):
         inf_id = self.get_inf_id()
         context = True
         if len(self.args) >= 2:
             if not os.path.isfile(self.args[1]):
-                print("RADL file '" + self.args[1] + "' does not exist")
-                return False
+                return False, "RADL file '" + self.args[1] + "' does not exist"
 
             if len(self.args) >= 3:
                 if self.args[2] in ["0", "1"]:
                     context = bool(int(self.args[2]))
                 else:
-                    print("The ctxt flag must be 0 or 1")
-                    return False
+                    return False, "The ctxt flag must be 0 or 1"
         else:
-            print("RADL file to add resources not specified")
-            return False
+            return False, "RADL file to add resources not specified"
 
         _, file_extension = os.path.splitext(self.args[1])
         if file_extension in [".yaml", ".yml"]:
@@ -490,29 +477,19 @@ class IMClient:
         else:
             (success, vms_id) = self.server.AddResource(inf_id, str(radl), self.auth_data, context)
 
-        if success:
-            if not self.options.quiet:
-                print("Resources with IDs: %s successfully added." % ",".join(vms_id))
-            else:
-                print("\n".join(vms_id))
-        else:
-            print("ERROR adding resources to infrastructure: %s" % vms_id)
-        return success
+        return success, vms_id
 
     def alter(self):
         inf_id = self.get_inf_id()
         if len(self.args) >= 2:
             vm_id = self.args[1]
         else:
-            print("VM ID to Modify not specified")
-            return False
+            return False, "VM ID to Modify not specified"
         if len(self.args) >= 3:
             if not os.path.isfile(self.args[2]):
-                print("RADL file '" + self.args[2] + "' does not exist")
-                return False
+                return False, "RADL file '" + self.args[2] + "' does not exist"
         else:
-            print("RADL file to modify the VM not specified")
-            return False
+            return False, "RADL file to modify the VM not specified"
 
         radl = radl_parse.parse_radl(self.args[2])
 
@@ -525,12 +502,7 @@ class IMClient:
         else:
             (success, res) = self.server.AlterVM(inf_id, vm_id, str(radl), self.auth_data)
 
-        if success:
-            if not self.options.quiet:
-                print("VM successfully modified.")
-        else:
-            print("ERROR modifying the VM: %s" % res)
-        return success
+        return success, res
 
     def reconfigure(self):
         inf_id = self.get_inf_id()
@@ -538,8 +510,7 @@ class IMClient:
         vm_list = None
         if len(self.args) >= 2:
             if not os.path.isfile(self.args[1]):
-                print("RADL file '" + self.args[1] + "' does not exist")
-                return False
+                return False, "RADL file '" + self.args[1] + "' does not exist"
             else:
                 # Read the file
                 f = open(self.args[1])
@@ -561,12 +532,7 @@ class IMClient:
         else:
             (success, res) = self.server.Reconfigure(inf_id, str(radl), self.auth_data, vm_list)
 
-        if success:
-            if not self.options.quiet:
-                print("Infrastructure successfully reconfigured.")
-        else:
-            print("ERROR reconfiguring the infrastructure: " + res)
-        return success
+        return success, res
 
     def getcontmsg(self):
         inf_id = self.get_inf_id()
@@ -579,16 +545,8 @@ class IMClient:
             cont_out = resp.text
         else:
             (success, cont_out) = self.server.GetInfrastructureContMsg(inf_id, self.auth_data)
-        if success:
-            if len(cont_out) > 0:
-                if not self.options.quiet:
-                    print("Msg Contextualizator: \n")
-                print(cont_out)
-            elif not self.options.quiet:
-                print("No Msg Contextualizator avaliable\n")
-        else:
-            print("Error getting infrastructure contextualization message: %s" % cont_out)
-        return success
+
+        return success, cont_out
 
     def getstate(self):
         inf_id = self.get_inf_id()
@@ -604,26 +562,15 @@ class IMClient:
                 res = resp.text
         else:
             (success, res) = self.server.GetInfrastructureState(inf_id, self.auth_data)
-        if success:
-            if not self.options.quiet:
-                state = res['state']
-                vm_states = res['vm_states']
-                print("The infrastructure is in state: %s" % state)
-                for vm_id, vm_state in vm_states.items():
-                    print("VM ID: %s is in state: %s." % (vm_id, vm_state))
-            else:
-                print(json.dumps(res))
-        else:
-            print("Error getting infrastructure state: %s" % res)
-        return success
+
+        return success, res
 
     def getvminfo(self):
         inf_id = self.get_inf_id()
         if len(self.args) >= 2:
             vm_id = self.args[1]
         else:
-            print("VM ID to get info not specified")
-            return False
+            return False, "VM ID to get info not specified"
 
         propiedad = None
         if len(self.args) >= 3:
@@ -643,11 +590,7 @@ class IMClient:
             else:
                 (success, info) = self.server.GetVMInfo(inf_id, vm_id, self.auth_data)
 
-        if not success:
-            print("ERROR getting the VM info: %s" % vm_id)
-
-        print(info)
-        return success
+        return success, info
 
     def getinfo(self):
         inf_id = self.get_inf_id()
@@ -675,24 +618,13 @@ class IMClient:
                 if not self.options.quiet:
                     print("Info about VM with ID: %s" % vm_id)
 
-                if self.options.restapi:
-                    headers = {"Authorization": self.rest_auth_data}
-                    url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi, inf_id, vm_id)
-                    if propiedad:
-                        url += "/" + propiedad
-                    resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-                    success = resp.status_code == 200
-                    info = resp.text
-                else:
-                    if propiedad:
-                        (success, info) = self.server.GetVMProperty(inf_id, vm_id, propiedad, self.auth_data)
-                    else:
-                        (success, info) = self.server.GetVMInfo(inf_id, vm_id, self.auth_data)
+                self.args = [inf_id, vm_id, propiedad]
+                vm_success, vm_info = self.getvminfo()
 
-                if not success:
+                if not vm_success:
                     print("ERROR getting the information about the VM: " + vm_id)
 
-                print(info)
+                print(vm_info)
         else:
             print("ERROR getting the information about the infrastructure: " + str(vm_ids))
         return success
@@ -706,16 +638,11 @@ class IMClient:
                 url += "?force=yes"
             resp = requests.request("DELETE", url, verify=self.options.verify, headers=headers)
             success = resp.status_code == 200
-            inf_id = resp.text
+            res = resp.text
         else:
-            (success, inf_id) = self.server.DestroyInfrastructure(inf_id, self.auth_data, self.options.force)
+            (success, res) = self.server.DestroyInfrastructure(inf_id, self.auth_data, self.options.force)
 
-        if success:
-            if not self.options.quiet:
-                print("Infrastructure successfully destroyed")
-        else:
-            print("ERROR destroying the infrastructure: %s" % inf_id)
-        return success
+        return success, res
 
     def list_infras(self):
         flt = None
@@ -738,18 +665,7 @@ class IMClient:
         else:
             (success, res) = self.server.GetInfrastructureList(self.auth_data, flt)
 
-        if success:
-            if res:
-                if not self.options.quiet:
-                    print("Infrastructure IDs: \n  %s" % ("\n  ".join([str(inf_id) for inf_id in res])))
-                else:
-                    print("\n".join([str(inf_id) for inf_id in res]))
-            else:
-                if not self.options.quiet:
-                    print("No Infrastructures.")
-        else:
-            print("ERROR listing then infrastructures: %s" % res)
-        return success
+        return success, res
 
     def start(self):
         inf_id = self.get_inf_id()
@@ -758,16 +674,11 @@ class IMClient:
             url = "%s/infrastructures/%s/start" % (self.options.restapi, inf_id)
             resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
             success = resp.status_code == 200
-            inf_id = resp.text
+            res = resp.text
         else:
-            (success, inf_id) = self.server.StartInfrastructure(inf_id, self.auth_data)
+            (success, res) = self.server.StartInfrastructure(inf_id, self.auth_data)
 
-        if success:
-            if not self.options.quiet:
-                print("Infrastructure successfully started")
-        else:
-            print("ERROR starting the infraestructure: " + inf_id)
-        return success
+        return success, res
 
     def stop(self):
         inf_id = self.get_inf_id()
@@ -776,16 +687,11 @@ class IMClient:
             url = "%s/infrastructures/%s/stop" % (self.options.restapi, inf_id)
             resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
             success = resp.status_code == 200
-            inf_id = resp.text
+            res = resp.text
         else:
-            (success, inf_id) = self.server.StopInfrastructure(inf_id, self.auth_data)
+            (success, res) = self.server.StopInfrastructure(inf_id, self.auth_data)
 
-        if success:
-            if not self.options.quiet:
-                print("Infrastructure successfully stopped")
-        else:
-            print("ERROR stopping the infrastructure: " + inf_id)
-        return success
+        return success, res
 
     def getradl(self):
         inf_id = self.get_inf_id()
@@ -798,19 +704,14 @@ class IMClient:
         else:
             (success, radl) = self.server.GetInfrastructureRADL(inf_id, self.auth_data)
 
-        if success:
-            print(radl)
-        else:
-            print("ERROR getting the infrastructure RADL: %s" % inf_id)
-        return success
+        return success, radl
 
     def getvmcontmsg(self):
         inf_id = self.get_inf_id()
         if len(self.args) >= 2:
             vm_id = self.args[1]
         else:
-            print("VM ID to get info not specified")
-            return False
+            return False, "VM ID to get info not specified"
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
@@ -821,19 +722,14 @@ class IMClient:
         else:
             (success, info) = self.server.GetVMContMsg(inf_id, vm_id, self.auth_data)
 
-        if success:
-            print(info)
-        else:
-            print("Error getting VM contextualization message: %s" % info)
-        return success
+        return success, info
 
     def startvm(self):
         inf_id = self.get_inf_id()
         if len(self.args) >= 2:
             vm_id = self.args[1]
         else:
-            print("VM ID to get info not specified")
-            return False
+            return False, "VM ID to get info not specified"
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
@@ -844,20 +740,14 @@ class IMClient:
         else:
             (success, info) = self.server.StartVM(inf_id, vm_id, self.auth_data)
 
-        if success:
-            if not self.options.quiet:
-                print("VM successfully started")
-        else:
-            print("Error starting VM: %s" % info)
-        return success
+        return success, info
 
     def stopvm(self):
         inf_id = self.get_inf_id()
         if len(self.args) >= 2:
             vm_id = self.args[1]
         else:
-            print("VM ID to get info not specified")
-            return False
+            return False, "VM ID to get info not specified"
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
@@ -868,20 +758,14 @@ class IMClient:
         else:
             (success, info) = self.server.StopVM(inf_id, vm_id, self.auth_data)
 
-        if success:
-            if not self.options.quiet:
-                print("VM successfully stopped")
-        else:
-            print("Error stopping VM: %s" % info)
-        return success
+        return success, info
 
     def rebootvm(self):
         inf_id = self.get_inf_id()
         if len(self.args) >= 2:
             vm_id = self.args[1]
         else:
-            print("VM ID to get info not specified")
-            return False
+            return False, "VM ID to get info not specified"
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
@@ -892,12 +776,7 @@ class IMClient:
         else:
             (success, info) = self.server.RebootVM(inf_id, vm_id, self.auth_data)
 
-        if success:
-            if not self.options.quiet:
-                print("VM successfully rebooted")
-        else:
-            print("Error rebooting VM: %s" % info)
-        return success
+        return success, info
 
     def ssh(self, operation):
         inf_id = self.get_inf_id()
@@ -1002,16 +881,9 @@ class IMClient:
         else:
             (success, version) = self.server.GetVersion()
 
-        if success:
-            if not self.options.quiet:
-                print("IM service version: %s" % version)
-            else:
-                print(version)
-        else:
-            print("ERROR getting IM service version: " + version)
-        return success
+        return success, version
 
-    def export(self):
+    def export_data(self):
         inf_id = self.get_inf_id()
         delete = False
         if len(self.args) >= 2:
@@ -1031,20 +903,14 @@ class IMClient:
         else:
             (success, data) = self.server.ExportInfrastructure(inf_id, delete, self.auth_data)
 
-        if success:
-            print(data)
-        else:
-            print("ERROR exporting data: " + data)
-        return success
+        return success, data
 
     def import_data(self):
         if len(self.args) >= 1:
             if not os.path.isfile(self.args[0]):
-                print("JSON file '" + self.args[0] + "' does not exist")
-                return False
+                return False, "JSON file '" + self.args[0] + "' does not exist"
         else:
-            print("JSON file to create inf. not specified")
-            return False
+            return False, "JSON file to create inf. not specified"
 
         f = open(self.args[0])
         data = "".join(f.readlines())
@@ -1061,14 +927,7 @@ class IMClient:
         else:
             (success, inf_id) = self.server.ImportInfrastructure(data, self.auth_data)
 
-        if success:
-            if not self.options.quiet:
-                print("New Inf: " + inf_id)
-            else:
-                print(inf_id)
-        else:
-            print("ERROR importing data: " + inf_id)
-        return success
+        return success, inf_id
 
     def getoutputs(self):
         inf_id = self.get_inf_id()
@@ -1083,59 +942,47 @@ class IMClient:
             else:
                 res = resp.text
         else:
-            print("ERROR getting the infrastructure outputs: Only available with REST API.")
-            return False
-        if success:
-            return res
-        else:
-            print("Error getting infrastructure outputs: %s" % res)
-            return None
+            return False, "ERROR getting the infrastructure outputs: Only available with REST API."
+
+        return success, res
 
     def cloudimages(self):
-        if len(self.args) >= 1:
-            cloud_id = self.args[0]
-            if self.options.restapi:
-                headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-                url = "%s/clouds/%s/images" % (self.options.restapi, cloud_id)
-                resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-                success = resp.status_code == 200
-                if success:
-                    data = resp.json()["images"]
-                else:
-                    data = resp.text
-            else:
-                (success, data) = self.server.GetCloudImageList(cloud_id, self.auth_data)
+        if not len(self.args) >= 1:
+            return False, "Cloud ID not specified"
 
+        cloud_id = self.args[0]
+        if self.options.restapi:
+            headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
+            url = "%s/clouds/%s/images" % (self.options.restapi, cloud_id)
+            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
+            success = resp.status_code == 200
             if success:
-                print(json.dumps(data, indent=4))
+                data = resp.json()["images"]
             else:
-                print("ERROR getting cloud image list: " + data)
-            return success
+                data = resp.text
         else:
-            raise Exception("Cloud ID not specified")
+            (success, data) = self.server.GetCloudImageList(cloud_id, self.auth_data)
+
+        return success, data
 
     def cloudusage(self):
-        if len(self.args) >= 1:
-            cloud_id = self.args[0]
-            if self.options.restapi:
-                headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-                url = "%s/clouds/%s/quotas" % (self.options.restapi, cloud_id)
-                resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-                success = resp.status_code == 200
-                if success:
-                    data = resp.json()["quotas"]
-                else:
-                    data = resp.text
-            else:
-                (success, data) = self.server.GetCloudImageList(cloud_id, self.auth_data)
+        if not len(self.args) >= 1:
+            return False, "Cloud ID not specified"
 
+        cloud_id = self.args[0]
+        if self.options.restapi:
+            headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
+            url = "%s/clouds/%s/quotas" % (self.options.restapi, cloud_id)
+            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
+            success = resp.status_code == 200
             if success:
-                print(json.dumps(data, indent=4))
+                data = resp.json()["quotas"]
             else:
-                print("ERROR getting cloud image list: " + data)
-            return success
+                data = resp.text
         else:
-            raise Exception("Cloud ID not specified")
+            (success, data) = self.server.GetCloudImageList(cloud_id, self.auth_data)
+
+        return success, data
 
     def wait(self):
         inf_id = self.get_inf_id()
@@ -1173,17 +1020,11 @@ class IMClient:
                 wait += 30
 
         if state == "configured":
-            if not self.options.quiet:
-                print("The infrastructure is in state: %s" % state)
-            return True
+            return True, "The infrastructure is in state: %s" % state
         elif wait >= max_time:
-            if not self.options.quiet:
-                print("Timeout waiting.")
-            return False
+            return False, "Timeout waiting."
         else:
-            if not self.options.quiet:
-                print("The infrastructure is in state: %s" % state)
-            return False
+            return False, "The infrastructure is in state: %s" % state
 
 
 def main(operation, options, args, parser):
@@ -1227,109 +1068,257 @@ def main(operation, options, args, parser):
                 print("Connected with: " + options.xmlrpc)
 
     if operation == "removeresource":
-        return imclient.removeresource()
+        success, vms_id = imclient.removeresource()
+        if success:
+            if not options.quiet:
+                print("Resources with IDs: %s successfully deleted." % str(vms_id))
+        else:
+            print("ERROR deleting resources from the infrastructure: %s" % vms_id)
+        return success
 
     elif operation == "addresource":
-        return imclient.addresource()
+        success, vms_id = imclient.addresource()
+        if success:
+            if not options.quiet:
+                print("Resources with IDs: %s successfully added." % ",".join(vms_id))
+            else:
+                print(json.dumps(vms_id, indent=4))
+        else:
+            print("ERROR adding resources to infrastructure: %s" % vms_id)
+        return success
 
     elif operation == "create":
-        inf_id = imclient.create()
-        if not options.quiet:
-            print("Infrastructure successfully created with ID: %s" % str(inf_id))
+        success, inf_id = imclient.create()
+        if success:
+            if not options.quiet:
+                print("Infrastructure successfully created with ID: %s" % str(inf_id))
         else:
-            print(inf_id)
-        return inf_id
+            if not options.quiet:
+                print("ERROR creating the infrastructure: %s" % inf_id)
+        return success
 
     elif operation == "alter":
-        return imclient.alter()
+        success, res = imclient.alter()
+        if success:
+            if not options.quiet:
+                print("VM successfully modified.")
+        else:
+            print("ERROR modifying the VM: %s" % res)
+        return success
 
     elif operation == "reconfigure":
-        return imclient.reconfigure()
+        success, res = imclient.reconfigure()
+        if success:
+            if not options.quiet:
+                print("Infrastructure successfully reconfigured.")
+        else:
+            print("ERROR reconfiguring the infrastructure: " + res)
+        return success
 
     elif operation == "getcontmsg":
-        return imclient.getcontmsg()
+        success, cont_out = imclient.getcontmsg()
+        if success:
+            if len(cont_out) > 0:
+                if not options.quiet:
+                    print("Msg Contextualizator: \n")
+                print(cont_out)
+            elif not options.quiet:
+                print("No Msg Contextualizator avaliable\n")
+        else:
+            print("Error getting infrastructure contextualization message: %s" % cont_out)
+        return success
 
     elif operation == "getstate":
-        return imclient.getstate()
+        success, res = imclient.getstate()
+        if success:
+            if not options.quiet:
+                state = res['state']
+                vm_states = res['vm_states']
+                print("The infrastructure is in state: %s" % state)
+                for vm_id, vm_state in vm_states.items():
+                    print("VM ID: %s is in state: %s." % (vm_id, vm_state))
+            else:
+                print(json.dumps(res, indent=4))
+        else:
+            print("Error getting infrastructure state: %s" % res)
+        return success
 
     elif operation == "getvminfo":
-        return imclient.getvminfo()
+        success, info = imclient.getvminfo()
+        if not success:
+            print("ERROR getting the VM info: %s" % info)
+        print(info)
+        return success
 
     elif operation == "getinfo":
         return imclient.getinfo()
 
     elif operation == "destroy":
-        return imclient.destroy()
+        success, res = imclient.destroy()
+        if success:
+            if not options.quiet:
+                print("Infrastructure successfully destroyed")
+        else:
+            print("ERROR destroying the infrastructure: %s" % res)
+        return success
 
     elif operation == "list":
-        return imclient.list_infras()
+        success, res = imclient.list_infras()
+        if success:
+            if res:
+                if not options.quiet:
+                    print("Infrastructure IDs: \n  %s" % ("\n  ".join([str(inf_id) for inf_id in res])))
+                else:
+                    print(json.dumps(res, indent=4))
+            else:
+                if not options.quiet:
+                    print("No Infrastructures.")
+        else:
+            print("ERROR listing then infrastructures: %s" % res)
+        return success
 
     elif operation == "start":
-        return imclient.start()
+        success, res = imclient.start()
+        if success:
+            if not options.quiet:
+                print("Infrastructure successfully started")
+        else:
+            print("ERROR starting the infraestructure: " + res)
+        return success
 
     elif operation == "stop":
-        return imclient.stop()
+        success, res = imclient.stop()
+        if success:
+            if not options.quiet:
+                print("Infrastructure successfully stopped")
+        else:
+            print("ERROR stopping the infrastructure: " + res)
+        return success
 
     elif operation == "getradl":
-        return imclient.getradl()
+        success, radl = imclient.getradl()
+        if success:
+            print(radl)
+        else:
+            print("ERROR getting the infrastructure RADL: %s" % radl)
+        return success
 
     elif operation == "getvmcontmsg":
-        return imclient.getvmcontmsg()
+        success, info = imclient.getvmcontmsg()
+        if success:
+            print(info)
+        else:
+            print("Error getting VM contextualization message: %s" % info)
+        return success
 
     elif operation == "startvm":
-        return imclient.startvm()
+        success, info = imclient.startvm()
+        if success:
+            if not options.quiet:
+                print("VM successfully started")
+        else:
+            print("Error starting VM: %s" % info)
+
+        return success
 
     elif operation == "stopvm":
-        return imclient.stopvm()
+        success, info = imclient.stopvm()
+        if success:
+            if not options.quiet:
+                print("VM successfully stopped")
+        else:
+            print("Error stopping VM: %s" % info)
+        return success
 
     elif operation == "rebootvm":
-        return imclient.rebootvm()
+        success, info = imclient.rebootvm()
+        if success:
+            if not options.quiet:
+                print("VM successfully rebooted")
+        else:
+            print("Error rebooting VM: %s" % info)
+        return success
 
     elif operation in ["sshvm", "ssh"]:
         return imclient.ssh(operation)
 
     elif operation == "getversion":
-        return imclient.getversion()
+        success, version = imclient.getversion()
+        if success:
+            if not options.quiet:
+                print("IM service version: %s" % version)
+            else:
+                print(version)
+        else:
+            print("ERROR getting IM service version: " + version)
+        return success
 
     elif operation == "export":
-        return imclient.export()
+        success, data = imclient.export_data()
+        if success:
+            print(data)
+        else:
+            print("ERROR exporting data: " + data)
+        return success
 
     elif operation == "import":
-        return imclient.import_data()
+        success, inf_id = imclient.import_data()
+        if success:
+            if not options.quiet:
+                print("New Inf: " + inf_id)
+            else:
+                print(inf_id)
+        else:
+            print("ERROR importing data: " + inf_id)
+        return success
 
     elif operation == "getoutputs":
-        outputs = imclient.getoutputs()
-        if outputs:
+        success, outputs = imclient.getoutputs()
+        if success:
             if not options.quiet:
                 print("The infrastructure outputs:\n")
                 for key, value in outputs.items():
                     print("%s = %s" % (key, value))
             else:
-                print(json.dumps(outputs))
-            return True
-        else:
-            return False
+                print(json.dumps(outputs, indent=4))
+        return success
 
     elif operation == "cloudimages":
-        return imclient.cloudimages()
+        success, data = imclient.cloudimages()
+        if success:
+            print(json.dumps(data, indent=4))
+        else:
+            print("ERROR getting cloud image list: " + data)
+        return success
 
     elif operation == "cloudusage":
-        return imclient.cloudusage()
+        success, data = imclient.cloudusage()
+        if success:
+            print(json.dumps(data, indent=4))
+        else:
+            print("ERROR getting cloud usage: " + data)
+        return success
 
     elif operation == "wait":
-        return imclient.wait()
+        success, info = imclient.wait()
+        if success:
+            if not options.quiet:
+                print(info)
+        else:
+            print(info)
+        return success
 
     elif operation == "create_wait_outputs":
-        inf_id = imclient.create()
-        if not inf_id:
+        success, inf_id = imclient.create()
+        if not success:
             return False
         imclient.args = [inf_id]
-        success = imclient.wait()
+        success, _ = imclient.wait()
         if not success:
             print('{"infid": "%s"}' % inf_id)
             return False
-        outputs = imclient.getoutputs()
-        if outputs:
+        success, outputs = imclient.getoutputs()
+        if success:
             outputs["infid"] = inf_id
             print(json.dumps(outputs))
             return True

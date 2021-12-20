@@ -235,7 +235,7 @@ class TestClient(unittest.TestCase):
         oldstdout = sys.stdout
         sys.stdout = out
         res = main("create", options, [get_abs_path("../files/test.radl")], parser)
-        self.assertIsNotNone(res)
+        self.assertTrue(res)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully created with ID: inf1", output)
         sys.stdout = oldstdout
