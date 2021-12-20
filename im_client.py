@@ -30,7 +30,6 @@ except ImportError:
     pass
 
 import json
-from re import S
 import sys
 import os
 import subprocess
@@ -534,27 +533,27 @@ class IMClient:
 
         return success, res
 
-    def get_infra_property(self, property):
+    def get_infra_property(self, prop):
         inf_id = self.get_inf_id()
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s/%s" % (self.options.restapi, inf_id, property)
+            url = "%s/infrastructures/%s/%s" % (self.options.restapi, inf_id, prop)
             resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
             success = resp.status_code == 200
             if success:
-                res = resp.json()[property]
+                res = resp.json()[prop]
             else:
                 res = resp.text
         else:
-            if property == "state":
+            if prop == "state":
                 (success, res) = self.server.GetInfrastructureState(inf_id, self.auth_data)
-            elif property == "contmsg":
+            elif prop == "contmsg":
                 (success, res) = self.server.GetInfrastructureContMsg(inf_id, self.auth_data)
-            elif property == "radl":
+            elif prop == "radl":
                 (success, res) = self.server.GetInfrastructureRADL(inf_id, self.auth_data)
-            elif property == "outputs":
-                False, "ERROR getting the infrastructure outputs: Only available with REST API."
+            elif prop == "outputs":
+                return False, "ERROR getting the infrastructure outputs: Only available with REST API."
             else:
                 return False, "Invalid Operation."
 

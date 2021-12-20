@@ -1105,14 +1105,14 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         sys.stdout = out
         options.xmlrpc = None
-        options.quiet = False
+        options.quiet = True
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
 
         res = main("cloudusage", options, ["one"], parser)
         self.assertEquals(res, True)
-        output = out.getvalue().strip()
-        self.assertIn('{\n    "cores": {\n        "used": 5,\n        "limit": -1\n    }\n}', output)
+        output = json.loads(out.getvalue().strip())
+        self.assertEqual({'cores': {'used': 5, 'limit': -1}}, output)
         sys.stdout = oldstdout
 
     @patch("im_client.ServerProxy")
@@ -1139,12 +1139,10 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
-    def test_create_wait_outputs(self, server_proxy, requests):
+    def test_create_wait_outputs(self, requests):
         """
         Test create_wait_outputs operation
         """
-        proxy = MagicMock()
         requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
