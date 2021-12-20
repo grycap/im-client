@@ -1013,6 +1013,37 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
+    @patch("im_client.ServerProxy")
+    def test_sshvm_via_master(self, server_proxy):
+        """
+        Test sshvm operation via master VM
+        """
+        proxy = MagicMock()
+
+        radl_master = open(get_abs_path("../files/test_ssh_master.radl"), 'r').read()
+        radl_wn = open(get_abs_path("../files/test_ssh_wn.radl"), 'r').read()
+        proxy.GetVMInfo.side_effect = [(True, radl_wn), (True, radl_master)]
+        server_proxy.return_value = proxy
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        options.restapi = None
+        parser = MagicMock()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        oldstderr = sys.stderr
+        sys.stdout = out
+        sys.stderr = out
+        res = main("sshvm", options, ["infid", "vmid", "1"], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("ssh -p 22 -i /tmp/", output)
+        self.assertIn(" -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@10.0.0.2"
+                      " -o ProxyCommand=ssh -W %h:%p -i /var/tmp/ubuntu_ubuntu_10.0.0.2.pem -p 22"
+                      " -o StrictHostKeyChecking=no ubuntu@8.8.8.8", output)
+        sys.stdout = oldstdout
+        sys.stderr = oldstderr
+
     def test_parser(self):
         """
         Test parser
