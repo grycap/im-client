@@ -586,6 +586,13 @@ class IMClient:
 
         return success, info
 
+    def _get_vms_info_generator(self, inf_id, vm_ids, propiedad):
+        """Helper function to return a generator."""
+        for vm_id in vm_ids:
+            self.args = [inf_id, vm_id, propiedad]
+            success, radl = self.getvminfo()
+            yield vm_id, success, radl
+
     def getinfo(self):
         inf_id = self.get_inf_id()
         propiedad = None
@@ -608,20 +615,9 @@ class IMClient:
             (success, vm_ids) = self.server.GetInfrastructureInfo(inf_id, self.auth_data)
 
         if success:
-            for vm_id in vm_ids:
-                if not self.options.quiet:
-                    print("Info about VM with ID: %s" % vm_id)
-
-                self.args = [inf_id, vm_id, propiedad]
-                vm_success, vm_info = self.getvminfo()
-
-                if not vm_success:
-                    print("ERROR getting the information about the VM: " + vm_id)
-
-                print(vm_info)
+            return True, self._get_vms_info_generator(inf_id, vm_ids, propiedad)
         else:
-            print("ERROR getting the information about the infrastructure: " + str(vm_ids))
-        return success
+            return False, "ERROR getting the information about the infrastructure: " + str(vm_ids)
 
     def destroy(self):
         inf_id = self.get_inf_id()
@@ -732,8 +728,7 @@ class IMClient:
                 if self.args[1] in ["0", "1"]:
                     show_only = bool(int(self.args[1]))
                 else:
-                    print("The show_only flag must be 0 or 1")
-                    return False
+                    return False, "The show_only flag must be 0 or 1"
         else:
             if len(self.args) >= 2:
                 vm_id = self.args[1]
@@ -741,11 +736,9 @@ class IMClient:
                     if self.args[2] in ["0", "1"]:
                         show_only = bool(int(self.args[2]))
                     else:
-                        print("The show_only flag must be 0 or 1")
-                        return False
+                        return False, "The show_only flag must be 0 or 1"
             else:
-                print("VM ID to get info not specified")
-                return False
+                return False, "VM ID to get info not specified"
 
         self.args = [inf_id, vm_id]
         vm_success, vm_info = self.getvminfo()
@@ -753,8 +746,7 @@ class IMClient:
         if vm_success:
             radl = radl_parse.parse_radl(vm_info)
         else:
-            print("Error accessing VM: %s" % vm_info)
-            return vm_success
+            return vm_success, "Error accessing VM: %s" % vm_info
 
         proxy_host = False
         for netid in radl.systems[0].getNetworkIDs():
@@ -789,20 +781,12 @@ class IMClient:
                             f.write(priv_key)
                         os.chmod(proxy_key_filename, 0o600)
                     else:
-                        print("Error, no valid credentials in VM 0")
-                        return False
+                        return False, "Error, no valid credentials in VM 0"
                     net.setValue('proxy_host', proxy_host)
             else:
-                print("Error accessing VM: %s" % vm_info)
-                return vm_success
+                return False, "Error accessing VM: %s" % vm_info
 
-        try:
-            CmdSsh.run(radl, show_only)
-        except Exception as ex:
-            print(str(ex))
-            return False
-
-        return True
+        return True, (radl, show_only)
 
     def getversion(self):
         if self.options.restapi:
@@ -1043,7 +1027,18 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "getinfo":
-        return imclient.getinfo()
+        success, vms_info = imclient.getinfo()
+        if success:
+            for vm_id, vm_succes, vm_radl in vms_info:
+                if not options.quiet:
+                    print("Info about VM with ID: %s" % vm_id)
+                if vm_succes:
+                    print(vm_radl)
+                else:
+                    print("ERROR getting the information about the VM: " + vm_radl)
+        else:
+            print("ERROR getting the information about infrastructure: " + vms_info)
+        return success
 
     elif operation == "destroy":
         success, res = imclient.destroy()
@@ -1132,7 +1127,18 @@ def main(operation, options, args, parser):
         return success
 
     elif operation in ["sshvm", "ssh"]:
-        return imclient.ssh(operation)
+        success, res = imclient.ssh(operation)
+        if success:
+            try:
+                radl, show_only = res
+                CmdSsh.run(radl, show_only)
+            except Exception as ex:
+                print(str(ex))
+                return False
+            return True
+        else:
+            print(res)
+            return False
 
     elif operation == "getversion":
         success, version = imclient.getversion()
