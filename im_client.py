@@ -894,17 +894,8 @@ class IMClient:
         wait = 0
         state = "pending"
         while state in ["pending", "running", "unknown"] and unknown_count < 3 and wait < max_time:
-            if self.options.restapi:
-                headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-                url = "%s/infrastructures/%s/state" % (self.options.restapi, inf_id)
-                resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-                success = resp.status_code == 200
-                if success:
-                    res = resp.json()['state']
-                else:
-                    res = resp.text
-            else:
-                (success, res) = self.server.GetInfrastructureState(inf_id, self.auth_data)
+
+            success, res = self.get_infra_property("state")
 
             if success:
                 state = res['state']
