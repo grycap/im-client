@@ -553,6 +553,8 @@ class IMClient:
                 (success, res) = self.server.GetInfrastructureContMsg(inf_id, self.auth_data)
             elif property == "radl":
                 (success, res) = self.server.GetInfrastructureRADL(inf_id, self.auth_data)
+            elif property == "outputs":
+                False, "ERROR getting the infrastructure outputs: Only available with REST API."
             else:
                 return False, "Invalid Operation."
 
@@ -746,20 +748,14 @@ class IMClient:
                 print("VM ID to get info not specified")
                 return False
 
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi, inf_id, vm_id)
-            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            info = resp.text
-        else:
-            (success, info) = self.server.GetVMInfo(inf_id, vm_id, self.auth_data)
+        self.args = [inf_id, vm_id]
+        vm_success, vm_info = self.getvminfo()
 
-        if success:
-            radl = radl_parse.parse_radl(info)
+        if vm_success:
+            radl = radl_parse.parse_radl(vm_info)
         else:
-            print("Error accessing VM: %s" % info)
-            return success
+            print("Error accessing VM: %s" % vm_info)
+            return vm_success
 
         proxy_host = False
         for netid in radl.systems[0].getNetworkIDs():
@@ -771,17 +767,12 @@ class IMClient:
             vm_id = IMClient.get_master_vm_id(inf_id)
             if not self.options.quiet:
                 print("VM ID %s does not has public IP, try to access via VM ID 0." % vm_id)
-            if self.options.restapi:
-                headers = {"Authorization": self.rest_auth_data}
-                url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi, inf_id, vm_id)
-                resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-                success = resp.status_code == 200
-                info = resp.text
-            else:
-                (success, info) = self.server.GetVMInfo(inf_id, vm_id, self.auth_data)
 
-            if success:
-                radl2 = radl_parse.parse_radl(info)
+            self.args = [inf_id, vm_id]
+            vm_success, vm_info = self.getvminfo()
+
+            if vm_success:
+                radl2 = radl_parse.parse_radl(vm_info)
                 host = radl2.getPublicIP()
                 username = radl2.systems[0].getValue("disk.0.os.credentials.username")
                 password = radl2.systems[0].getValue("disk.0.os.credentials.password")
@@ -803,8 +794,8 @@ class IMClient:
                         return False
                     net.setValue('proxy_host', proxy_host)
             else:
-                print("Error accessing VM: %s" % info)
-                return success
+                print("Error accessing VM: %s" % vm_info)
+                return vm_success
 
         try:
             CmdSsh.run(radl, show_only)
@@ -870,23 +861,6 @@ class IMClient:
             (success, inf_id) = self.server.ImportInfrastructure(data, self.auth_data)
 
         return success, inf_id
-
-    def getoutputs(self):
-        inf_id = self.get_inf_id()
-
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s/outputs" % (self.options.restapi, inf_id)
-            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            if success:
-                res = resp.json()['outputs']
-            else:
-                res = resp.text
-        else:
-            return False, "ERROR getting the infrastructure outputs: Only available with REST API."
-
-        return success, res
 
     def get_cloud_info(self, operation):
         if not len(self.args) >= 1:
@@ -1201,7 +1175,7 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "getoutputs":
-        success, outputs = imclient.getoutputs()
+        success, outputs = imclient.get_infra_property("outputs")
         if success:
             if not options.quiet:
                 print("The infrastructure outputs:\n")
@@ -1245,7 +1219,7 @@ def main(operation, options, args, parser):
         if not success:
             print('{"infid": "%s"}' % inf_id)
             return False
-        success, outputs = imclient.getoutputs()
+        success, outputs = imclient.get_infra_property("outputs")
         if success:
             outputs["infid"] = inf_id
             print(json.dumps(outputs))
