@@ -886,7 +886,7 @@ class IMClient:
         return success, data
 
     def wait(self):
-        inf_id = self.get_inf_id()
+        self.get_inf_id()
         max_time = 36000  # 10h
         if len(self.args) >= 2:
             max_time = int(self.args[1])
