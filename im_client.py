@@ -259,7 +259,6 @@ class IMClient:
 
         else:
             if options.xmlrpc.startswith("https"):
-                print("Secure connection with: " + options.xmlrpc)
                 if not options.verify:
                     try:
                         import ssl
@@ -1254,7 +1253,7 @@ under certain conditions; please read the license at \n\
 http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
     parser = PosOptionParser(usage="%prog [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] "
-                             "[-a|--auth_file <filename>] operation op_parameters" + NOTICE, version="%prog 1.5.10")
+                             "[-a|--auth_file <filename>] operation op_parameters" + NOTICE, version="%prog 1.5.11")
     parser.add_option("-a", "--auth_file", dest="auth_file", nargs=1, default=default_auth_file, help="Authentication"
                       " data file", type="string")
     parser.add_option("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=default_xmlrpc, help="URL address of the "
