@@ -126,11 +126,10 @@ class CmdSsh:
                 public_net = net
 
         if public_net:
-            outports = public_net.getOutPorts()
-            if outports:
-                for outport in outports:
-                    if outport.get_local_port() == 22 and outport.get_protocol() == "tcp":
-                        ssh_port = outport.get_remote_port()
+            outports = public_net.getOutPorts() if public_net.getOutPorts() else {}
+            for outport in outports:
+                if outport.get_local_port() == 22 and outport.get_protocol() == "tcp":
+                    ssh_port = outport.get_remote_port()
 
         return str(ssh_port)
 
@@ -294,7 +293,7 @@ class IMClient:
                             command = value[8:len(value) - 1]
                             value = IMClient._run_command(command)
                         # Enable to specify a filename and set the contents of it
-                        if value.startswith("file(") and value.endswith(")"):
+                        elif value.startswith("file(") and value.endswith(")"):
                             filename = value[5:len(value) - 1]
                             try:
                                 value_file = open(filename, 'r')
