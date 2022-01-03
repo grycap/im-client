@@ -126,11 +126,10 @@ class CmdSsh:
                 public_net = net
 
         if public_net:
-            outports = public_net.getOutPorts()
-            if outports:
-                for outport in outports:
-                    if outport.get_local_port() == 22 and outport.get_protocol() == "tcp":
-                        ssh_port = outport.get_remote_port()
+            outports = public_net.getOutPorts() if public_net.getOutPorts() else {}
+            for outport in outports:
+                if outport.get_local_port() == 22 and outport.get_protocol() == "tcp":
+                    ssh_port = outport.get_remote_port()
 
         return str(ssh_port)
 
@@ -294,7 +293,7 @@ class IMClient:
                             command = value[8:len(value) - 1]
                             value = IMClient._run_command(command)
                         # Enable to specify a filename and set the contents of it
-                        if value.startswith("file(") and value.endswith(")"):
+                        elif value.startswith("file(") and value.endswith(")"):
                             filename = value[5:len(value) - 1]
                             try:
                                 value_file = open(filename, 'r')
@@ -351,19 +350,29 @@ class IMClient:
         else:
             raise Exception("Infrastructure ID not specified")
 
-    def create(self):
-        if len(self.args) >= 1:
-            if not os.path.isfile(self.args[0]):
-                return False, "RADL file '" + self.args[0] + "' does not exist"
-            asyncr = False
-            if len(self.args) >= 2:
-                asyncr = bool(int(self.args[1]))
+    def get_vm_id(self):
+        if len(self.args) >= 2:
+            return self.args[1]
         else:
-            return False, "RADL file to create inf. not specified"
+            raise Exception("VM ID not specified")
+
+    def get_radl(self, param_index, fail_if_not_set=True):
+        if len(self.args) > param_index:
+            if not os.path.isfile(self.args[param_index]):
+                raise Exception("RADL file '%s' does not exist" % self.args[param_index])
+            return self.args[param_index]
+        elif fail_if_not_set:
+            raise Exception("RADL file not specified")
+
+    def create(self):
+        radl_file = self.get_radl(0)
+        asyncr = False
+        if len(self.args) >= 2:
+            asyncr = bool(int(self.args[1]))
 
         # Read the file
-        _, file_extension = os.path.splitext(self.args[0])
-        f = open(self.args[0])
+        _, file_extension = os.path.splitext(radl_file)
+        f = open(radl_file)
         radl_data = "".join(f.readlines())
         f.close()
         if file_extension in [".yaml", ".yml", ".json", ".jsn"]:
@@ -431,26 +440,21 @@ class IMClient:
 
     def addresource(self):
         inf_id = self.get_inf_id()
+        radl_file = self.get_radl(1)
         context = True
-        if len(self.args) >= 2:
-            if not os.path.isfile(self.args[1]):
-                return False, "RADL file '" + self.args[1] + "' does not exist"
+        if len(self.args) >= 3:
+            if self.args[2] in ["0", "1"]:
+                context = bool(int(self.args[2]))
+            else:
+                return False, "The ctxt flag must be 0 or 1"
 
-            if len(self.args) >= 3:
-                if self.args[2] in ["0", "1"]:
-                    context = bool(int(self.args[2]))
-                else:
-                    return False, "The ctxt flag must be 0 or 1"
-        else:
-            return False, "RADL file to add resources not specified"
-
-        _, file_extension = os.path.splitext(self.args[1])
+        _, file_extension = os.path.splitext(radl_file)
         if file_extension in [".yaml", ".yml"]:
-            f = open(self.args[1])
+            f = open(radl_file)
             radl = "".join(f.readlines())
             f.close()
         else:
-            radl = radl_parse.parse_radl(self.args[1])
+            radl = radl_parse.parse_radl(radl_file)
             radl.check()
 
         if self.options.restapi:
@@ -477,15 +481,8 @@ class IMClient:
 
     def alter(self):
         inf_id = self.get_inf_id()
-        if len(self.args) >= 2:
-            vm_id = self.args[1]
-        else:
-            return False, "VM ID to Modify not specified"
-        if len(self.args) >= 3:
-            if not os.path.isfile(self.args[2]):
-                return False, "RADL file '" + self.args[2] + "' does not exist"
-        else:
-            return False, "RADL file to modify the VM not specified"
+        vm_id = self.get_vm_id()
+        radl_file = self.get_radl(2)
 
         radl = radl_parse.parse_radl(self.args[2])
 
@@ -504,18 +501,16 @@ class IMClient:
         inf_id = self.get_inf_id()
         radl = ""
         vm_list = None
-        if len(self.args) >= 2:
-            if not os.path.isfile(self.args[1]):
-                return False, "RADL file '" + self.args[1] + "' does not exist"
-            else:
-                # Read the file
-                f = open(self.args[1])
-                radl_data = "".join(f.readlines())
-                f.close()
-                radl = radl_parse.parse_radl(radl_data)
+        radl_file = self.get_radl(1, False)
+        if len(self.args) >= 3:
+            vm_list = [int(vm_id) for vm_id in self.args[2].split(",")]
 
-                if len(self.args) >= 3:
-                    vm_list = [int(vm_id) for vm_id in self.args[2].split(",")]
+        if radl_file:
+            # Read the file
+            f = open(radl_file)
+            radl_data = "".join(f.readlines())
+            f.close()
+            radl = radl_parse.parse_radl(radl_data)
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
@@ -558,10 +553,7 @@ class IMClient:
 
     def getvminfo(self):
         inf_id = self.get_inf_id()
-        if len(self.args) >= 2:
-            vm_id = self.args[1]
-        else:
-            return False, "VM ID to get info not specified"
+        vm_id = self.get_vm_id()
 
         propiedad = None
         if len(self.args) >= 3:
@@ -673,10 +665,7 @@ class IMClient:
 
     def getvmcontmsg(self):
         inf_id = self.get_inf_id()
-        if len(self.args) >= 2:
-            vm_id = self.args[1]
-        else:
-            return False, "VM ID to get info not specified"
+        vm_id = self.get_vm_id()
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
@@ -691,10 +680,7 @@ class IMClient:
 
     def vm_op(self, operation):
         inf_id = self.get_inf_id()
-        if len(self.args) >= 2:
-            vm_id = self.args[1]
-        else:
-            return False, "VM ID to get info not specified"
+        vm_id = self.get_vm_id()
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
