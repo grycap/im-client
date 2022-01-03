@@ -109,3 +109,5 @@ IM-client 1.5.9
 IM-client 1.5.10
     * Add wait function enhancement.
 
+IM-client 1.5.11
+    * Add Add create_wait_outputs operation function.
