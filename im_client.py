@@ -249,22 +249,20 @@ class IMClient:
         self.rest_auth_data = ""
         self.options = options
         self.auth_data = auth_data
-        if options.restapi:
-            if auth_data:
-                for item in auth_data:
-                    for key, value in item.items():
-                        value = value.replace("\n", "\\\\n")
-                        self.rest_auth_data += "%s = %s;" % (key, value)
-                    self.rest_auth_data += "\\n"
+        if options.restapi and auth_data:
+            for item in auth_data:
+                for key, value in item.items():
+                    value = value.replace("\n", "\\\\n")
+                    self.rest_auth_data += "%s = %s;" % (key, value)
+                self.rest_auth_data += "\\n"
 
-        else:
-            if options.xmlrpc.startswith("https"):
-                if not options.verify:
-                    try:
-                        import ssl
-                        ssl._create_default_https_context = ssl._create_unverified_context
-                    except Exception:
-                        pass
+        elif options.xmlrpc:
+            if options.xmlrpc.startswith("https") and not options.verify:
+                try:
+                    import ssl
+                    ssl._create_default_https_context = ssl._create_unverified_context
+                except Exception:
+                    pass
             self.server = ServerProxy(options.xmlrpc, allow_none=True)
 
     # From IM.auth
@@ -929,18 +927,12 @@ def main(operation, options, args, parser):
 
     imclient = IMClient(options, auth_data, args)
 
-    if options.restapi:
-        if not options.quiet:
-            if options.restapi.startswith("https"):
-                print("Secure connection with: " + options.restapi)
-            else:
-                print("Connected with: " + options.restapi)
-    else:
-        if not options.quiet:
-            if options.xmlrpc.startswith("https"):
-                print("Secure connection with: " + options.xmlrpc)
-            else:
-                print("Connected with: " + options.xmlrpc)
+    if not options.quiet:
+        url = options.restapi if options.restapi else options.xmlrpc
+        if url.startswith("https"):
+            print("Secure connection with: " + url)
+        else:
+            print("Connected with: " + url)
 
     if operation == "removeresource":
         success, vms_id = imclient.removeresource()
