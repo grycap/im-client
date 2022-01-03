@@ -484,7 +484,7 @@ class IMClient:
         vm_id = self.get_vm_id()
         radl_file = self.get_radl(2)
 
-        radl = radl_parse.parse_radl(self.args[2])
+        radl = radl_parse.parse_radl(radl_file)
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
@@ -1186,11 +1186,12 @@ def main(operation, options, args, parser):
     elif operation == "create_wait_outputs":
         success, inf_id = imclient.create()
         if not success:
+            print('{"error": "%s"}' % inf_id)
             return False
         imclient.args = [inf_id]
-        success, _ = imclient.wait()
+        success, error = imclient.wait()
         if not success:
-            print('{"infid": "%s"}' % inf_id)
+            print('{"infid": "%s", "error": "%s"}' % (inf_id, error))
             return False
         success, outputs = imclient.get_infra_property("outputs")
         if success:
@@ -1198,7 +1199,7 @@ def main(operation, options, args, parser):
             print(json.dumps(outputs))
             return True
         else:
-            print('{"infid": "%s"}' % inf_id)
+            print('{"infid": "%s", "error": "%s"}' % (inf_id, outputs))
             return False
 
 
