@@ -249,11 +249,14 @@ class IMClient:
         self.options = options
         self.auth_data = auth_data
         if options.restapi and auth_data:
-            for item in auth_data:
-                for key, value in item.items():
-                    value = value.replace("\n", "\\\\n")
-                    self.rest_auth_data += "%s = %s;" % (key, value)
-                self.rest_auth_data += "\\n"
+            if isinstance(auth_data, str):
+                self.rest_auth_data = auth_data
+            else:
+                for item in auth_data:
+                    for key, value in item.items():
+                        value = value.replace("\n", "\\\\n")
+                        self.rest_auth_data += "%s = %s;" % (key, value)
+                    self.rest_auth_data += "\\n"
 
         elif options.xmlrpc:
             if options.xmlrpc.startswith("https") and not options.verify:
@@ -263,6 +266,22 @@ class IMClient:
                 except Exception:
                     pass
             self.server = ServerProxy(options.xmlrpc, allow_none=True)
+
+    @staticmethod
+    def replace_auth_values(value):
+        # Enable to specify a commnad and set the contents of the output
+        if value.startswith("command(") and value.endswith(")"):
+            command = value[8:-1]
+            return IMClient._run_command(command)
+        # Enable to specify a filename and set the contents of it
+        elif value.startswith("file(") and value.endswith(")"):
+            try:
+                with open(value[5:-1], 'r') as f:
+                    data = f.read()
+                return data.strip()
+            except Exception:
+                pass
+        return value
 
     # From IM.auth
     @staticmethod
@@ -276,6 +295,10 @@ class IMClient:
 
         res = []
 
+        if len(lines) == 1 and lines[0].startswith("Bearer "):
+            token = lines[0].strip()[7:]
+            return "Bearer %s" % IMClient.replace_auth_values(token)
+
         for line in lines:
             line = line.strip()
             if len(line) > 0 and not line.startswith("#"):
@@ -288,21 +311,7 @@ class IMClient:
                     else:
                         key = key_value[0].strip()
                         value = key_value[1].strip().replace("\\n", "\n")
-                        # Enable to specify a commnad and set the contents of the output
-                        if value.startswith("command(") and value.endswith(")"):
-                            command = value[8:len(value) - 1]
-                            value = IMClient._run_command(command)
-                        # Enable to specify a filename and set the contents of it
-                        elif value.startswith("file(") and value.endswith(")"):
-                            filename = value[5:len(value) - 1]
-                            try:
-                                value_file = open(filename, 'r')
-                                value = value_file.read()
-                                value_file.close()
-                            except Exception:
-                                pass
-
-                        auth[key] = value
+                        auth[key] = IMClient.replace_auth_values(value)
                 res.append(auth)
 
         return res
