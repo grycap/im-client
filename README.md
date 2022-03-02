@@ -344,3 +344,7 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
       then waits for it to be configured, and finally get the TOSCA outputs. In case of failure in infrastructure
       creation none will be returned. In case of error waiting or getting the outputs only the infrastructure ID
       will be returned.
+
+   ``change_auth <infId> <newAuthFile>``
+      This operation enables to change the owner of infrastructure with ID ``infId`` using the authentication
+      data from file ``newAuthFile``.

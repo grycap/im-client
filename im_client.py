@@ -894,6 +894,44 @@ class IMClient:
         else:
             return False, "The infrastructure is in state: %s" % state
 
+    def change_auth(self):
+        inf_id = self.get_inf_id()
+        if len(self.args) >= 2:
+            if not os.path.isfile(self.args[1]):
+                return False, "New auth file '" + self.args[1] + "' does not exist"
+        else:
+            return False, "JSON file to create inf. not specified"
+
+        new_auth_data = []
+        for elem in IMClient.read_auth_data(self.args[1]):
+            if "type" in elem and elem["type"] == "InfrastructureManager":
+                new_auth_data.append(elem)
+                break
+
+        if not new_auth_data:
+            return False, "No new InfrastructureManager auth provided."
+
+        overwrite = False
+        if len(self.args) >= 3:
+            if self.args[2] in ["0", "1"]:
+                overwrite = bool(int(self.args[2]))
+            else:
+                return False, "The overwrite flag must be 0 or 1"
+
+        if self.options.restapi:
+            headers = {"Authorization": self.rest_auth_data}
+            url = "%s/infrastructures/%s/authentication" % (self.options.restapi, inf_id)
+            if overwrite:
+                url += "?overwrite=1"
+            resp = requests.request("POST", url, verify=self.options.verify,
+                                    headers=headers, data=json.dumps(new_auth_data[0]))
+            success = resp.status_code == 200
+            info = resp.text
+        else:
+            (success, info) = self.server.ChangeInfrastructureAuth(inf_id, new_auth_data[0], overwrite, self.auth_data)
+
+        return success, info
+
 
 def main(operation, options, args, parser):
     """
@@ -907,7 +945,7 @@ def main(operation, options, args, parser):
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
                           "alter", "getcontmsg", "getvminfo", "reconfigure", "getradl", "getvmcontmsg", "stopvm",
                           "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import", "getoutputs",
-                          "rebootvm", "cloudusage", "cloudimages", "wait", "create_wait_outputs"]):
+                          "rebootvm", "cloudusage", "cloudimages", "wait", "create_wait_outputs", "change_auth"]):
         parser.error("operation not recognised.  Use --help to show all the available operations")
 
     auth_data = None
@@ -1211,6 +1249,15 @@ def main(operation, options, args, parser):
             print('{"infid": "%s", "error": "%s"}' % (inf_id, outputs))
             return False
 
+    elif operation == "change_auth":
+        success, error = imclient.change_auth()
+        if success:
+            if not options.quiet:
+                print("Auth data successfully changed.")
+        else:
+            print("ERROR changing auth data: " + error)
+        return success
+
 
 def get_parser():
     """
@@ -1282,6 +1329,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     parser.add_operation_help('getversion', '')
     parser.add_operation_help('wait', '<inf_id> <max_time>')
     parser.add_operation_help('create_wait_outputs', '<radl_file>')
+    parser.add_operation_help('change_auth', '<inf_id> <new_auth_file>')
 
     return parser
 
