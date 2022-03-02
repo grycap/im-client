@@ -345,6 +345,7 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
       creation none will be returned. In case of error waiting or getting the outputs only the infrastructure ID
       will be returned.
 
-   ``change_auth <infId> <newAuthFile>``
+   ``change_auth <infId> <newAuthFile> [overwrite]``
       This operation enables to change the owner of infrastructure with ID ``infId`` using the authentication
-      data from file ``newAuthFile``.
+      data from file ``newAuthFile``. The ``overwrite`` parameter is optional and is a flag to specify if the
+      authentication data will be overwrited or will be appended. The default value is 0.
