@@ -920,7 +920,7 @@ class IMClient:
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/authentication" % (self.options.restapi, inf_id)
+            url = "%s/infrastructures/%s/authorization" % (self.options.restapi, inf_id)
             if overwrite:
                 url += "?overwrite=1"
             resp = requests.request("POST", url, verify=self.options.verify,
