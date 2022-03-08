@@ -249,11 +249,14 @@ class IMClient:
         self.options = options
         self.auth_data = auth_data
         if options.restapi and auth_data:
-            for item in auth_data:
-                for key, value in item.items():
-                    value = value.replace("\n", "\\\\n")
-                    self.rest_auth_data += "%s = %s;" % (key, value)
-                self.rest_auth_data += "\\n"
+            if isinstance(auth_data, str):
+                self.rest_auth_data = auth_data
+            else:
+                for item in auth_data:
+                    for key, value in item.items():
+                        value = value.replace("\n", "\\\\n")
+                        self.rest_auth_data += "%s = %s;" % (key, value)
+                    self.rest_auth_data += "\\n"
 
         elif options.xmlrpc:
             if options.xmlrpc.startswith("https") and not options.verify:
@@ -263,6 +266,22 @@ class IMClient:
                 except Exception:
                     pass
             self.server = ServerProxy(options.xmlrpc, allow_none=True)
+
+    @staticmethod
+    def replace_auth_values(value):
+        # Enable to specify a commnad and set the contents of the output
+        if value.startswith("command(") and value.endswith(")"):
+            command = value[8:-1]
+            return IMClient._run_command(command)
+        # Enable to specify a filename and set the contents of it
+        elif value.startswith("file(") and value.endswith(")"):
+            try:
+                with open(value[5:-1], 'r') as f:
+                    data = f.read()
+                return data.strip()
+            except Exception:
+                pass
+        return value
 
     # From IM.auth
     @staticmethod
@@ -276,6 +295,10 @@ class IMClient:
 
         res = []
 
+        if len(lines) == 1 and lines[0].startswith("Bearer "):
+            token = lines[0].strip()[7:]
+            return "Bearer %s" % IMClient.replace_auth_values(token)
+
         for line in lines:
             line = line.strip()
             if len(line) > 0 and not line.startswith("#"):
@@ -288,21 +311,7 @@ class IMClient:
                     else:
                         key = key_value[0].strip()
                         value = key_value[1].strip().replace("\\n", "\n")
-                        # Enable to specify a commnad and set the contents of the output
-                        if value.startswith("command(") and value.endswith(")"):
-                            command = value[8:len(value) - 1]
-                            value = IMClient._run_command(command)
-                        # Enable to specify a filename and set the contents of it
-                        elif value.startswith("file(") and value.endswith(")"):
-                            filename = value[5:len(value) - 1]
-                            try:
-                                value_file = open(filename, 'r')
-                                value = value_file.read()
-                                value_file.close()
-                            except Exception:
-                                pass
-
-                        auth[key] = value
+                        auth[key] = IMClient.replace_auth_values(value)
                 res.append(auth)
 
         return res
@@ -885,6 +894,44 @@ class IMClient:
         else:
             return False, "The infrastructure is in state: %s" % state
 
+    def change_auth(self):
+        inf_id = self.get_inf_id()
+        if len(self.args) >= 2:
+            if not os.path.isfile(self.args[1]):
+                return False, "New auth file '" + self.args[1] + "' does not exist"
+        else:
+            return False, "JSON file to create inf. not specified"
+
+        new_auth_data = []
+        for elem in IMClient.read_auth_data(self.args[1]):
+            if "type" in elem and elem["type"] == "InfrastructureManager":
+                new_auth_data.append(elem)
+                break
+
+        if not new_auth_data:
+            return False, "No new InfrastructureManager auth provided."
+
+        overwrite = False
+        if len(self.args) >= 3:
+            if self.args[2] in ["0", "1"]:
+                overwrite = bool(int(self.args[2]))
+            else:
+                return False, "The overwrite flag must be 0 or 1"
+
+        if self.options.restapi:
+            headers = {"Authorization": self.rest_auth_data}
+            url = "%s/infrastructures/%s/authorization" % (self.options.restapi, inf_id)
+            if overwrite:
+                url += "?overwrite=1"
+            resp = requests.request("POST", url, verify=self.options.verify,
+                                    headers=headers, data=json.dumps(new_auth_data[0]))
+            success = resp.status_code == 200
+            info = resp.text
+        else:
+            (success, info) = self.server.ChangeInfrastructureAuth(inf_id, new_auth_data[0], overwrite, self.auth_data)
+
+        return success, info
+
 
 def main(operation, options, args, parser):
     """
@@ -898,7 +945,7 @@ def main(operation, options, args, parser):
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
                           "alter", "getcontmsg", "getvminfo", "reconfigure", "getradl", "getvmcontmsg", "stopvm",
                           "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import", "getoutputs",
-                          "rebootvm", "cloudusage", "cloudimages", "wait", "create_wait_outputs"]):
+                          "rebootvm", "cloudusage", "cloudimages", "wait", "create_wait_outputs", "change_auth"]):
         parser.error("operation not recognised.  Use --help to show all the available operations")
 
     auth_data = None
@@ -1202,6 +1249,15 @@ def main(operation, options, args, parser):
             print('{"infid": "%s", "error": "%s"}' % (inf_id, outputs))
             return False
 
+    elif operation == "change_auth":
+        success, error = imclient.change_auth()
+        if success:
+            if not options.quiet:
+                print("Auth data successfully changed.")
+        else:
+            print("ERROR changing auth data: " + error)
+        return success
+
 
 def get_parser():
     """
@@ -1273,6 +1329,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     parser.add_operation_help('getversion', '')
     parser.add_operation_help('wait', '<inf_id> <max_time>')
     parser.add_operation_help('create_wait_outputs', '<radl_file>')
+    parser.add_operation_help('change_auth', '<inf_id> <new_auth_file>')
 
     return parser
 
