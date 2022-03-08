@@ -2,7 +2,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/im-client.svg)](https://pypi.org/project/im-client)
 [![Build Status](http://jenkins.i3m.upv.es/buildStatus/icon?job=grycap/im-client-unit-py3)](http://jenkins.i3m.upv.es:8080/job/grycap/job/im-client-unit-py3/)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/c74628a2fc134c2683d3fc57b571ce09)](https://www.codacy.com/app/micafer/im-client?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=grycap/im-client&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/c74628a2fc134c2683d3fc57b571ce09)](https://www.codacy.com/gh/grycap/im-client/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=grycap/im-client&amp;utm_campaign=Badge_Grade)
 [![Codacy Badge](https://api.codacy.com/project/badge/Coverage/c74628a2fc134c2683d3fc57b571ce09)](https://www.codacy.com/app/micafer/im-client?utm_source=github.com&utm_medium=referral&utm_content=grycap/im-client&utm_campaign=Badge_Coverage)
 [![License](https://img.shields.io/badge/license-GPL%20v3.0-brightgreen.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://imdocs.readthedocs.io/en/latest/client.html)
@@ -340,10 +340,12 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
       with a "configured" state or 1 otherwise.
 
    ``create_wait_outputs <radlfile>``
-      This operation is a combination of the create, wait and getoutputs functions. First create the infrastructure,
-      then waits for it to be configured, and finally get the TOSCA outputs. In case of failure in infrastructure
-      creation none will be returned. In case of error waiting or getting the outputs only the infrastructure ID
-      will be returned.
+      This operation is a combination of the create, wait and getoutputs functions. First it creates the
+      infrastructure using the specified ``inputfile``, then waits for it to be configured, and finally
+      gets the TOSCA outputs. In case of failure in then infrastructure creation step only the error message
+      will be returned. The results will be returned to stdout in json format::
+         
+         {"infid": "ID", "error": "Error message"}
 
    ``change_auth <infId> <newAuthFile> [overwrite]``
       This operation enables to change the owner of infrastructure with ID ``infId`` using the authentication
