@@ -116,6 +116,9 @@ class TestClient(unittest.TestCase):
                 resp.status_code = 200
                 resp.text = ('{ "uri-list": [ { "uri" : "http://localhost/infid/vms/1" }]}')
                 resp.json.return_value = json.loads(resp.text)
+            elif url == "/infrastructures/infid/authorization":
+                resp.status_code = 200
+                resp.text = ""
             else:
                 resp.status_code = 404
         elif method == "DELETE":
@@ -1191,6 +1194,21 @@ class TestClient(unittest.TestCase):
         self.assertEqual(output, {"infid": "inf1", "output1": "value1" , "output2": "value2"})
         sys.stdout = oldstdout
 
+    @patch('requests.request')
+    def test_change_user(self, requests):
+        """
+        Test create_wait_outputs operation
+        """
+        requests.side_effect = self.get_response
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        options.restapi = "https://localhost:8800"
+        options.xmlrpc = None
+        options.quiet = True
+        parser = MagicMock()
+
+        res = main("change_auth", options, ["infid", get_abs_path("../files/auth_new.dat")], parser)
+        self.assertEquals(res, True)
 
 
 if __name__ == '__main__':
