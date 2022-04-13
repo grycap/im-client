@@ -1244,10 +1244,9 @@ def main(operation, options, args, parser):
         if success:
             outputs["infid"] = inf_id
             print(json.dumps(outputs))
-            return True
         else:
-            print('{"infid": "%s", "error": "%s"}' % (inf_id, outputs))
-            return False
+            print('{"infid": "%s", "outputs": {}}' % inf_id)
+        return True
 
     elif operation == "change_auth":
         success, error = imclient.change_auth()
