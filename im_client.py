@@ -1233,12 +1233,12 @@ def main(operation, options, args, parser):
     elif operation == "create_wait_outputs":
         success, inf_id = imclient.create()
         if not success:
-            print('{"error": "%s"}' % inf_id)
+            print(json.dumps({'error': inf_id}))
             return False
         imclient.args = [inf_id]
         success, error = imclient.wait()
         if not success:
-            print('{"infid": "%s", "error": "%s"}' % (inf_id, error))
+            print(json.dumps({'error': error, 'infid': inf_id}))
             return False
         success, outputs = imclient.get_infra_property("outputs")
         if success:
@@ -1246,7 +1246,7 @@ def main(operation, options, args, parser):
             print(json.dumps(outputs))
             return True
         else:
-            print('{"infid": "%s", "error": "%s"}' % (inf_id, outputs))
+            print(json.dumps({'error': outputs, 'infid': inf_id}))
             return False
 
     elif operation == "change_auth":
