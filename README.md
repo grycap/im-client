@@ -176,7 +176,7 @@ id = ost; type = OpenStack; host = https://ostserver:5000; username = user; pass
 # OpenStack site using VOMS proxy authentication
 id = ostvoms; type = OpenStack; proxy = file(/tmp/proxy.pem); host = https://keystone:5000; tenant = tname
 # OpenStack site using OIDC authentication for EGI Sites
-id = ost; type = OpenStack; host = https://ostserver:5000; username = egi.eu; tenant = openid; password = comman(oidc-token OIDC_ACCOUNT); auth_version = 3.x_oidc_access_token; domain = project_name_or_id
+id = ost; type = OpenStack; host = https://ostserver:5000; username = egi.eu; tenant = openid; password = command(oidc-token OIDC_ACCOUNT); auth_version = 3.x_oidc_access_token; domain = project_name_or_id
 # IM auth data 
 id = im; type = InfrastructureManager; username = user; password = pass
 # VMRC auth data
