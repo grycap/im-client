@@ -93,6 +93,18 @@ this:
 id = id_value ; type = value_of_type ; username = value_of_username ; password = value_of_password
 ```
 
+Remember that the **InfrastructureManager auth line is mandatory**, like this:
+
+```sh
+id = im ; type = InfrastructureManager ; username = value_of_username ; password = value_of_password
+```
+
+or using an OIDC token:
+
+```sh
+id = im ; type = InfrastructureManager ; token = value_of_token
+```
+
 Values can contain "=", and "\\n" is replaced by carriage return. The available
 keys are:
 
