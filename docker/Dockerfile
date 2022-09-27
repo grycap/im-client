@@ -9,7 +9,7 @@ RUN  apk add --no-cache python3 py3-requests jq bash
 
 # Install IM client
 RUN  apk add --no-cache py3-pip  && \
-     pip3 install https://github.com/grycap/im-client/archive/refs/heads/master.zip && \
+     pip3 install im-client==1.5.11 && \
      apk del --no-cache py3-pip
 
 ENTRYPOINT ["/usr/bin/im_client.py"]
