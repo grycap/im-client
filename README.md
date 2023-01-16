@@ -243,6 +243,24 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
    Path to the authorization file, see [here](https://imdocs.readthedocs.io/en/latest/client.html#authorization-file).
    This option is compulsory.
 
+* option: -f|--force
+
+   Force the deletion of the infrastructure. Only for destroy operation.
+   The default value is `False`.
+
+* option: -q|--quiet
+
+   Work in quiet mode. Avoid all unnecessary prints.
+   The default value is `False`.
+
+* option: -n|--name
+
+   Show/use Infrastructure name in the selected operation.
+   In case of list operation it will show the name of each infrastructure (if available).
+   In other operations if this flag is set the user should specify the name of the infrastructure
+   instead of the ID.
+   The default value is `False`.
+
 * operation:
 
    ``list [filter]``:
@@ -356,7 +374,7 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
       infrastructure using the specified ``inputfile``, then waits for it to be configured, and finally
       gets the TOSCA outputs. In case of failure in then infrastructure creation step only the error message
       will be returned. The results will be returned to stdout in json format::
-         
+
          {"infid": "ID", "error": "Error message"}
 
    ``change_auth <infId> <newAuthFile> [overwrite]``
