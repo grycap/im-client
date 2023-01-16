@@ -1,7 +1,7 @@
 # Dockerfile to create a container with the IM client
 FROM alpine:3.16
 LABEL maintainer="Miguel Caballer <micafer1@upv.es>"
-LABEL version="1.5.11"
+LABEL version="1.6.0"
 LABEL description="Container image to run the IM client. (http://www.grycap.upv.es/im)"
 
 # Install python3
