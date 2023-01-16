@@ -12,4 +12,8 @@ RUN  apk add --no-cache py3-pip  && \
      pip3 install im-client==1.5.11 && \
      apk del --no-cache py3-pip
 
+COPY im_client.cfg /im-client/im_client.cfg
+
+WORKDIR /im-client
+
 ENTRYPOINT ["/usr/bin/im_client.py"]

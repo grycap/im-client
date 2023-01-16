@@ -351,11 +351,23 @@ class IMClient:
 
     def get_inf_id(self):
         if len(self.args) >= 1:
-            if self.args[0].isdigit():
+            inf_id = self.args[0]
+            if inf_id.isdigit():
                 inf_id = int(self.args[0])
-                return inf_id
+
+            if self.options.name:
+                success, infras = self.list_infras(True)
+                if not success:
+                    raise Exception("Error getting infrastructure list.")
+                res = [infid for infid, inf_name in infras.items() if inf_name == inf_id]
+                if len(res) == 0:
+                    raise Exception("Infrastructure Name not found")
+                elif len(res) >= 1:
+                    if len(res) > 1:
+                        print("WARNING!: more that one infrastructure with the same name. First one returned.")
+                    return res[0]
             else:
-                return self.args[0]
+                return inf_id
         else:
             raise Exception("Infrastructure ID not specified")
 
@@ -633,7 +645,7 @@ class IMClient:
 
         return success, res
 
-    def list_infras(self):
+    def list_infras(self, show_name=False):
         flt = None
         if len(self.args) >= 1:
             flt = self.args[0]
@@ -653,6 +665,17 @@ class IMClient:
                 res = resp.text
         else:
             (success, res) = self.server.GetInfrastructureList(self.auth_data, flt)
+
+        if success and show_name:
+            inf_names = {}
+            for inf_id in res:
+                inf_names[inf_id] = "N/A"
+                success, radl_data = self.get_infra_property("radl", inf_id)
+                if success:
+                    radl = radl_parse.parse_radl(radl_data)
+                    if radl.description and radl.description.getValue("name"):
+                        inf_names[inf_id] = radl.description.getValue("name")
+            res = inf_names
 
         return success, res
 
@@ -1075,30 +1098,18 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "list":
-        success, res = imclient.list_infras()
+        success, res = imclient.list_infras(options.name)
         if success:
             if res:
-                if options.name:
-                    inf_names = {}
-                    for inf_id in res:
-                        inf_names[inf_id] = "N/A"
-                        success, radl_data = imclient.get_infra_property("radl", inf_id)
-                        if success:
-                            radl = radl_parse.parse_radl(radl_data)
-                            if radl.description and radl.description.getValue("name"):
-                                inf_names[inf_id] = radl.description.getValue("name")
-
-                    if not options.quiet:
+                if options.quiet:
+                    print(json.dumps(res, indent=4))
+                else:
+                    if options.name:
                         print("Infrastructure ID                       Name")
                         print("====================================    ====")
-                        print("\n".join(["%s    %s" % (inf_id, name) for inf_id, name in inf_names.items()]))
+                        print("\n".join(["%s    %s" % (inf_id, name) for inf_id, name in res.items()]))
                     else:
-                        print(json.dumps(inf_names, indent=4))
-                else:
-                    if not options.quiet:
                         print("Infrastructure IDs: \n  %s" % ("\n  ".join([str(inf_id) for inf_id in res])))
-                    else:
-                        print(json.dumps(res, indent=4))
             else:
                 if not options.quiet:
                     print("No Infrastructures.")
@@ -1319,7 +1330,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     parser.add_option("-q", "--quiet", action="store_true", default=False, dest="quiet",
                       help="Work in quiet mode")
     parser.add_option("-n", "--name", action="store_true", default=False, dest="name",
-                      help="Show Infra name in list")
+                      help="Show/User Infra name-")
     parser.add_operation_help('list', '')
     parser.add_operation_help('create', '<radl_file> [async_flag]')
     parser.add_operation_help('destroy', '<inf_id>')

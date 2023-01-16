@@ -113,3 +113,5 @@ IM-client 1.5.11
     * Add create_wait_outputs operation function.
     * Add change_auth operation.
 
+IM-client 1.6.0
+    * Enable to get/use names to manage infrastructures.
