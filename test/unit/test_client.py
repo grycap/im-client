@@ -177,6 +177,7 @@ class TestClient(unittest.TestCase):
         options.restapi = None
         options.verify = False
         options.quiet = False
+        options.name = False
         parser = MagicMock()
 
         out = StringIO()
@@ -187,6 +188,21 @@ class TestClient(unittest.TestCase):
         self.assertEquals(res, True)
         self.assertIn("IDs: \n  inf1\n  inf2", output)
         sys.stdout = oldstdout
+
+        options.name = True
+        proxy.GetInfrastructureRADL.side_effect = [(True, "description desc (name = 'some name')\nsystem s1 ()"),
+                                                   (True, "description desc (name = 'some name2')\nsystem s2 ()")]
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        sys.stdout = out
+        res = main("list", options, [], parser)
+        output = out.getvalue().strip()
+        self.assertEquals(res, True)
+        self.assertIn("inf1    some name", output)
+        self.assertIn("inf2    some name2", output)
+        sys.stdout = oldstdout
+        options.name = False
 
         out = StringIO()
         oldstdout = sys.stdout

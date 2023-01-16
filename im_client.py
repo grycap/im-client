@@ -534,8 +534,9 @@ class IMClient:
 
         return success, res
 
-    def get_infra_property(self, prop):
-        inf_id = self.get_inf_id()
+    def get_infra_property(self, prop, inf_id=None):
+        if not inf_id:
+            inf_id = self.get_inf_id()
 
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
@@ -1077,10 +1078,27 @@ def main(operation, options, args, parser):
         success, res = imclient.list_infras()
         if success:
             if res:
-                if not options.quiet:
-                    print("Infrastructure IDs: \n  %s" % ("\n  ".join([str(inf_id) for inf_id in res])))
+                if options.name:
+                    inf_names = {}
+                    for inf_id in res:
+                        inf_names[inf_id] = "N/A"
+                        success, radl_data = imclient.get_infra_property("radl", inf_id)
+                        if success:
+                            radl = radl_parse.parse_radl(radl_data)
+                            if radl.description and radl.description.getValue("name"):
+                                inf_names[inf_id] = radl.description.getValue("name")
+
+                    if not options.quiet:
+                        print("Infrastructure ID                       Name")
+                        print("====================================    ====")
+                        print("\n".join(["%s    %s" % (inf_id, name) for inf_id, name in inf_names.items()]))
+                    else:
+                        print(json.dumps(inf_names, indent=4))
                 else:
-                    print(json.dumps(res, indent=4))
+                    if not options.quiet:
+                        print("Infrastructure IDs: \n  %s" % ("\n  ".join([str(inf_id) for inf_id in res])))
+                    else:
+                        print(json.dumps(res, indent=4))
             else:
                 if not options.quiet:
                     print("No Infrastructures.")
@@ -1300,6 +1318,8 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
                       help="Force the deletion of the infrastructure")
     parser.add_option("-q", "--quiet", action="store_true", default=False, dest="quiet",
                       help="Work in quiet mode")
+    parser.add_option("-n", "--name", action="store_true", default=False, dest="name",
+                      help="Show Infra name in list")
     parser.add_operation_help('list', '')
     parser.add_operation_help('create', '<radl_file> [async_flag]')
     parser.add_operation_help('destroy', '<inf_id>')
