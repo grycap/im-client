@@ -1250,7 +1250,7 @@ class TestClient(unittest.TestCase):
         res = main("create_wait_outputs", options, [get_abs_path("../files/test.radl")], parser)
         self.assertEquals(res, True)
         output = json.loads(out.getvalue().strip())
-        self.assertEqual(output, {"infid": "inf1", "output1": "value1" , "output2": "value2"})
+        self.assertEqual(output, {"infid": "inf1", "output1": "value1", "output2": "value2"})
         sys.stdout = oldstdout
 
     @patch('requests.request')
