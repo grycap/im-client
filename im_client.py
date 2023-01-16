@@ -1088,12 +1088,12 @@ def main(operation, options, args, parser):
                             if radl.description and radl.description.getValue("name"):
                                 inf_names[inf_id] = radl.description.getValue("name")
 
-                            if not options.quiet:
-                                print("Infrastructure ID                       Name")
-                                print("====================================    ====")
-                                print("\n".join(["%s    %s" % (inf_id, name) for inf_id, name in inf_names.items()]))
-                            else:
-                                print(json.dumps(inf_names, indent=4))
+                    if not options.quiet:
+                        print("Infrastructure ID                       Name")
+                        print("====================================    ====")
+                        print("\n".join(["%s    %s" % (inf_id, name) for inf_id, name in inf_names.items()]))
+                    else:
+                        print(json.dumps(inf_names, indent=4))
                 else:
                     if not options.quiet:
                         print("Infrastructure IDs: \n  %s" % ("\n  ".join([str(inf_id) for inf_id in res])))
