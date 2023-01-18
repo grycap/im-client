@@ -356,16 +356,15 @@ class IMClient:
                 inf_id = int(self.args[0])
 
             if self.options.name:
-                success, infras = self.list_infras(True)
+                success, infras = self.list_infras(flt=".*description\s*.*\s*(\s*name\s*=\s*'%s'.*).*" % inf_id)
                 if not success:
                     raise Exception("Error getting infrastructure list.")
-                res = [infid for infid, inf_name in infras.items() if inf_name == inf_id]
-                if len(res) == 0:
+                if len(infras) == 0:
                     raise Exception("Infrastructure Name not found")
-                elif len(res) >= 1:
-                    if len(res) > 1:
+                elif len(infras) >= 1:
+                    if len(infras) > 1:
                         print("WARNING!: more that one infrastructure with the same name. First one returned.")
-                    return res[0]
+                    return infras[0]
             else:
                 return inf_id
         else:
@@ -645,9 +644,8 @@ class IMClient:
 
         return success, res
 
-    def list_infras(self, show_name=False):
-        flt = None
-        if len(self.args) >= 1:
+    def list_infras(self, show_name=False, flt=None):
+        if flt is None and len(self.args) >= 1:
             flt = self.args[0]
 
         if self.options.restapi:
@@ -1098,7 +1096,7 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "list":
-        success, res = imclient.list_infras(options.name)
+        success, res = imclient.list_infras(show_name=options.name)
         if success:
             if res:
                 if options.quiet:
