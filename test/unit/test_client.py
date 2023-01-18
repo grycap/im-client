@@ -600,9 +600,7 @@ class TestClient(unittest.TestCase):
 
         # Test using name instead of the ID
         options.name = True
-        proxy.GetInfrastructureList.return_value = (True, ["inf1", "inf2"])
-        proxy.GetInfrastructureRADL.side_effect = [(True, "description desc (name = 'some name')\nsystem s1 ()"),
-                                                   (True, "description desc (name = 'some name2')\nsystem s2 ()")]
+        proxy.GetInfrastructureList.return_value = (True, ["inf1"])
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
@@ -610,6 +608,8 @@ class TestClient(unittest.TestCase):
         self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully destroyed", output)
+        self.assertEqual(proxy.GetInfrastructureList.call_args_list[0][0][1],
+                         ".*description\s*.*\s*(\s*name\s*=\s*'some name'.*).*")
         self.assertEqual(proxy.DestroyInfrastructure.call_args_list[1][0][0], 'inf1')
         options.name = False
 
