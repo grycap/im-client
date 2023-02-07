@@ -2,7 +2,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/im-client.svg)](https://pypi.org/project/im-client)
 [![Build Status](http://jenkins.i3m.upv.es/buildStatus/icon?job=grycap/im-client-unit-py3)](http://jenkins.i3m.upv.es:8080/job/grycap/job/im-client-unit-py3/)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/c74628a2fc134c2683d3fc57b571ce09)](https://www.codacy.com/app/micafer/im-client?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=grycap/im-client&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/c74628a2fc134c2683d3fc57b571ce09)](https://www.codacy.com/gh/grycap/im-client/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=grycap/im-client&amp;utm_campaign=Badge_Grade)
 [![Codacy Badge](https://api.codacy.com/project/badge/Coverage/c74628a2fc134c2683d3fc57b571ce09)](https://www.codacy.com/app/micafer/im-client?utm_source=github.com&utm_medium=referral&utm_content=grycap/im-client&utm_campaign=Badge_Coverage)
 [![License](https://img.shields.io/badge/license-GPL%20v3.0-brightgreen.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://imdocs.readthedocs.io/en/latest/client.html)
@@ -93,6 +93,18 @@ this:
 id = id_value ; type = value_of_type ; username = value_of_username ; password = value_of_password
 ```
 
+Remember that the **InfrastructureManager auth line is mandatory**, like this:
+
+```sh
+id = im ; type = InfrastructureManager ; username = value_of_username ; password = value_of_password
+```
+
+or using an OIDC token:
+
+```sh
+id = im ; type = InfrastructureManager ; token = value_of_token
+```
+
 Values can contain "=", and "\\n" is replaced by carriage return. The available
 keys are:
 
@@ -176,7 +188,7 @@ id = ost; type = OpenStack; host = https://ostserver:5000; username = user; pass
 # OpenStack site using VOMS proxy authentication
 id = ostvoms; type = OpenStack; proxy = file(/tmp/proxy.pem); host = https://keystone:5000; tenant = tname
 # OpenStack site using OIDC authentication for EGI Sites
-id = ost; type = OpenStack; host = https://ostserver:5000; username = egi.eu; tenant = openid; password = comman(oidc-token OIDC_ACCOUNT); auth_version = 3.x_oidc_access_token; domain = project_name_or_id
+id = ost; type = OpenStack; host = https://ostserver:5000; username = egi.eu; tenant = openid; password = command(oidc-token OIDC_ACCOUNT); auth_version = 3.x_oidc_access_token; domain = project_name_or_id
 # IM auth data 
 id = im; type = InfrastructureManager; username = user; password = pass
 # VMRC auth data
@@ -230,6 +242,24 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
 
    Path to the authorization file, see [here](https://imdocs.readthedocs.io/en/latest/client.html#authorization-file).
    This option is compulsory.
+
+* option: -f|--force
+
+   Force the deletion of the infrastructure. Only for destroy operation.
+   The default value is `False`.
+
+* option: -q|--quiet
+
+   Work in quiet mode. Avoid all unnecessary prints.
+   The default value is `False`.
+
+* option: -n|--name
+
+   Show/use Infrastructure name in the selected operation.
+   In case of list operation it will show the name of each infrastructure (if available).
+   In other operations if this flag is set the user should specify the name of the infrastructure
+   instead of the ID.
+   The default value is `False`.
 
 * operation:
 
@@ -340,10 +370,12 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
       with a "configured" state or 1 otherwise.
 
    ``create_wait_outputs <radlfile>``
-      This operation is a combination of the create, wait and getoutputs functions. First create the infrastructure,
-      then waits for it to be configured, and finally get the TOSCA outputs. In case of failure in infrastructure
-      creation none will be returned. In case of error waiting or getting the outputs only the infrastructure ID
-      will be returned.
+      This operation is a combination of the create, wait and getoutputs functions. First it creates the
+      infrastructure using the specified ``inputfile``, then waits for it to be configured, and finally
+      gets the TOSCA outputs. In case of failure in then infrastructure creation step only the error message
+      will be returned. The results will be returned to stdout in json format::
+
+         {"infid": "ID", "error": "Error message"}
 
    ``change_auth <infId> <newAuthFile> [overwrite]``
       This operation enables to change the owner of infrastructure with ID ``infId`` using the authentication
