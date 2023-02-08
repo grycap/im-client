@@ -28,7 +28,7 @@ except ImportError:
 sys.path.append("..")
 sys.path.append(".")
 
-from im_client import main, get_parser
+from im_client import main, get_parser, IMClient
 from mock import patch, MagicMock
 
 try:
@@ -1269,6 +1269,24 @@ class TestClient(unittest.TestCase):
 
         res = main("change_auth", options, ["infid", get_abs_path("../files/auth_new.dat")], parser)
         self.assertEquals(res, True)
+
+    def test_read_auth_data(self):
+        """
+        Test read_auth_data function
+        """
+        auth_lines = ["""id = a1; type = InfrastructureManager; username = someuser; password = somepass """,
+                      """id = a2; type = VMRC; username = someuser; password = somepass; """,
+                      """id = a3; type = OpenNebula; username = someuser; password   =   "some;'pass" """,
+                      """id = a4; type = EC2; username =someuser; password='some;"pass' """]
+        auth = IMClient.read_auth_data(auth_lines)
+        self.assertEqual(auth, [{'id': 'a1', 'password': "somepass",
+                                 'type': 'InfrastructureManager', 'username': 'someuser'},
+                                {'id': 'a2', 'password': "somepass",
+                                 'type': 'VMRC', 'username': 'someuser'},
+                                {'id': 'a3', 'password': "some;'pass",
+                                 'type': 'OpenNebula', 'username': 'someuser'},
+                                {'id': 'a4', 'password': 'some;"pass',
+                                 'type': 'EC2', 'username': 'someuser'}])
 
 
 if __name__ == '__main__':

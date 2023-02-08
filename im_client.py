@@ -283,6 +283,40 @@ class IMClient:
                 pass
         return value
 
+    @staticmethod
+    def split_line(line, separator=";", maintain_quotes=False):
+        """
+        Split line using ; as separator char
+        considering single quotes as a way to delimit
+        tokens. (in particular to enable using char ; inside a token)
+        """
+        tokens = []
+        token = ""
+        in_qoutes = False
+        in_dqoutes = False
+        has_quotes = False
+        for char in line:
+            if char == '"' and not in_qoutes:
+                has_quotes = True
+                in_dqoutes = not in_dqoutes
+                if maintain_quotes:
+                    token += char
+            elif char == "'" and not in_dqoutes:
+                has_quotes = True
+                in_qoutes = not in_qoutes
+                if maintain_quotes:
+                    token += char
+            elif char == separator and not in_qoutes and not in_dqoutes:
+                tokens.append(token)
+                token = ""
+            else:
+                token += char
+        # Add the last token
+        if token.strip() != "" or has_quotes:
+            tokens.append(token)
+
+        return tokens
+
     # From IM.auth
     @staticmethod
     def read_auth_data(filename):
@@ -303,9 +337,8 @@ class IMClient:
             line = line.strip()
             if len(line) > 0 and not line.startswith("#"):
                 auth = {}
-                tokens = line.split(";")
-                for token in tokens:
-                    key_value = token.split(" = ")
+                for token in IMClient.split_line(line, maintain_quotes=True):
+                    key_value = IMClient.split_line(token, "=")
                     if len(key_value) != 2:
                         break
                     else:
