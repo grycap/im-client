@@ -241,6 +241,9 @@ class CmdSsh:
 
 
 class IMClient:
+    """
+    Class to connect with the Infrastructure Manager
+    """
 
     def __init__(self, options, auth_data, args):
         self.args = args
@@ -269,6 +272,18 @@ class IMClient:
 
     @staticmethod
     def init_client(im_url, auth_data, rest=True, ssl_verify=False):
+        """
+        Create and initialize the IMClient class
+        Arguments:
+           - im_url(string): URL to the IM API (REST or XML-RPC)
+           - auth_data(:py:class:`dict` of str objects): Authentication data to access cloud provider
+                                                         (as returned by `read_auth_data` function).
+           - rest(boolean): Flag to specify the type of API to use (REST or XML-RPC).
+                            Default `True`.
+           - ssl_verify(boolean): Flag to specify if ssl certificates must be validated.
+                                  Default `False`.
+        Returns(:py:class:`imclient.IMClient`): A client ready to interact with an IM instance.
+        """
         options = {}
         if rest:
             options["restapi"] = im_url
@@ -330,6 +345,13 @@ class IMClient:
     # From IM.auth
     @staticmethod
     def read_auth_data(filename):
+        """
+        Read an IM auth data file.
+        Arguments:
+           - filename(string): path to the IM auth file.
+        Returns(:py:class:`list` of `dict` of str objects): Authentication data to access cloud provider and the IM.
+        One entry per line, each line splitted in a dictionary of pairs key/value.
+        """
         if isinstance(filename, list):
             lines = filename
         else:
@@ -428,6 +450,16 @@ class IMClient:
             raise Exception("RADL file not specified")
 
     def create(self, inf_desc, desc_type="radl", asyncr=False):
+        """
+        Create an infrastructure
+        Arguments:
+           - inf_desc(string): Infrastructure description in RADL (plain or JSON) or TOSCA.
+           - desc_type(string): Infrastructure description type ("radl", "json" or "yaml")
+           - asyncr(boolean): Flag to specify if the creation call will be asynchronous.
+                              Default `False`.
+        Returns: A tuple with the operation success (boolean) and the infrastructure ID in case of success
+                 or the error message otherwise.
+        """
         inf_id = None
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
@@ -476,6 +508,16 @@ class IMClient:
         return self.create(radl, desc_type, asyncr)
 
     def removeresource(self, inf_id, vm_list, context=None):
+        """
+        Remove resources from an infrastructure
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - vm_list(list of strings): List of VM IDs to delete.
+           - context(boolean): Flag to disable the contextualization at the end.
+        Returns: A tuple with the operation success (boolean) and the list of deleted VM IDs in case of success
+                 or the error message otherwise.
+        """
+        vm_list = ",".join(str(vm_id) for vm_id in vm_list)
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
             url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi.rstrip("/"), inf_id, vm_list)
@@ -496,7 +538,7 @@ class IMClient:
         inf_id = self._get_inf_id()
         context = None
         if len(self.args) >= 2:
-            vm_list = self.args[1]
+            vm_list = [int(vm_id) for vm_id in self.args[1].split(",")]
 
             if len(self.args) >= 3:
                 if self.args[2] in ["0", "1"]:
@@ -513,10 +555,22 @@ class IMClient:
         return self.removeresource(inf_id, vm_list, context)
 
     def addresource(self, inf_id, inf_desc, desc_type="radl", context=None):
+        """
+        Add resources into an infrastructure
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - inf_desc(string): Infrastructure description in RADL (plain or JSON) or TOSCA.
+           - desc_type(string): Infrastructure description type ("radl", "json" or "yaml")
+           - context(boolean): Flag to disable the contextualization at the end.
+        Returns: A tuple with the operation success (boolean) and the list of added VM IDs in case of success
+                 or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
             if desc_type == "yaml":
                 headers["Content-Type"] = "text/yaml"
+            elif desc_type == "json":
+                headers["Content-Type"] = "application/json"
             url = "%s/infrastructures/%s" % (self.options.restapi, inf_id)
             if context is False:
                 url += "?context=0"
@@ -559,6 +613,15 @@ class IMClient:
         return self.addresource(inf_id, radl, desc_type, context)
 
     def alter(self, inf_id, vm_id, inf_desc):
+        """
+        Modifies the features of a VM
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - vm_id(string): VM ID.
+           - inf_desc(string): Infrastructure description in RADL (plain).
+        Returns: A tuple with the operation success (boolean) and the RADL of the modified VM in case of success
+                 or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
             url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi, inf_id, vm_id)
@@ -580,6 +643,15 @@ class IMClient:
         return self.alter(inf_id, vm_id, radl)
 
     def reconfigure(self, inf_id, inf_desc, vm_list=None):
+        """
+        Reconfigure the infrastructure
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - inf_desc(string): Infrastructure description in RADL (plain).
+           - vm_list(list of strings): Optional list of VM IDs to reconfigure (default all).
+        Returns: A tuple with the operation success (boolean) and an empty string in case of success
+                 or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
             url = "%s/infrastructures/%s/reconfigure" % (self.options.restapi, inf_id)
