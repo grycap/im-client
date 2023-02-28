@@ -441,7 +441,7 @@ class IMClient:
         else:
             raise Exception("VM ID not specified")
 
-    def get_radl(self, param_index, fail_if_not_set=True):
+    def _get_radl(self, param_index, fail_if_not_set=True):
         if len(self.args) > param_index:
             if not os.path.isfile(self.args[param_index]):
                 raise Exception("RADL file '%s' does not exist" % self.args[param_index])
@@ -482,7 +482,7 @@ class IMClient:
         return success, inf_id
 
     def _create(self):
-        radl_file = self.get_radl(0)
+        radl_file = self._get_radl(0)
         asyncr = False
         if len(self.args) >= 2:
             asyncr = bool(int(self.args[1]))
@@ -591,7 +591,7 @@ class IMClient:
 
     def _addresource(self):
         inf_id = self._get_inf_id()
-        radl_file = self.get_radl(1)
+        radl_file = self._get_radl(1)
         context = None
         if len(self.args) >= 3:
             if self.args[2] in ["0", "1"]:
@@ -636,7 +636,7 @@ class IMClient:
     def _alter(self):
         inf_id = self._get_inf_id()
         vm_id = self._get_vm_id()
-        radl_file = self.get_radl(2)
+        radl_file = self._get_radl(2)
 
         radl = radl_parse.parse_radl(radl_file)
 
@@ -669,7 +669,7 @@ class IMClient:
         inf_id = self._get_inf_id()
         radl = ""
         vm_list = None
-        radl_file = self.get_radl(1, False)
+        radl_file = self._get_radl(1, False)
         if len(self.args) >= 3:
             vm_list = [int(vm_id) for vm_id in self.args[2].split(",")]
 
@@ -683,6 +683,15 @@ class IMClient:
         return self.reconfigure(inf_id, radl, vm_list)
 
     def get_infra_property(self, inf_id, prop):
+        """
+        Get an infrastructure property.
+
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - prop(string): Property to get. Valid values: "radl", "contmsg", "state", "outputs"
+        Returns: A tuple with the operation success (boolean) and the value of the prop in case of success
+                 or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
             url = "%s/infrastructures/%s/%s" % (self.options.restapi, inf_id, prop)
@@ -710,7 +719,22 @@ class IMClient:
         inf_id = self._get_inf_id()
         return self.get_infra_property(inf_id, prop)
 
+    def _getvmcontmsg(self):
+        inf_id = self._get_inf_id()
+        vm_id = self._get_vm_id()
+        return self.getvminfo(inf_id, vm_id, "contmsg")
+
     def getvminfo(self, inf_id, vm_id, prop=None):
+        """
+        Get VM info.
+
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - vm_id(string): VM ID.
+           - prop(string): Optional RADL property to get.
+        Returns: A tuple with the operation success (boolean) and the value of the prop in case of success
+                 or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
             url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi, inf_id, vm_id)
@@ -721,7 +745,10 @@ class IMClient:
             info = resp.text
         else:
             if prop:
-                (success, info) = self.server.GetVMProperty(inf_id, vm_id, prop, self.auth_data)
+                if prop == "contmsg":
+                    (success, info) = self.server.GetVMContMsg(inf_id, vm_id, self.auth_data)
+                else:
+                    (success, info) = self.server.GetVMProperty(inf_id, vm_id, prop, self.auth_data)
             else:
                 (success, info) = self.server.GetVMInfo(inf_id, vm_id, self.auth_data)
 
@@ -745,6 +772,15 @@ class IMClient:
             yield vm_id, success, radl
 
     def getinfo(self, inf_id, prop=None):
+        """
+        Get infrastructure info.
+
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - prop(string): Optional RADL property to get.
+        Returns: A tuple with the operation success (boolean) and the value of the prop in case of success
+                 or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
             url = "%s/infrastructures/%s" % (self.options.restapi, inf_id)
@@ -774,6 +810,16 @@ class IMClient:
         return self.getinfo(inf_id, prop)
 
     def destroy(self, inf_id, asyncr=False):
+        """
+        Destroy an infrastructure
+
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - asyncr(boolean): Flag to specify if the deletion call will be asynchronous.
+                              Default `False`.
+        Returns: A tuple with the operation success (boolean) and an empty string in case of success
+                 or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
             url = "%s/infrastructures/%s" % (self.options.restapi, inf_id)
@@ -794,6 +840,14 @@ class IMClient:
         return self.destroy(inf_id)
 
     def list_infras(self, flt=None):
+        """
+        Get the list of user infrastructures
+
+        Arguments:
+           - flt(string): Optional filter (as regular expression) to filter the infrastructures.
+        Returns: A tuple with the operation success (boolean) and the list of infrastructure IDs
+                 in case of success or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
             url = "%s/infrastructures" % self.options.restapi
@@ -831,7 +885,38 @@ class IMClient:
 
         return success, res
 
+    def start_infra(self, inf_id):
+        """
+        Start an infrastructure (previously stopped)
+
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+        Returns: A tuple with the operation success (boolean) and an empty string
+                 in case of success or the error message otherwise.
+        """
+        return self.infra_op(inf_id, "start")
+
+    def stop_infra(self, inf_id):
+        """
+        Stop an infrastructure
+
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+        Returns: A tuple with the operation success (boolean) and an empty string
+                 in case of success or the error message otherwise.
+        """
+        return self.infra_op(inf_id, "stop")
+
     def infra_op(self, inf_id, operation):
+        """
+        Call an infrastructure operation (start or stop)
+
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - operation(string): Operation to call: "start" or "stop".
+        Returns: A tuple with the operation success (boolean) and an empty string
+                 in case of success or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
             url = "%s/infrastructures/%s/%s" % (self.options.restapi, inf_id, operation)
@@ -851,24 +936,53 @@ class IMClient:
         inf_id = self._get_inf_id()
         return self.infra_op(inf_id, operation)
 
-    def getvmcontmsg(self, inf_id, vm_id):
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s/contmsg" % (self.options.restapi, inf_id, vm_id)
-            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            info = resp.text
-        else:
-            (success, info) = self.server.GetVMContMsg(inf_id, vm_id, self.auth_data)
+    def start_vm(self, inf_id, vm_id):
+        """
+        Start an VM (previously stopped)
 
-        return success, info
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - vm_id(string): VM ID.
+        Returns: A tuple with the operation success (boolean) and an empty string
+                 in case of success or the error message otherwise.
+        """
+        return self.infra_op(inf_id, vm_id, "start")
 
-    def _getvmcontmsg(self):
-        inf_id = self._get_inf_id()
-        vm_id = self._get_vm_id()
-        return self.getvmcontmsg(inf_id, vm_id)
+    def stop_vm(self, inf_id, vm_id):
+        """
+        Stop an VM
+
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - vm_id(string): VM ID.
+        Returns: A tuple with the operation success (boolean) and an empty string
+                 in case of success or the error message otherwise.
+        """
+        return self.infra_op(inf_id, vm_id, "stop")
+
+    def reboot_vm(self, inf_id, vm_id):
+        """
+        Reboot an VM
+
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - vm_id(string): VM ID.
+        Returns: A tuple with the operation success (boolean) and an empty string
+                 in case of success or the error message otherwise.
+        """
+        return self.infra_op(inf_id, vm_id, "reboot")
 
     def vm_op(self, inf_id, vm_id, operation):
+        """
+        Call a VM operation (start, stop or reboot)
+
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - vm_id(string): VM ID.
+           - operation(string): Operation to call: "start", "stop" or "reboot".
+        Returns: A tuple with the operation success (boolean) and an empty string
+                 in case of success or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
             url = "%s/infrastructures/%s/vms/%s/%s" % (self.options.restapi, inf_id, vm_id, operation)
@@ -964,6 +1078,12 @@ class IMClient:
         return True, (radl, show_only)
 
     def getversion(self):
+        """
+        Get IM server version
+
+        Returns: A tuple with the operation success (boolean) and the version string
+                 in case of success or the error message otherwise.
+        """
         if self.options.restapi:
             url = "%s/version" % self.options.restapi
             resp = requests.request("GET", url, verify=self.options.verify)
@@ -975,6 +1095,16 @@ class IMClient:
         return success, version
 
     def export_data(self, inf_id, delete=None):
+        """
+        Export infrastructure data
+
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - delete(boolean): Flag to specify if the infrastructure will be deleted after exporting the data.
+                              Default `False`.
+        Returns: A tuple with the operation success (boolean) and the json data of the infrastructure
+                 in case of success or the error message otherwise.
+        """
         if len(self.args) >= 2:
             delete = bool(int(self.args[1]))
 
@@ -1002,6 +1132,14 @@ class IMClient:
         return self.export_data(inf_id, delete)
 
     def import_data(self, data):
+        """
+        Import infrastructure data
+
+        Arguments:
+           - data(string): Json data with the Infrastructure info.
+        Returns: A tuple with the operation success (boolean) and the ID of the imported infrastructure
+                 in case of success or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
             url = "%s/infrastructures" % self.options.restapi
@@ -1028,7 +1166,38 @@ class IMClient:
 
         return self.import_data(data)
 
+    def get_cloud_images(self, cloud_id):
+        """
+        Get Cloud provider images
+
+        Arguments:
+           - cloud_id(string): ID of the cloud provider (as defined in the auth data).
+        Returns: A tuple with the operation success (boolean) and the requested data
+                 in case of success or the error message otherwise.
+        """
+        return self.get_cloud_info(cloud_id, "images")
+
+    def get_cloud_quotas(self, cloud_id):
+        """
+        Get Cloud provider quotas
+
+        Arguments:
+           - cloud_id(string): ID of the cloud provider (as defined in the auth data).
+        Returns: A tuple with the operation success (boolean) and the requested data
+                 in case of success or the error message otherwise.
+        """
+        return self.get_cloud_info(cloud_id, "quotas")
+
     def get_cloud_info(self, cloud_id, operation):
+        """
+        Get Cloud provider info
+
+        Arguments:
+           - cloud_id(string): ID of the cloud provider (as defined in the auth data).
+           - operation(string): Type of information to get: "images" or "quotas".
+        Returns: A tuple with the operation success (boolean) and the requested data
+                 in case of success or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
             url = "%s/clouds/%s/%s" % (self.options.restapi, cloud_id, operation)
@@ -1089,6 +1258,17 @@ class IMClient:
             return False, "The infrastructure is in state: %s" % state
 
     def change_auth(self, inf_id, new_auth_data, overwrite=None):
+        """
+        Change ownership of an infrastructure
+
+        Arguments:
+           - inf_id(string): Infrastructure ID.
+           - new_auth_data(string): New Infrastructure Manager auth data to set.
+           - overwrite(boolean): Flag to specify if the auth data will be overwrited.
+                                 Default `False`.
+        Returns: A tuple with the operation success (boolean) and an empty string
+                 in case of success or the error message otherwise.
+        """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
             url = "%s/infrastructures/%s/authorization" % (self.options.restapi, inf_id)

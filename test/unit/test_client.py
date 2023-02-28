@@ -1289,11 +1289,12 @@ class TestClient(unittest.TestCase):
                                  'type': 'EC2', 'username': 'someuser'}])
 
     def test_init_client(self):
-        auth_data = [{'id': 'a1', 'password': "somepass",
-                      'type': 'InfrastructureManager', 'username': 'someuser'},
-                     {'id': 'a2', 'password': "somepass",
-                      'type': 'VMRC', 'username': 'someuser'}]
-        client = IMClient.init_client("https://im.egi.eu/im", auth_data)
+        auth_lines = ["""id = a1; type = InfrastructureManager; username = someuser; password = somepass """,
+                      """id = a2; type = VMRC; username = someuser; password = somepass; """,
+                      """id = a3; type = OpenNebula; username = someuser; password   =   "some;'pass" """,
+                      """id = a4; type = EC2; username =someuser; password='some;"pass' """]
+        auth = IMClient.read_auth_data(auth_lines)
+        client = IMClient.init_client("https://im.egi.eu/im", auth)
         self.assertEqual(client.options.restapi, "https://im.egi.eu/im")
         self.assertEqual(client.options.verify, False)
 
