@@ -384,7 +384,7 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
 
 ### 1.5 PYTHON CLIENT
 
-IMClient can also be used as a Python library to access IM:
+IMClient can also be used as a Python library to access IM (since version 1.7.0):
 
 ```py
    from imclient import IMClient
