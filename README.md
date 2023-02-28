@@ -381,3 +381,36 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
       This operation enables to change the owner of infrastructure with ID ``infId`` using the authentication
       data from file ``newAuthFile``. The ``overwrite`` parameter is optional and is a flag to specify if the
       authentication data will be overwrited or will be appended. The default value is 0.
+
+### 1.5 PYTHON CLIENT
+
+IMClient can also be used as a Python library to access IM:
+
+```py
+   auth = IMClient.read_auth_data("/path/auth.dat")
+   client = IMClient.init_client("https://im.egi.eu/im", auth)
+   inf_desc = """
+      network public (outbound = 'yes')
+
+      system node (
+      cpu.count>=2 and
+      memory.size>=4g and
+      net_interface.0.connection = 'public' and
+      disk.0.os.name='linux' and
+      disk.0.image.url = 'appdb://SCAI/egi.ubuntu.20.04?vo.access.egi.eu'
+      )
+
+      configure wn (
+      @begin
+      ---
+      - tasks:
+         - debug: msg="Configured!"
+      @end
+      )
+
+      deploy node 1
+   """
+   success, inf_id = client.create(inf_desc)
+   ...
+   success, err = client.destroy(inf_id)
+```
