@@ -18,14 +18,14 @@
 
 from setuptools import setup
 
-version = "1.6.0"
+version = "1.7.0"
 
 setup(name="IM-client", version=version,
       author='GRyCAP - Universitat Politecnica de Valencia',
       author_email='micafer1@upv.es',
       url='http://www.grycap.upv.es/im',
-      packages=[''],
-      package_dir={'': '.'},
+      packages=['', 'imclient'],
+      package_dir={'': '.', 'imclient': 'imclient'},
       scripts=["im_client.py"],
       package_data={"": ["LICENSE", "INSTALL", "NOTICE", "auth.dat"]},
       license="GPL version 3, http://www.gnu.org/licenses/gpl-3.0.txt",

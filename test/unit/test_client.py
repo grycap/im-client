@@ -28,7 +28,8 @@ except ImportError:
 sys.path.append("..")
 sys.path.append(".")
 
-from im_client import main, get_parser, IMClient
+from imclient import IMClient
+from im_client import main, get_parser
 from mock import patch, MagicMock
 
 try:
@@ -163,7 +164,7 @@ class TestClient(unittest.TestCase):
         return resp
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_list(self, server_proxy, requests):
         """
         Test list operation
@@ -236,7 +237,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_create(self, server_proxy, requests):
         """
         Test create operation
@@ -283,7 +284,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_removeresource(self, server_proxy, requests):
         """
         Test removeresource operation
@@ -318,7 +319,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_addresource(self, server_proxy, requests):
         """
         Test addresource operation
@@ -364,7 +365,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_alter(self, server_proxy, requests):
         """
         Test alter operation
@@ -399,7 +400,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_reconfigure(self, server_proxy, requests):
         """
         Test reconfigure operation
@@ -434,7 +435,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_getcontmsg(self, server_proxy, requests):
         """
         Test getcontmsg operation
@@ -469,7 +470,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_getstate(self, server_proxy, requests):
         """
         Test getstate operation
@@ -504,7 +505,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_getvminfo(self, server_proxy, requests):
         """
         Test getvminfo operation
@@ -539,7 +540,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_getinfo(self, server_proxy, requests):
         """
         Test getinfo operation
@@ -575,7 +576,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_destroy(self, server_proxy, requests):
         """
         Test destroy operation
@@ -637,7 +638,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_start(self, server_proxy, requests):
         """
         Test start operation
@@ -672,7 +673,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_stop(self, server_proxy, requests):
         """
         Test stop operation
@@ -707,7 +708,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_getradl(self, server_proxy, requests):
         """
         Test getradl operation
@@ -741,7 +742,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_getvmcontmsg(self, server_proxy, requests):
         """
         Test getvmcontmsg operation
@@ -775,7 +776,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_startvm(self, server_proxy, requests):
         """
         Test startvm operation
@@ -811,7 +812,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_stopvm(self, server_proxy, requests):
         """
         Test stopvm operation
@@ -846,7 +847,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_rebootvm(self, server_proxy, requests):
         """
         Test rebootvm operation
@@ -881,7 +882,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_getversion(self, server_proxy, requests):
         """
         Test getversion operation
@@ -915,7 +916,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_export(self, server_proxy, requests):
         """
         Test export operation
@@ -949,7 +950,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_import(self, server_proxy, requests):
         """
         Test import operation
@@ -983,7 +984,7 @@ class TestClient(unittest.TestCase):
         self.assertIn("New Inf: newinfid", output)
         sys.stdout = oldstdout
 
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_sshvm(self, server_proxy):
         """
         Test sshvm operation
@@ -1040,7 +1041,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_sshvm_key(self, server_proxy):
         """
         Test sshvm operation
@@ -1069,7 +1070,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_sshvm_via_master(self, server_proxy):
         """
         Test sshvm operation via master VM
@@ -1110,7 +1111,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(['create', 'test.radl'], args)
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_getoutputs(self, server_proxy, requests):
         """
         Test getoutputs operation
@@ -1135,7 +1136,7 @@ class TestClient(unittest.TestCase):
         self.assertIn("\noutput1 = value1", output)
         sys.stdout = oldstdout
 
-    @patch("im_client.OptionParser.exit")
+    @patch("imclient.imclient.OptionParser.exit")
     def test_parser_help(self, option_parser_exit):
         """
         Test parser help
@@ -1154,7 +1155,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_getcloudimages(self, server_proxy, requests):
         """
         Test cloudimages operation
@@ -1182,7 +1183,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_getcloudusage(self, server_proxy, requests):
         """
         Test cloudusage operation
@@ -1206,7 +1207,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual({'cores': {'used': 5, 'limit': -1}}, output)
         sys.stdout = oldstdout
 
-    @patch("im_client.ServerProxy")
+    @patch("imclient.imclient.ServerProxy")
     def test_wait(self, server_proxy):
         """
         Test wait operation
