@@ -387,6 +387,8 @@ im_client.py [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] 
 IMClient can also be used as a Python library to access IM:
 
 ```py
+   from imclient import IMClient
+
    auth = IMClient.read_auth_data("/path/auth.dat")
    client = IMClient.init_client("https://im.egi.eu/im", auth)
    inf_desc = """
