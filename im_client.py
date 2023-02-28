@@ -946,7 +946,7 @@ class IMClient:
         Returns: A tuple with the operation success (boolean) and an empty string
                  in case of success or the error message otherwise.
         """
-        return self.infra_op(inf_id, vm_id, "start")
+        return self.vm_op(inf_id, vm_id, "start")
 
     def stop_vm(self, inf_id, vm_id):
         """
@@ -958,7 +958,7 @@ class IMClient:
         Returns: A tuple with the operation success (boolean) and an empty string
                  in case of success or the error message otherwise.
         """
-        return self.infra_op(inf_id, vm_id, "stop")
+        return self.vm_op(inf_id, vm_id, "stop")
 
     def reboot_vm(self, inf_id, vm_id):
         """
@@ -970,7 +970,7 @@ class IMClient:
         Returns: A tuple with the operation success (boolean) and an empty string
                  in case of success or the error message otherwise.
         """
-        return self.infra_op(inf_id, vm_id, "reboot")
+        return self.vm_op(inf_id, vm_id, "reboot")
 
     def vm_op(self, inf_id, vm_id, operation):
         """
