@@ -2,7 +2,7 @@
 
 1.1 REQUISITES
 
-IM is based on python, so Python 2.4 or higher runtime and standard library must
+IM is based on python, so Python 3 or higher runtime and standard library must
 be installed in the system.
 
 It is also required to install the RADL parser (https://github.com/grycap/radl), available in pip

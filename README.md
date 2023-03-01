@@ -28,7 +28,7 @@ Usage: im_client.py \
 
 ### 1.1 REQUISITES
 
-IM is based on python, so Python 2.4 or higher runtime and standard
+IM is based on python, so Python 3 or higher runtime and standard
 library must be installed in the system.
 
 It is also required the [RADL parser](https://github.com/grycap/radl),

@@ -117,4 +117,5 @@ IM-client 1.6.0
     * Enable to get/use names to manage infrastructures.
 
 IM-client 1.7.0
-    * Refactor code and enable to use it as a library.
+    * Refactor code and enable to use it as a library
+    * Remove python2 support
