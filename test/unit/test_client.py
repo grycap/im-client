@@ -1290,6 +1290,9 @@ class TestClient(unittest.TestCase):
                                  'type': 'EC2', 'username': 'someuser'}])
 
     def test_init_client(self):
+        """
+        Test IMClient as a lib
+        """
         auth_lines = ["""id = a1; type = InfrastructureManager; username = someuser; password = somepass """,
                       """id = a2; type = VMRC; username = someuser; password = somepass; """,
                       """id = a3; type = OpenNebula; username = someuser; password   =   "some;'pass" """,
