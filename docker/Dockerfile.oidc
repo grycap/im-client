@@ -1,7 +1,7 @@
 # Dockerfile to create a container with the IM client
 FROM ubuntu:22.04
 LABEL maintainer="Miguel Caballer <micafer1@upv.es>"
-LABEL version="1.5.11-oidc"
+LABEL version="1.7.0-oidc"
 LABEL description="Container image to run the IM client. (http://www.grycap.upv.es/im)"
 
 # Install python3
@@ -11,7 +11,7 @@ RUN  apt update && \
      apt-key adv --keyserver hkp://pgp.surfnet.nl --recv-keys ACDFB08FDC962044D87FF00B512839863D487A87 && \
      apt update && \
      apt install -y --no-install-recommends python3-requests jq python3-pip oidc-agent && \
-     pip install https://github.com/grycap/im-client/archive/refs/heads/master.zip && \
+     pip install im-client==1.7.0  && \
      apt-get purge -y python-pip && \
      apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* && rm -rf ~/.cache/
 

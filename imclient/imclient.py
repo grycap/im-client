@@ -17,11 +17,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 try:
-    from xmlrpclib import ServerProxy
-except ImportError:
-    from xmlrpc.client import ServerProxy
-
-try:
     # To avoid annoying InsecureRequestWarning messages in some Connectors
     import requests.packages
     from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -35,6 +30,7 @@ import subprocess
 import tempfile
 import time
 from optparse import OptionParser, Option, IndentedHelpFormatter, Values
+from xmlrpc.client import ServerProxy
 
 from radl import radl_parse
 
