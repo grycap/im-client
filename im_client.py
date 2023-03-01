@@ -24,6 +24,7 @@ import configparser as ConfigParser
 from imclient import IMClient, version
 from imclient.imclient import CmdSsh, PosOptionParser
 
+
 def main(operation, options, args, parser):
     """
     Launch Client
