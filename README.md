@@ -8,7 +8,6 @@
 [![Docs](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://imdocs.readthedocs.io/en/latest/client.html)
 [![SQAaaS badge](https://img.shields.io/badge/sqaaas%20software-gold-yellow)](https://eu.badgr.com/public/assertions/Zonx9GHHRiSxDVtabutm7g)
 
-
 IM is a tool that ease the access and the usability of IaaS clouds by
 automating the VMI selection, deployment, configuration, software installation,
 monitoring and update of Virtual Appliances. It supports APIs from a large
