@@ -6,6 +6,8 @@
 [![Codacy Badge](https://api.codacy.com/project/badge/Coverage/c74628a2fc134c2683d3fc57b571ce09)](https://www.codacy.com/app/micafer/im-client?utm_source=github.com&utm_medium=referral&utm_content=grycap/im-client&utm_campaign=Badge_Coverage)
 [![License](https://img.shields.io/badge/license-GPL%20v3.0-brightgreen.svg)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-latest-brightgreen.svg)](https://imdocs.readthedocs.io/en/latest/client.html)
+[![SQAaaS badge](https://img.shields.io/badge/sqaaas%20software-gold-yellow)](https://eu.badgr.com/public/assertions/Zonx9GHHRiSxDVtabutm7g)
+
 
 IM is a tool that ease the access and the usability of IaaS clouds by
 automating the VMI selection, deployment, configuration, software installation,
@@ -23,6 +25,14 @@ Usage: im_client.py \
          [-a|--auth_file <filename>] \
          operation op_parameters
 ```
+
+## Achievements
+
+[![SQAaaS badge](https://github.com/EOSC-synergy/SQAaaS/raw/master/badges/badges_150x116/badge_software_gold.png)](https://eu.badgr.com/public/assertions/Zonx9GHHRiSxDVtabutm7g "SQAaaS gold badge achieved")
+
+This software has received a gold badge according to the
+[Software Quality Baseline criteria](https://github.com/indigo-dc/sqa-baseline)
+defined by the [EOSC-Synergy](https://www.eosc-synergy.eu) project.
 
 ## 1 INSTALLATION
 
