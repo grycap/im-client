@@ -17,9 +17,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from setuptools import setup
-from imclient import version
 
-setup(name="IM-client", version=version,
+setup(name="IM-client", version="1.7.0",
       author='GRyCAP - Universitat Politecnica de Valencia',
       author_email='micafer1@upv.es',
       url='http://www.grycap.upv.es/im',
