@@ -72,20 +72,21 @@ tar xvzf IM-client-X.XX.tar.gz
 
 #### 1.3.3 IM-Client Docker image
 
-The IM Client has an official Docker container image available in Docker Hub
-that can be used instead of installing the CLI. You can download it by typing:
+The IM Client has an official Docker container image available in Github
+Container Registry that can be used instead of installing the CLI. You can
+download it by typing:
 
 ```sh
-sudo docker pull grycap/im-client
+sudo docker pull ghcr.io/grycap/im-client
 ```
 
 You can exploit all the potential of the IM Client as if you download the CLI
 and run it on your computer:
 
 ```sh
-docker run --rm -ti -v "$PWD:/tmp/im" grycap/im-client \
+docker run --rm -ti -v "$PWD:/tmp/im" ghcr.io/grycap/im-client \
       -r https://server.com:8800 -a /tmp/im/auth.dat list
-docker run --rm -ti -v "$PWD:/tmp/im" grycap/im-client \
+docker run --rm -ti -v "$PWD:/tmp/im" ghcr.io/grycap/im-client \
       -r https://server.com:8800 -a /tmp/im/auth.dat create /tmp/im/somefile.radl
 ```
 
