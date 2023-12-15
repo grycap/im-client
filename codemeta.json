@@ -6,7 +6,7 @@
     "@type": "SoftwareSourceCode",
     "identifier": "im-client",
     "name": "IM Client",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "description": "IM Client is a tool to connect with the Iinfrastructure Manager service",
     "license": "GNU General Public License v3.0",
     "author": [
