@@ -288,13 +288,13 @@ class IMClient:
         # Enable to specify a commnad and set the contents of the output
         if value.startswith("command(") and value.endswith(")"):
             command = value[8:-1]
-            return IMClient._run_command(command)
+            return "'%s'" % IMClient._run_command(command)
         # Enable to specify a filename and set the contents of it
         elif value.startswith("file(") and value.endswith(")"):
             try:
                 with open(value[5:-1], 'r') as f:
                     data = f.read()
-                return data.strip()
+                return "'%s'" % data.strip()
             except Exception:
                 pass
         return value
@@ -440,6 +440,28 @@ class IMClient:
         elif fail_if_not_set:
             raise Exception("RADL file not specified")
 
+    @staticmethod
+    def read_input_file(filename):
+        # Read the file
+        _, file_extension = os.path.splitext(filename)
+        f = open(filename)
+        radl_data = "".join(f.readlines())
+        f.close()
+        desc_type = "radl"
+        if file_extension in [".yaml", ".yml"]:
+            radl = radl_data
+            desc_type = "yaml"
+        elif file_extension in [".json", ".jsn"]:
+            radl = radl_data
+            desc_type = "json"
+        else:
+            # check for input parameters @input.[param_name]@
+            radl_data = IMClient._get_input_params(radl_data)
+            radl = radl_parse.parse_radl(radl_data)
+            radl.check()
+
+        return radl, desc_type
+
     def create(self, inf_desc, desc_type="radl", asyncr=False):
         """
         Create an infrastructure
@@ -479,22 +501,7 @@ class IMClient:
             asyncr = bool(int(self.args[1]))
 
         # Read the file
-        _, file_extension = os.path.splitext(radl_file)
-        f = open(radl_file)
-        radl_data = "".join(f.readlines())
-        f.close()
-        desc_type = "radl"
-        if file_extension in [".yaml", ".yml"]:
-            radl = radl_data
-            desc_type = "yaml"
-        elif file_extension in [".json", ".jsn"]:
-            radl = radl_data
-            desc_type = "json"
-        else:
-            # check for input parameters @input.[param_name]@
-            radl_data = IMClient._get_input_params(radl_data)
-            radl = radl_parse.parse_radl(radl_data)
-            radl.check()
+        radl, desc_type = self.read_input_file(radl_file)
 
         return self.create(radl, desc_type, asyncr)
 
@@ -590,16 +597,7 @@ class IMClient:
             else:
                 return False, "The ctxt flag must be 0 or 1"
 
-        _, file_extension = os.path.splitext(radl_file)
-        desc_type = "radl"
-        if file_extension in [".yaml", ".yml"]:
-            f = open(radl_file)
-            radl = "".join(f.readlines())
-            f.close()
-            desc_type = "yaml"
-        else:
-            radl = radl_parse.parse_radl(radl_file)
-            radl.check()
+        radl, desc_type = self.read_input_file(radl_file)
 
         return self.addresource(inf_id, radl, desc_type, context)
 
@@ -633,7 +631,7 @@ class IMClient:
 
         return self.alter(inf_id, vm_id, radl)
 
-    def reconfigure(self, inf_id, inf_desc, vm_list=None):
+    def reconfigure(self, inf_id, inf_desc, desc_type="radl", vm_list=None):
         """
         Reconfigure the infrastructure
         Arguments:
@@ -645,6 +643,10 @@ class IMClient:
         """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
+            if desc_type == "json":
+                headers["Content-Type"] = "application/json"
+            elif desc_type in "yaml":
+                headers["Content-Type"] = "text/yaml"
             url = "%s/infrastructures/%s/reconfigure" % (self.options.restapi, inf_id)
             if vm_list:
                 url += "?vm_list=" + ",".join(str(vm_id) for vm_id in vm_list)
@@ -666,12 +668,9 @@ class IMClient:
 
         if radl_file:
             # Read the file
-            f = open(radl_file)
-            radl_data = "".join(f.readlines())
-            f.close()
-            radl = radl_parse.parse_radl(radl_data)
+            radl, desc_type = self.read_input_file(radl_file)
 
-        return self.reconfigure(inf_id, radl, vm_list)
+        return self.reconfigure(inf_id, radl, desc_type, vm_list)
 
     def get_infra_property(self, inf_id, prop):
         """
