@@ -497,6 +497,9 @@ class IMClient:
     def _create(self):
         radl_file = self._get_radl(0)
         asyncr = False
+        # by default asyncr is False, but in case of REST API, it is True
+        if self.options.restapi:
+            asyncr = True
         if len(self.args) >= 2:
             asyncr = bool(int(self.args[1]))
 

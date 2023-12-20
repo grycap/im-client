@@ -330,12 +330,12 @@ def main(operation, options, args, parser):
     elif operation == "create_wait_outputs":
         success, inf_id = imclient._create()
         if not success:
-            print('{"error": "%s"}' % inf_id)
+            print(json.dumps({'error': inf_id}))
             return False
         imclient.args = [inf_id]
         success, error = imclient._wait()
         if not success:
-            print('{"infid": "%s", "error": "%s"}' % (inf_id, error))
+            print(json.dumps({'error': error, 'infid': inf_id}))
             return False
         success, outputs = imclient._get_infra_property("outputs")
         if success:
