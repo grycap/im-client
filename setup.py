@@ -18,7 +18,7 @@
 
 from setuptools import setup
 
-setup(name="IM-client", version="1.7.0",
+setup(name="IM-client", version="1.8.0",
       author='GRyCAP - Universitat Politecnica de Valencia',
       author_email='micafer1@upv.es',
       url='http://www.grycap.upv.es/im',
