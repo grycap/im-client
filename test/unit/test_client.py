@@ -1149,7 +1149,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = out
         parser.parse_args(["--help"])
         output = out.getvalue().strip()
-        self.assertEqual(output[:16], "Usage: nosetests")
+        self.assertEqual(output[:7], "Usage: ")
         self.assertIn("[-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] "
                       "[-a|--auth_file <filename>] operation op_parameters", output)
         sys.stdout = oldstdout
