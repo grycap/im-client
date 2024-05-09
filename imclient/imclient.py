@@ -666,6 +666,7 @@ class IMClient:
         radl = ""
         vm_list = None
         radl_file = self._get_radl(1, False)
+        desc_type = "radl"
         if len(self.args) >= 3:
             vm_list = [int(vm_id) for vm_id in self.args[2].split(",")]
 
