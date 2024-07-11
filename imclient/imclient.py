@@ -666,6 +666,7 @@ class IMClient:
         radl = ""
         vm_list = None
         radl_file = self._get_radl(1, False)
+        desc_type = "radl"
         if len(self.args) >= 3:
             vm_list = [int(vm_id) for vm_id in self.args[2].split(",")]
 
@@ -717,7 +718,7 @@ class IMClient:
         vm_id = self._get_vm_id()
         return self.getvminfo(inf_id, vm_id, "contmsg")
 
-    def getvminfo(self, inf_id, vm_id, prop=None):
+    def getvminfo(self, inf_id, vm_id, prop=None, system_name=None):
         """
         Get VM info.
 
@@ -725,25 +726,39 @@ class IMClient:
            - inf_id(string): Infrastructure ID.
            - vm_id(string): VM ID.
            - prop(string): Optional RADL property to get.
+           - system_name(string): Optional system name to filter the VMs.
         Returns: A tuple with the operation success (boolean) and the value of the prop in case of success
                  or the error message otherwise.
         """
         if self.options.restapi:
             headers = {"Authorization": self.rest_auth_data}
             url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi, inf_id, vm_id)
-            if prop:
+            if prop and not system_name:
                 url += "/" + prop
             resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
             success = resp.status_code == 200
-            info = resp.text
+            if system_name and success:
+                radl_info = radl_parse.parse_radl(resp.text)
+                if radl_info.systems[0].name == system_name:
+                    info = radl_info.systems[0].getValue(prop)
+                else:
+                    info = ""
+            else:
+                info = resp.text
         else:
-            if prop:
+            if prop and not system_name:
                 if prop == "contmsg":
                     (success, info) = self.server.GetVMContMsg(inf_id, vm_id, self.auth_data)
                 else:
                     (success, info) = self.server.GetVMProperty(inf_id, vm_id, prop, self.auth_data)
             else:
                 (success, info) = self.server.GetVMInfo(inf_id, vm_id, self.auth_data)
+                if success and system_name:
+                    radl_info = radl_parse.parse_radl(info)
+                    if radl_info.systems[0].name == system_name:
+                        info = radl_info.systems[0].getValue(prop)
+                    else:
+                        info = ""
 
         return success, info
 
@@ -757,20 +772,20 @@ class IMClient:
 
         return self.getvminfo(inf_id, vm_id, prop)
 
-    def _get_vms_info_generator(self, inf_id, vm_ids, propiedad):
+    def _get_vms_info_generator(self, inf_id, vm_ids, prop, system_name):
         """Helper function to return a generator."""
         for vm_id in vm_ids:
-            self.args = [inf_id, vm_id, propiedad]
-            success, radl = self._getvminfo()
+            success, radl = self.getvminfo(inf_id, vm_id, prop, system_name)
             yield vm_id, success, radl
 
-    def getinfo(self, inf_id, prop=None):
+    def getinfo(self, inf_id, prop=None, system_name=None):
         """
         Get infrastructure info.
 
         Arguments:
            - inf_id(string): Infrastructure ID.
            - prop(string): Optional RADL property to get.
+           - system_name(string): Optional system name to filter the VMs.
         Returns: A tuple with the operation success (boolean) and the value of the prop in case of success
                  or the error message otherwise.
         """
@@ -790,7 +805,7 @@ class IMClient:
             (success, vm_ids) = self.server.GetInfrastructureInfo(inf_id, self.auth_data)
 
         if success:
-            return True, self._get_vms_info_generator(inf_id, vm_ids, prop)
+            return True, self._get_vms_info_generator(inf_id, vm_ids, prop, system_name)
         else:
             return False, "ERROR getting the information about the infrastructure: " + str(vm_ids)
 
@@ -800,7 +815,7 @@ class IMClient:
         if len(self.args) >= 2:
             prop = self.args[1]
 
-        return self.getinfo(inf_id, prop)
+        return self.getinfo(inf_id, prop, self.options.system_name)
 
     def destroy(self, inf_id, asyncr=False):
         """
