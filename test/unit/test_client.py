@@ -84,7 +84,7 @@ class TestClient(unittest.TestCase):
                 resp.json.return_value = json.loads(resp.text)
             elif url == "/infrastructures/infid2":
                 resp.status_code = 200
-                resp.text = ('{ "uri-list": [{ "uri" : "http://localhost/infid2/vms/vm1" }, ' +
+                resp.text = ('{ "uri-list": [{ "uri" : "http://localhost/infid2/vms/vm1" },'
                              '{ "uri" : "http://localhost/infid2/vms/vm2" }]}')
                 resp.json.return_value = json.loads(resp.text)
             elif url == "/infrastructures/infid/vms/vm1":
