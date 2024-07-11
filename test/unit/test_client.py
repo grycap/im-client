@@ -80,15 +80,26 @@ class TestClient(unittest.TestCase):
                 resp.text = "radltest"
             elif url == "/infrastructures/infid":
                 resp.status_code = 200
-                resp.text = ('{ "uri-list": [ { "uri" : "http://localhost/infid/vms/vm1" }]}')
+                resp.text = ('{ "uri-list": [{ "uri" : "http://localhost/infid/vms/vm1" }]}')
+                resp.json.return_value = json.loads(resp.text)
+            elif url == "/infrastructures/infid2":
+                resp.status_code = 200
+                resp.text = ('{ "uri-list": [{ "uri" : "http://localhost/infid2/vms/vm1" }, ' +
+                             '{ "uri" : "http://localhost/infid2/vms/vm2" }]}')
                 resp.json.return_value = json.loads(resp.text)
             elif url == "/infrastructures/infid/vms/vm1":
                 resp.status_code = 200
                 resp.text = "radltest"
+            elif url == "/infrastructures/infid2/vms/vm1":
+                resp.status_code = 200
+                resp.text = "system node (cpu.count = 1)"
+            elif url == "/infrastructures/infid2/vms/vm2":
+                resp.status_code = 200
+                resp.text = "system node2 (cpu.count = 2)"
             elif url == "/infrastructures/infid/radl":
                 resp.status_code = 200
                 resp.json.return_value = {"radl": "radltest"}
-            elif url == "/infrastructures/infid/vms/vmid/contmsg":
+            elif url in ["/infrastructures/infid/vms/vmid/contmsg", "/infrastructures/infid/vms/vm1/contmsg"]:
                 resp.status_code = 200
                 resp.text = 'getvmcontmsg'
             elif url == "/version":
@@ -554,6 +565,7 @@ class TestClient(unittest.TestCase):
         options.restapi = None
         options.quiet = False
         options.name = False
+        options.system_name = None
         parser = MagicMock()
 
         out = StringIO()
@@ -573,6 +585,44 @@ class TestClient(unittest.TestCase):
         self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("Info about VM with ID: vm1\nradltest", output)
+        sys.stdout = oldstdout
+
+        out = StringIO()
+        sys.stdout = out
+        options.xmlrpc = None
+        options.restapi = "https://localhost:8800"
+        requests.side_effect = self.get_response
+        res = main("getinfo", options, ["infid", "contmsg"], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("Info about VM with ID: vm1\ngetvmcontmsg", output)
+        sys.stdout = oldstdout
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        sys.stdout = out
+        options.xmlrpc = "http://localhost:8899"
+        options.restapi = None
+        options.system_name = "node"
+        str_radl1 = "system node (cpu.count = 1)"
+        str_radl2 = "system node2 (cpu.count = 2)"
+        proxy.GetInfrastructureInfo.return_value = (True, ["vm1", "vm2"])
+        proxy.GetVMInfo.side_effect = [(True, str_radl1), (True, str_radl2)]
+        res = main("getinfo", options, ["infid", "cpu.count"], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("Info about VM with ID: vm1\n1", output)
+
+        out = StringIO()
+        sys.stdout = out
+        options.xmlrpc = None
+        options.restapi = "https://localhost:8800"
+        options.system_name = "node"
+        requests.side_effect = self.get_response
+        res = main("getinfo", options, ["infid2", "cpu.count"], parser)
+        self.assertEquals(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("Info about VM with ID: vm1\n1", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
