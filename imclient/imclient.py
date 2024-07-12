@@ -740,7 +740,10 @@ class IMClient:
             if system_name and success:
                 radl_info = radl_parse.parse_radl(resp.text)
                 if radl_info.systems[0].name == system_name:
-                    info = radl_info.systems[0].getValue(prop)
+                    if prop:
+                        info = radl_info.systems[0].getValue(prop)
+                    else:
+                        info = resp.text
                 else:
                     info = ""
             else:
@@ -756,7 +759,8 @@ class IMClient:
                 if success and system_name:
                     radl_info = radl_parse.parse_radl(info)
                     if radl_info.systems[0].name == system_name:
-                        info = radl_info.systems[0].getValue(prop)
+                        if prop:
+                            info = radl_info.systems[0].getValue(prop)
                     else:
                         info = ""
 
