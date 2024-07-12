@@ -149,7 +149,8 @@ def main(operation, options, args, parser):
                 if not options.quiet:
                     print("Info about VM with ID: %s" % vm_id)
                 if vm_succes:
-                    print(vm_radl)
+                    if not options.system_name or (options.system_name and vm_radl != ""):
+                        print(vm_radl)
                 else:
                     print("ERROR getting the information about the VM: " + vm_radl)
         else:
@@ -397,9 +398,9 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
                       help="Force the deletion of the infrastructure")
     parser.add_option("-q", "--quiet", action="store_true", default=False, dest="quiet",
                       help="Work in quiet mode")
-    parser.add_option("-n", "--name", action="store_true", default=None, dest="name",
+    parser.add_option("-n", "--name", action="store_true", default=False, dest="name",
                       help="Use infrastructure name instead of ID")
-    parser.add_option("-s", "--system_name", action="store_true", default=None, dest="system_name",
+    parser.add_option("-s", "--system_name", default=None, dest="system_name", nargs=1, type="string",
                       help="Filter VMs by system name")
     parser.add_operation_help('list', '')
     parser.add_operation_help('create', '<radl_file> [async_flag]')
