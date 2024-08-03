@@ -93,7 +93,10 @@ class CmdSsh:
                 ops = CmdSsh._connect_password(radl)
 
             if show_only:
-                print(" ".join(ops))
+                for op in ops:
+                    if "ProxyCommand" in op:
+                        op = "'" + op + "'"
+                    print(op, end=" ")
             else:
                 os.execlp(ops[0], *ops)
         except OSError as e:
@@ -199,11 +202,12 @@ class CmdSsh:
             ssh_args = CmdSsh._get_proxy_command(radl, ip, s.getValue("disk.0.os.credentials.username"))
 
         res = ["sshpass", "-p%s" % s.getValue("disk.0.os.credentials.password"),
-               "ssh", "-p", ssh_port, "-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no",
-               "%s@%s" % (s.getValue("disk.0.os.credentials.username"), ip)]
+               "ssh", "-p", ssh_port, "-o", "UserKnownHostsFile=/dev/null", "-o", "StrictHostKeyChecking=no"]
 
         if ssh_args:
             res.extend(ssh_args)
+
+        res.append("%s@%s" % (s.getValue("disk.0.os.credentials.username"), ip))
 
         return res
 
@@ -222,11 +226,10 @@ class CmdSsh:
             ssh_args = CmdSsh._get_proxy_command(radl, ip, s.getValue("disk.0.os.credentials.username"))
 
         res = ["ssh", "-p", ssh_port, "-i", f.name, "-o", "UserKnownHostsFile=/dev/null",
-               "-o", "StrictHostKeyChecking=no",
-               "%s@%s" % (s.getValue("disk.0.os.credentials.username"), ip)]
-
+               "-o", "StrictHostKeyChecking=no"]
         if ssh_args:
             res.extend(ssh_args)
+        res.append("%s@%s" % (s.getValue("disk.0.os.credentials.username"), ip))
 
         return res
 
