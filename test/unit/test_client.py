@@ -1086,8 +1086,8 @@ class TestClient(unittest.TestCase):
         self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("sshpass -pyoyoyo ssh -p 22 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
-                      "ubuntu@10.0.0.1 -o ProxyCommand=sshpass -p passwd ssh -W %h:%p -p 22"
-                      " -o StrictHostKeyChecking=no username@someserver.com", output)
+                      "-o 'ProxyCommand=sshpass -p passwd ssh -W %h:%p -p 22"
+                      " -o StrictHostKeyChecking=no username@someserver.com' ubuntu@10.0.0.1", output)
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
@@ -1146,9 +1146,9 @@ class TestClient(unittest.TestCase):
         self.assertEquals(res, True)
         output = out.getvalue().strip()
         self.assertIn("ssh -p 22 -i /tmp/", output)
-        self.assertIn(" -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ubuntu@10.0.0.2"
-                      " -o ProxyCommand=ssh -W %h:%p -i /var/tmp/ubuntu_ubuntu_10.0.0.2.pem -p 22"
-                      " -o StrictHostKeyChecking=no ubuntu@8.8.8.8", output)
+        self.assertIn(" -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no"
+                      " -o 'ProxyCommand=ssh -W %h:%p -i /var/tmp/ubuntu_ubuntu_10.0.0.2.pem -p 22"
+                      " -o StrictHostKeyChecking=no ubuntu@8.8.8.8' ubuntu@10.0.0.2", output)
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
