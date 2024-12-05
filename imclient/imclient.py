@@ -415,7 +415,7 @@ class IMClient:
                 inf_id = int(self.args[0])
 
             if self.options.name:
-                success, infras = self._list_infras(flt=".*description\s*.*\s*(\s*name\s*=\s*'%s'.*).*" % inf_id)
+                success, infras = self._list_infras(flt=".*description\\s*.*\\s*(\\s*name\\s*=\\s*'%s'.*).*" % inf_id)
                 if not success:
                     raise Exception("Error getting infrastructure list.")
                 if len(infras) == 0:
