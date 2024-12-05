@@ -278,7 +278,7 @@ class IMClient:
                                   Default `False`.
         Returns(:py:class:`imclient.IMClient`): A client ready to interact with an IM instance.
         """
-        options = {}
+        options = {"force": False, "quiet": True, "name": None, "system_name": None}
         if rest:
             options["restapi"] = im_url
         else:
