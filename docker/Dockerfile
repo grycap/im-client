@@ -5,10 +5,10 @@ LABEL version="1.8.0"
 LABEL description="Container image to run the IM client. (http://www.grycap.upv.es/im)"
 
 # Install python3
-RUN  apk add --no-cache python3 py3-requests jq bash
+RUN  apk add --no-cache python3 py3-requests py3-packaging jq bash openssh-client
 
 # Install IM client
-RUN  apk add --no-cache py3-pip  && \
+RUN  apk add --no-cache py3-pip && \
      pip3 install im-client==1.8.0 && \
      apk del --no-cache py3-pip
 
