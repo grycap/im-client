@@ -119,3 +119,10 @@ IM-client 1.6.0
 IM-client 1.7.0
     * Refactor code and enable to use it as a library
     * Remove python2 support
+
+IM-client 1.8.0
+    * Accept TOSCA in reconfigure
+    * Fix system_name func
+
+IM-client 1.8.1
+    * Fix error calling client.destroy.
