@@ -1065,11 +1065,11 @@ class TestClient(unittest.TestCase):
 
         sys.stdout = out
         sys.stderr = out
-        res = main("ssh", options, ["infid", "1"], parser)
+        res = main("ssh", options, ["infid", "1", "cmd", "cmd_args"], parser)
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("sshpass -pyoyoyo ssh -p 1022 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
-                      "ubuntu@10.0.0.1", output)
+                      "ubuntu@10.0.0.1 cmd cmd_args", output)
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
