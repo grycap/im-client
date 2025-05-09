@@ -85,12 +85,18 @@ class CmdSsh:
     """
 
     @staticmethod
-    def run(radl, show_only=False):
+    def run(radl, show_only=False, cmd=None):
         try:
             if radl.systems[0].getValue("disk.0.os.credentials.private_key"):
                 ops = CmdSsh._connect_key(radl)
             else:
                 ops = CmdSsh._connect_password(radl)
+
+            if cmd:
+                if isinstance(cmd, list):
+                    ops.extend(cmd)
+                else:
+                    ops.append(cmd)
 
             if show_only:
                 for op in ops:
@@ -1025,6 +1031,7 @@ class IMClient:
         inf_id = self._get_inf_id()
         show_only = False
         master_vm_id = None
+        cmd = None
         if operation == "ssh":
             master_vm_id = self._get_master_vm_id(inf_id)
             vm_id = master_vm_id
@@ -1033,6 +1040,8 @@ class IMClient:
                     show_only = bool(int(self.args[1]))
                 else:
                     return False, "The show_only flag must be 0 or 1"
+                if len(self.args) >= 3:
+                    cmd = self.args[2:]
         else:
             if len(self.args) >= 2:
                 vm_id = self.args[1]
@@ -1041,6 +1050,8 @@ class IMClient:
                         show_only = bool(int(self.args[2]))
                     else:
                         return False, "The show_only flag must be 0 or 1"
+                    if len(self.args) >= 4:
+                        cmd = self.args[3:]
             else:
                 return False, "VM ID to get info not specified"
 
@@ -1090,7 +1101,7 @@ class IMClient:
             else:
                 return False, "Error accessing VM: %s" % vm_info
 
-        return True, (radl, show_only)
+        return True, (radl, show_only, cmd)
 
     def getversion(self):
         """

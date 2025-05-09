@@ -252,8 +252,8 @@ def main(operation, options, args, parser):
         success, res = imclient._ssh(operation)
         if success:
             try:
-                radl, show_only = res
-                CmdSsh.run(radl, show_only)
+                radl, show_only, cmd = res
+                CmdSsh.run(radl, show_only, cmd)
             except Exception as ex:
                 print(str(ex))
                 return False
