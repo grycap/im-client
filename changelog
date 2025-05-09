@@ -126,3 +126,7 @@ IM-client 1.8.0
 
 IM-client 1.8.1
     * Fix error calling client.destroy.
+
+IM-client 1.8.2
+    * Enable to add a command in the SSH operation.
+    * Add put and get operations to copy date from/to a VM.
