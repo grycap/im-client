@@ -85,12 +85,18 @@ class CmdSsh:
     """
 
     @staticmethod
-    def run(radl, show_only=False):
+    def run(radl, show_only=False, cmd=None):
         try:
             if radl.systems[0].getValue("disk.0.os.credentials.private_key"):
                 ops = CmdSsh._connect_key(radl)
             else:
                 ops = CmdSsh._connect_password(radl)
+
+            if cmd:
+                if isinstance(cmd, list):
+                    ops.extend(cmd)
+                else:
+                    ops.append(cmd)
 
             if show_only:
                 for op in ops:
@@ -232,6 +238,48 @@ class CmdSsh:
         res.append("%s@%s" % (s.getValue("disk.0.os.credentials.username"), ip))
 
         return res
+
+
+class CmdScp():
+    """
+    Class to execute a scp directly to a VM (from EC3)
+    """
+
+    @staticmethod
+    def run(radl, op, cmd, show_only=False):
+        try:
+            if radl.systems[0].getValue("disk.0.os.credentials.private_key"):
+                ops = CmdSsh._connect_key(radl)
+            else:
+                ops = CmdSsh._connect_password(radl)
+
+            pos = ops.index("ssh")
+            ops[pos] = "scp"
+            ops.insert(pos + 1, "-r")
+            pos = ops.index("-p", pos)
+            ops[pos] = "-P"
+
+            if op == "put":
+                ops[-1] += f":{cmd[1]}"
+                ops.insert(-1, cmd[0])
+            elif op == "get":
+                ops[-1] += f":{cmd[0]}"
+                ops.append(cmd[1])
+            else:
+                raise Exception("Invalid operation: %s" % op)
+
+            if show_only:
+                for op in ops:
+                    if "ProxyCommand" in op:
+                        op = "'" + op + "'"
+                    print(op, end=" ")
+            else:
+                os.execlp(ops[0], *ops)
+        except OSError as e:
+            raise Exception("Error connecting to VM: %s\nProbably 'sshpass' or 'ssh' "
+                            "programs are not installed!" % str(e))
+        except Exception as e:
+            raise Exception("Error connecting to VM: %s" % str(e))
 
 
 class IMClient:
@@ -1025,7 +1073,8 @@ class IMClient:
         inf_id = self._get_inf_id()
         show_only = False
         master_vm_id = None
-        if operation == "ssh":
+        cmd = None
+        if operation in ["ssh", "put", "get"]:
             master_vm_id = self._get_master_vm_id(inf_id)
             vm_id = master_vm_id
             if len(self.args) >= 2:
@@ -1033,6 +1082,8 @@ class IMClient:
                     show_only = bool(int(self.args[1]))
                 else:
                     return False, "The show_only flag must be 0 or 1"
+                if len(self.args) >= 3:
+                    cmd = self.args[2:]
         else:
             if len(self.args) >= 2:
                 vm_id = self.args[1]
@@ -1041,6 +1092,8 @@ class IMClient:
                         show_only = bool(int(self.args[2]))
                     else:
                         return False, "The show_only flag must be 0 or 1"
+                    if len(self.args) >= 4:
+                        cmd = self.args[3:]
             else:
                 return False, "VM ID to get info not specified"
 
@@ -1090,7 +1143,7 @@ class IMClient:
             else:
                 return False, "Error accessing VM: %s" % vm_info
 
-        return True, (radl, show_only)
+        return True, (radl, show_only, cmd)
 
     def getversion(self):
         """
