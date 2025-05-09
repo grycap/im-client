@@ -240,6 +240,48 @@ class CmdSsh:
         return res
 
 
+class CmdScp():
+    """
+    Class to execute a scp directly to a VM (from EC3)
+    """
+
+    @staticmethod
+    def run(radl, op, cmd, show_only=False):
+        try:
+            if radl.systems[0].getValue("disk.0.os.credentials.private_key"):
+                ops = CmdSsh._connect_key(radl)
+            else:
+                ops = CmdSsh._connect_password(radl)
+
+            pos = ops.index("ssh")
+            ops[pos] = "scp"
+            ops.insert(pos + 1, "-r")
+            pos = ops.index("-p", pos)
+            ops[pos] = "-P"
+
+            if op == "put":
+                ops[-1] += f":{cmd[1]}"
+                ops.insert(-1, cmd[0])
+            elif op == "get":
+                ops[-1] += f":{cmd[0]}"
+                ops.append(cmd[1])
+            else:
+                raise Exception("Invalid operation: %s" % op)
+
+            if show_only:
+                for op in ops:
+                    if "ProxyCommand" in op:
+                        op = "'" + op + "'"
+                    print(op, end=" ")
+            else:
+                os.execlp(ops[0], *ops)
+        except OSError as e:
+            raise Exception("Error connecting to VM: %s\nProbably 'sshpass' or 'ssh' "
+                            "programs are not installed!" % str(e))
+        except Exception as e:
+            raise Exception("Error connecting to VM: %s" % str(e))
+
+
 class IMClient:
     """
     Class to connect with the Infrastructure Manager
@@ -1032,7 +1074,7 @@ class IMClient:
         show_only = False
         master_vm_id = None
         cmd = None
-        if operation == "ssh":
+        if operation in ["ssh", "put", "get"]:
             master_vm_id = self._get_master_vm_id(inf_id)
             vm_id = master_vm_id
             if len(self.args) >= 2:

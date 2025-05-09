@@ -22,7 +22,7 @@ import json
 import configparser as ConfigParser
 
 from imclient import IMClient, version
-from imclient.imclient import CmdSsh, PosOptionParser
+from imclient.imclient import CmdSsh, CmdScp, PosOptionParser
 
 
 def main(operation, options, args, parser):
@@ -37,7 +37,8 @@ def main(operation, options, args, parser):
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
                           "alter", "getcontmsg", "getvminfo", "reconfigure", "getradl", "getvmcontmsg", "stopvm",
                           "startvm", "sshvm", "ssh", "getstate", "getversion", "export", "import", "getoutputs",
-                          "rebootvm", "cloudusage", "cloudimages", "wait", "create_wait_outputs", "change_auth"]):
+                          "rebootvm", "cloudusage", "cloudimages", "wait", "create_wait_outputs", "change_auth",
+                          "putvm", "put", "getvm", "get"]):
         parser.error("operation not recognised.  Use --help to show all the available operations")
 
     auth_data = None
@@ -262,6 +263,40 @@ def main(operation, options, args, parser):
             print(res)
             return False
 
+    elif operation in ["putvm", "put"]:
+        success, res = imclient._ssh(operation)
+        if success:
+            try:
+                radl, show_only, cmd = res
+                if len(cmd) != 2:
+                    print("put must have 2 arguments")
+                    return False
+                CmdScp.run(radl, "put", cmd, show_only)
+            except Exception as ex:
+                print(str(ex))
+                return False
+            return True
+        else:
+            print(res)
+            return False
+
+    elif operation in ["getvm", "get"]:
+        success, res = imclient._ssh(operation)
+        if success:
+            try:
+                radl, show_only, cmd = res
+                if len(cmd) != 2:
+                    print("get must have 2 arguments")
+                    return False
+                CmdScp.run(radl, "get", cmd, show_only)
+            except Exception as ex:
+                print(str(ex))
+                return False
+            return True
+        else:
+            print(res)
+            return False
+
     elif operation == "getversion":
         success, version = imclient.getversion()
         if success:
@@ -422,6 +457,10 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     parser.add_operation_help('rebootvm', '<inf_id> <vm_id>')
     parser.add_operation_help('sshvm', '<inf_id> <vm_id> [show_only] [cmd]')
     parser.add_operation_help('ssh', '<inf_id> [show_only] [cmd]')
+    parser.add_operation_help('getvm', '<inf_id> <vm_id> <show_only> <orig> <dest>')
+    parser.add_operation_help('get', '<inf_id> <show_only> <orig> <dest>')
+    parser.add_operation_help('putvm', '<inf_id> <vm_id> <show_only> <orig> <dest>')
+    parser.add_operation_help('put', '<inf_id> <show_only> <orig> <dest>')
     parser.add_operation_help('export', '<inf_id> [delete]')
     parser.add_operation_help('import', '<json_file>')
     parser.add_operation_help('getoutputs', '<inf_id>')

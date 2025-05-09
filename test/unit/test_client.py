@@ -1092,6 +1092,47 @@ class TestClient(unittest.TestCase):
         sys.stderr = oldstderr
 
     @patch("imclient.imclient.ServerProxy")
+    def test_scpvm(self, server_proxy):
+        """
+        Test scpvm operation
+        """
+        proxy = MagicMock()
+
+        radl = open(get_abs_path("../files/test.radl"), 'r').read()
+        proxy.GetVMInfo.return_value = (True, radl)
+        server_proxy.return_value = proxy
+        options = MagicMock()
+        options.auth_file = get_abs_path("../../auth.dat")
+        options.restapi = None
+        options.name = False
+        parser = MagicMock()
+
+        out = StringIO()
+        oldstdout = sys.stdout
+        oldstderr = sys.stderr
+        sys.stdout = out
+        sys.stderr = out
+        res = main("getvm", options, ["infid", "vmid", "1", "orig", "dest"], parser)
+        self.assertEqual(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("sshpass -pyoyoyo scp -r -P 1022 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
+                      "ubuntu@10.0.0.1:orig dest", output)
+        sys.stdout = oldstdout
+        sys.stderr = oldstderr
+
+        oldstdout = sys.stdout
+        oldstderr = sys.stderr
+        sys.stdout = out
+        sys.stderr = out
+        res = main("putvm", options, ["infid", "vmid", "1", "orig", "dest"], parser)
+        self.assertEqual(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("sshpass -pyoyoyo scp -r -P 1022 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "
+                      "orig ubuntu@10.0.0.1:dest", output)
+        sys.stdout = oldstdout
+        sys.stderr = oldstderr
+
+    @patch("imclient.imclient.ServerProxy")
     def test_sshvm_key(self, server_proxy):
         """
         Test sshvm operation
