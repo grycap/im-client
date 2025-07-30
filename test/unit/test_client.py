@@ -1380,6 +1380,14 @@ class TestClient(unittest.TestCase):
                                 {'id': 'a4', 'password': 'some;"pass',
                                  'type': 'EC2', 'username': 'someuser'}])
 
+    def test_read_auth_json(self):
+        """
+        Test read_auth_data function
+        """
+        auth = IMClient.read_auth_data(get_abs_path("../files/auth.json"))
+        self.assertEqual(auth, [{'type': 'InfrastructureManager', 'username': 'user', 'password': "pass"},
+                                {'id': 'one', 'password': 'pass', 'type': 'OpenNebula', 'username': 'user', 'host': 'server:2633'}])
+
     def test_init_client(self):
         """
         Test IMClient as a lib

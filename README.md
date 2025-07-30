@@ -216,6 +216,8 @@ OpenStack has a set of addicional fields to access a cloud site:
   flow involves hitting the auth service (Keystone) with the provided username
   and password and requesting an authentication token.
 
+##### Auth file example
+
 An example of the auth file:
 
 <!-- markdownlint-disable MD013 -->
@@ -252,6 +254,27 @@ id = kub; type = Kubernetes; host = http://server:8080; username = user; passwor
 id = fog; type = FogBow; host = http://server:8182; proxy = file(/tmp/proxy.pem)
 # Azure Classic auth data
 id = azurecla; type = AzureClassic; subscription_id = subscription_id; public_key = file(/tmp/cert.pem); private_key = file(/tmp/key.pem)
+```
+<!-- markdownlint-enable MD013 -->
+
+Also JSON format is supported (since version 1.8.3):
+
+<!-- markdownlint-disable MD013 -->
+```json
+[
+    {
+        "type": "InfrastructureManager",
+        "username": "user",
+        "password": "pass"
+    },
+    {
+        "id": "one",
+        "type": "OpenNebula",
+        "host": "server:2633",
+        "username": "user",
+        "password": "pass"
+    }
+]
 ```
 <!-- markdownlint-enable MD013 -->
 

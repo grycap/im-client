@@ -397,9 +397,14 @@ class IMClient:
         if isinstance(filename, list):
             lines = filename
         else:
-            auth_file = open(filename, 'r')
-            lines = auth_file.readlines()
-            auth_file.close()
+            try:
+                with open(filename, 'r') as auth_file:
+                    auth_json = json.load(auth_file)
+                return auth_json
+            except json.JSONDecodeError:
+                with open(filename, 'r') as auth_file:
+                    lines = auth_file.readlines()
+                auth_file.close()
 
         res = []
 
