@@ -627,7 +627,8 @@ class TestClient(unittest.TestCase):
 
     @patch('requests.request')
     @patch("imclient.imclient.ServerProxy")
-    def test_destroy(self, server_proxy, requests):
+    @patch('builtins.input', return_value='yes')
+    def test_destroy(self, input_mock, server_proxy, requests):
         """
         Test destroy operation
         """
@@ -639,6 +640,7 @@ class TestClient(unittest.TestCase):
         options.restapi = None
         options.quiet = False
         options.name = False
+        options.force = False
         parser = MagicMock()
 
         out = StringIO()
@@ -685,6 +687,19 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully destroyed", output)
+        sys.stdout = oldstdout
+
+        input_mock.return_value = "a"
+        out = StringIO()
+        sys.stdout = out
+        options.force = True
+        options.xmlrpc = None
+        options.restapi = "https://localhost:8800"
+        requests.side_effect = self.get_response
+        res = main("destroy", options, ["infid"], parser)
+        self.assertEqual(res, False)
+        output = out.getvalue().strip()
+        self.assertIn("Canceled bu the user", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
