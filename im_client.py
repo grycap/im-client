@@ -311,7 +311,7 @@ def main(operation, options, args, parser):
     elif operation == "export":
         success, data = imclient._export_data()
         if success:
-            print(data)
+            print(json.dumps(data, indent=4))
         else:
             print("ERROR exporting data: " + data)
         return success
