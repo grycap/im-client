@@ -49,7 +49,7 @@ class TestClient(unittest.TestCase):
     """
 
     @staticmethod
-    def get_response(method, url, verify, cert=None, headers=None, data=None):
+    def get_response(method, url, verify, cert=None, headers=None, data=None, params=None):
         resp = MagicMock()
         parts = urlparse(url)
         url = parts[2]
