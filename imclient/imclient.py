@@ -513,7 +513,7 @@ class IMClient:
 
         return radl, desc_type
 
-    def create(self, inf_desc, desc_type="radl", asyncr=False):
+    def create(self, inf_desc, desc_type="radl", asyncr=False, dry_run=False):
         """
         Create an infrastructure
         Arguments:
@@ -521,6 +521,8 @@ class IMClient:
            - desc_type(string): Infrastructure description type ("radl", "json" or "yaml")
            - asyncr(boolean): Flag to specify if the creation call will be asynchronous.
                               Default `False`.
+           - dry_run(boolean): Flag to specify if the creation call will be a dry run (i.e.,
+                               no actual creation). Default `False`.
         Returns: A tuple with the operation success (boolean) and the infrastructure ID in case of success
                  or the error message otherwise.
         """
@@ -532,10 +534,13 @@ class IMClient:
             elif desc_type in "yaml":
                 headers["Content-Type"] = "text/yaml"
             url = "%s/infrastructures" % self.options.restapi
+            params = {}
             if asyncr:
-                url += "?async=yes"
+                params["async"] = "yes"
+            if dry_run:
+                params["dry_run"] = "yes"
             resp = requests.request("POST", url, verify=self.options.verify, headers=headers,
-                                    data=str(inf_desc))
+                                    params=params, data=str(inf_desc))
             success = resp.status_code == 200
             inf_id = resp.text
             if success:
