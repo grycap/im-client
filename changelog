@@ -130,3 +130,8 @@ IM-client 1.8.1
 IM-client 1.8.2
     * Enable to add a command in the SSH operation.
     * Add put and get operations to copy date from/to a VM.
+
+IM-client: 1.8.3
+    * Fix error printing export data.
+    * Ask confirmation in destroy.
+    * Add dry_run option in create operation.
