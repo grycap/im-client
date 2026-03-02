@@ -544,7 +544,10 @@ class IMClient:
             success = resp.status_code == 200
             inf_id = resp.text
             if success:
-                inf_id = os.path.basename(inf_id)
+                if dry_run:
+                    return True, resp.json()
+                else:
+                    inf_id = os.path.basename(inf_id)
         else:
             (success, inf_id) = self.server.CreateInfrastructure(str(inf_desc), self.auth_data)
 
