@@ -20,10 +20,7 @@ import unittest
 import sys
 import os
 import json
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
+from io import StringIO
 
 sys.path.append("..")
 sys.path.append(".")

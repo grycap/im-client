@@ -1,0 +1,4 @@
+include LICENSE
+include INSTALL
+include NOTICE
+include auth.dat

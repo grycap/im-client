@@ -474,8 +474,7 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
     return parser
 
 
-if __name__ == "__main__":
-
+def client():
     parser = get_parser()
     (options, args) = parser.parse_args()
 
@@ -492,3 +491,7 @@ if __name__ == "__main__":
     except Exception as ex:
         print(str(ex))
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    client()
