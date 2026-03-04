@@ -28,11 +28,7 @@ sys.path.append(".")
 from imclient import IMClient
 from imclient.cli import main, get_parser
 from mock import patch, MagicMock
-
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
+from urllib.parse import urlparse
 
 
 def get_abs_path(file_name):
