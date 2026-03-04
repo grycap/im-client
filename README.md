@@ -18,7 +18,6 @@ a fully functional infrastructure.
 
 ```sh
 Usage: im_client \
-         [-u|--xmlrpc-url <url>] \
          [-r|--restapi-url <url>] \
          [-v|--verify-ssl] \
          [-a|--auth_file <filename>] \
@@ -45,15 +44,9 @@ available in pip as the 'RADL' package. It is also required the Python
 [Requests library](http://docs.python-requests.org/)
 available as 'python-requests' in O.S. packages or 'requests' in pip.
 
-### 1.2 OPTIONAL PACKAGES
+### 1.2 INSTALLING
 
-In case of using the SSL secured version of the XMLRPC API the
-[SpringPython framework](http://springpython.webfactional.com/) 
-must be installed.
-
-### 1.3 INSTALLING
-
-#### 1.3.1 FROM PIP
+#### 1.2.1 FROM PIP
 
 You only have to call the install command of the pip tool with the IM-client
 package.
@@ -62,7 +55,7 @@ package.
 pip install IM-client
 ```
 
-#### 1.3.2 IM-Client Docker image
+#### 1.2.2 IM-Client Docker image
 
 The IM Client has an official Docker container image available in Github
 Container Registry that can be used instead of installing the CLI. You can
@@ -82,7 +75,7 @@ docker run --rm -ti -v "$PWD:/tmp/im" ghcr.io/grycap/im-client \
       -r https://server.com:8800 -a /tmp/im/auth.dat create /tmp/im/somefile.radl
 ```
 
-### 1.4 CONFIGURATION
+### 1.3 CONFIGURATION
 
 To avoid typing the parameters in all the client calls. The user can define a
 config file "im_client.cfg" in the current directory or a file ".im_client.cfg"
@@ -91,14 +84,11 @@ parameters:
 
 ```sh
 [im_client]
-# only set one of the urls
-#xmlrpc_url=http://localhost:8899
 restapi_url=http://localhost:8800
 auth_file=auth.dat
-xmlrpc_ssl_ca_certs=/tmp/pki/ca-chain.pem
 ```
 
-#### 1.4.1 AUTH FILE
+#### 1.3.1 AUTH FILE
 
 The authorization file stores in plain text the credentials to access the
 cloud providers, the IM service and the VMRC service. Each line of the file
@@ -253,17 +243,11 @@ The program`im_client` is called like this:
 
 ```sh
 Usage: im_client.py \
-         [-u|--xmlrpc-url <url>] \
          [-r|--restapi-url <url>] \
          [-v|--verify-ssl] \
          [-a|--auth_file <filename>] \
          operation op_parameters
 ```
-
-* option: -u|--xmlrpc-url url
-
-   URL to the XML-RPC service.
-   This option or the `-r` one must be specified.
 
 * option:: -r|--rest-url url
 
