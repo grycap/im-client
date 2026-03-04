@@ -17,7 +17,7 @@ and configuration of all the user required applications providing the user with
 a fully functional infrastructure.
 
 ```sh
-Usage: im_client.py \
+Usage: im_client \
          [-u|--xmlrpc-url <url>] \
          [-r|--restapi-url <url>] \
          [-v|--verify-ssl] \
@@ -62,15 +62,7 @@ package.
 pip install IM-client
 ```
 
-#### 1.3.2 FROM SOURCE
-
-You only need to install the tar-gziped file to any directoy:
-
-```sh
-tar xvzf IM-client-X.XX.tar.gz
-```
-
-#### 1.3.3 IM-Client Docker image
+#### 1.3.2 IM-Client Docker image
 
 The IM Client has an official Docker container image available in Github
 Container Registry that can be used instead of installing the CLI. You can

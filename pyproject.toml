@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "IM-client"
+version = "1.8.3"
+description = "IM is a tool to manage virtual infrastructures on Cloud deployments"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+
+authors = [
+    { name = "GRyCAP - Universitat Politecnica de Valencia", email = "micafer1@upv.es" }
+]
+
+urls = { homepage = "http://www.grycap.upv.es/im" }
+
+dependencies = [
+    "radl",
+    "netaddr",
+    "requests",
+]
+
+# Para PyPI y Twine
+requires-python = ">=3.7"
+
+
+[project.scripts]
+im_client = "imclient.cli:client"
+
+
+[tool.setuptools]
+packages = ["imclient"]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+"" = "."
+imclient = "imclient"

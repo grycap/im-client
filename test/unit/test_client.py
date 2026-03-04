@@ -20,16 +20,13 @@ import unittest
 import sys
 import os
 import json
-try:
-    from StringIO import StringIO
-except ImportError:
-    from io import StringIO
+from io import StringIO
 
 sys.path.append("..")
 sys.path.append(".")
 
 from imclient import IMClient
-from im_client import main, get_parser
+from imclient.cli import main, get_parser
 from mock import patch, MagicMock
 
 try:
