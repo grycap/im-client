@@ -913,7 +913,7 @@ class IMClient:
         if res == "yes":
             return self.destroy(inf_id)
         else:
-            return False, "Canceled bu the user."
+            return False, "Canceled by the user."
 
     def list_infras(self, flt=None):
         """
