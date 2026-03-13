@@ -692,7 +692,7 @@ class TestClient(unittest.TestCase):
         res = main("destroy", options, ["infid"], parser)
         self.assertEqual(res, False)
         output = out.getvalue().strip()
-        self.assertIn("Canceled bu the user", output)
+        self.assertIn("Canceled by the user", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
