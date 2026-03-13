@@ -1,14 +1,17 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = [
+    "setuptools~=69.5",
+    "wheel~=0.46"
+]
 build-backend = "setuptools.build_meta"
 
-
 [project]
-name = "IM-client"
+name = "im-client"
 version = "1.8.3"
 description = "IM is a tool to manage virtual infrastructures on Cloud deployments"
 readme = "README.md"
-license = "GPL-3.0-or-later"
+license = {text = "GPL version 3, http://www.gnu.org/licenses/gpl-3.0.txt"}
+
 
 authors = [
     { name = "GRyCAP - Universitat Politecnica de Valencia", email = "micafer1@upv.es" }
