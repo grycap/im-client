@@ -908,8 +908,12 @@ class IMClient:
 
     def _destroy(self):
         inf_id = self._get_inf_id()
-        res = input(f"Are you sure you want to destroy Inf:{inf_id}?\n"
-                    "This process cannot be undone!!.\n(yes/no):").strip().lower()
+        if not self.options.yes:
+            res = input(f"Are you sure you want to destroy Inf:{inf_id}?\n"
+                        "This process cannot be undone!!.\n(yes/no):").strip().lower()
+        else:
+            res = "yes"
+
         if res == "yes":
             return self.destroy(inf_id)
         else:
