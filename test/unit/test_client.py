@@ -634,6 +634,7 @@ class TestClient(unittest.TestCase):
         options.quiet = False
         options.name = False
         options.force = False
+        options.yes = False
         parser = MagicMock()
 
         out = StringIO()
@@ -685,6 +686,7 @@ class TestClient(unittest.TestCase):
         input_mock.return_value = "a"
         out = StringIO()
         sys.stdout = out
+        options.yes = False
         options.force = True
         options.xmlrpc = None
         options.restapi = "https://localhost:8800"
@@ -692,7 +694,20 @@ class TestClient(unittest.TestCase):
         res = main("destroy", options, ["infid"], parser)
         self.assertEqual(res, False)
         output = out.getvalue().strip()
-        self.assertIn("Canceled bu the user", output)
+        self.assertIn("Canceled by the user", output)
+        sys.stdout = oldstdout
+
+        out = StringIO()
+        sys.stdout = out
+        options.yes = True
+        options.force = False
+        options.xmlrpc = None
+        options.restapi = "https://localhost:8800"
+        requests.side_effect = self.get_response
+        res = main("destroy", options, ["infid"], parser)
+        self.assertEqual(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("Infrastructure successfully destroyed", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')

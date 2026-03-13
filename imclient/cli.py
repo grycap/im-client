@@ -437,6 +437,8 @@ http://www.gnu.org/licenses/gpl-3.0.txt for details."
                       help="Use infrastructure name instead of ID")
     parser.add_option("-s", "--system_name", default=None, dest="system_name", nargs=1, type="string",
                       help="Filter VMs by system name")
+    parser.add_option("-y", "--yes", action="store_true", default=False, dest="yes",
+                      help="Do not ask for confirmation when performing operations that may cause data loss")
     parser.add_operation_help('list', '')
     parser.add_operation_help('create', '<radl_file> [async_flag]')
     parser.add_operation_help('destroy', '<inf_id>')
