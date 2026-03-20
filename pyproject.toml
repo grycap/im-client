@@ -1,14 +1,15 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = [
+    "setuptools~=69.5",
+    "wheel~=0.46"
+]
 build-backend = "setuptools.build_meta"
 
-
 [project]
-name = "IM-client"
-version = "1.8.3"
+name = "im-client"
 description = "IM is a tool to manage virtual infrastructures on Cloud deployments"
-readme = "README.md"
-license = "GPL-3.0-or-later"
+license = {text = "GPL version 3, http://www.gnu.org/licenses/gpl-3.0.txt"}
+dynamic = ["version", "readme"]
 
 authors = [
     { name = "GRyCAP - Universitat Politecnica de Valencia", email = "micafer1@upv.es" }
@@ -37,3 +38,7 @@ include-package-data = true
 [tool.setuptools.package-dir]
 "" = "."
 imclient = "imclient"
+
+[tool.setuptools.dynamic]
+version = {attr = "imclient.version"}
+readme = {file = ["README.md"], content-type = "text/markdown"}

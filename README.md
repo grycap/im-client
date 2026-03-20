@@ -52,7 +52,7 @@ You only have to call the install command of the pip tool with the IM-client
 package.
 
 ```sh
-pip install IM-client
+pip install im-client
 ```
 
 #### 1.2.2 IM-Client Docker image

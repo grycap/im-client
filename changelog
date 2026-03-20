@@ -135,3 +135,7 @@ IM-client: 1.8.3
     * Fix error printing export data.
     * Ask confirmation in destroy.
     * Add dry_run option in create operation.
+
+IM-client: 1.8.4
+    * Add --yes option to the destroy operation
+    * Move from setup.py to pyproject.toml
