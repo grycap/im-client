@@ -137,5 +137,5 @@ IM-client: 1.8.3
     * Add dry_run option in create operation.
 
 IM-client: 1.8.4
-    * Add --yes option
+    * Add --yes option to the destroy operation
     * Move from setup.py to pyproject.toml
