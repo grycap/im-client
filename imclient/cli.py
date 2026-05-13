@@ -29,9 +29,7 @@ def main(operation, options, args, parser):
     """
     Launch Client
     """
-    if options.xmlrpc:
-        options.restapi = None
-    elif options.restapi is None:
+    if options.restapi is None:
         options.restapi = "http://localhost:8800"
 
     if (operation not in ["removeresource", "addresource", "create", "destroy", "getinfo", "list", "stop", "start",
@@ -54,11 +52,10 @@ def main(operation, options, args, parser):
     imclient = IMClient(options, auth_data, args)
 
     if not options.quiet:
-        url = options.restapi if options.restapi else options.xmlrpc
-        if url.startswith("https"):
-            print("Secure connection with: " + url)
+        if options.restapi.startswith("https"):
+            print("Secure connection with: " + options.restapi)
         else:
-            print("Connected with: " + url)
+            print("Connected with: " + options.restapi)
 
     if operation == "removeresource":
         success, vms_id = imclient._removeresource()
@@ -81,14 +78,15 @@ def main(operation, options, args, parser):
         return success
 
     elif operation == "create":
-        success, inf_id = imclient._create()
-        if success:
+        try:
+            inf_id = imclient._create()
             if not options.quiet:
                 print("Infrastructure successfully created with ID: %s" % str(inf_id))
-        else:
+            return True
+        except Exception as ex:
             if not options.quiet:
-                print("ERROR creating the infrastructure: %s" % inf_id)
-        return success
+                print("ERROR creating the infrastructure: %s" % str(ex))
+            return False
 
     elif operation == "alter":
         success, res = imclient._alter()
@@ -400,13 +398,10 @@ def get_parser():
     config.read(['im_client.cfg', os.path.expanduser('~/.im_client.cfg')])
 
     default_auth_file = None
-    default_xmlrpc = None
     default_restapi = None
 
     if config.has_option('im_client', "auth_file"):
         default_auth_file = config.get('im_client', "auth_file")
-    if config.has_option('im_client', "xmlrpc_url"):
-        default_xmlrpc = config.get('im_client', "xmlrpc_url")
     if config.has_option('im_client', "restapi_url"):
         default_restapi = config.get('im_client', "restapi_url")
 
@@ -419,16 +414,14 @@ This is free software, and you are welcome to redistribute it\n\
 under certain conditions; please read the license at \n\
 http://www.gnu.org/licenses/gpl-3.0.txt for details."
 
-    parser = PosOptionParser(usage="%prog [-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] "
+    parser = PosOptionParser(usage="%prog [-r|--restapi-url <url>] [-v|--verify-ssl] "
                              "[-a|--auth_file <filename>] operation op_parameters" + NOTICE, version=version)
     parser.add_option("-a", "--auth_file", dest="auth_file", nargs=1, default=default_auth_file, help="Authentication"
                       " data file", type="string")
-    parser.add_option("-u", "--xmlrpc-url", dest="xmlrpc", nargs=1, default=default_xmlrpc, help="URL address of the "
-                      "InfrastructureManager XML-RCP daemon", type="string")
     parser.add_option("-r", "--rest-url", dest="restapi", nargs=1, default=default_restapi, help="URL address of the "
                       "InfrastructureManager REST API", type="string")
     parser.add_option("-v", "--verify-ssl", action="store_true", default=False, dest="verify",
-                      help="Verify the certificate of the InfrastructureManager XML-RCP server")
+                      help="Verify the certificate of the InfrastructureManager REST API server")
     parser.add_option("-f", "--force", action="store_true", default=False, dest="force",
                       help="Force the deletion of the infrastructure")
     parser.add_option("-q", "--quiet", action="store_true", default=False, dest="quiet",

@@ -30,7 +30,6 @@ import subprocess
 import tempfile
 import time
 from optparse import OptionParser, Option, IndentedHelpFormatter, Values
-from xmlrpc.client import ServerProxy
 
 from radl import radl_parse
 
@@ -293,7 +292,7 @@ class IMClient:
         self.rest_auth_data = ""
         self.options = options
         self.auth_data = auth_data
-        if options.restapi and auth_data:
+        if auth_data:
             if isinstance(auth_data, str):
                 self.rest_auth_data = auth_data
             else:
@@ -303,34 +302,20 @@ class IMClient:
                         self.rest_auth_data += "%s = %s;" % (key, value)
                     self.rest_auth_data += "\\n"
 
-        elif options.xmlrpc:
-            if options.xmlrpc.startswith("https") and not options.verify:
-                try:
-                    import ssl
-                    ssl._create_default_https_context = ssl._create_unverified_context
-                except Exception:
-                    pass
-            self.server = ServerProxy(options.xmlrpc, allow_none=True)
-
     @staticmethod
-    def init_client(im_url, auth_data, rest=True, ssl_verify=False):
+    def init_client(im_url, auth_data, ssl_verify=False):
         """
         Create and initialize the IMClient class
         Arguments:
-           - im_url(string): URL to the IM API (REST or XML-RPC)
+           - im_url(string): URL to the IM API
            - auth_data(:py:class:`dict` of str objects): Authentication data to access cloud provider
                                                          (as returned by `read_auth_data` function).
-           - rest(boolean): Flag to specify the type of API to use (REST or XML-RPC).
-                            Default `True`.
            - ssl_verify(boolean): Flag to specify if ssl certificates must be validated.
                                   Default `False`.
         Returns(:py:class:`imclient.IMClient`): A client ready to interact with an IM instance.
         """
         options = {"force": False, "quiet": True, "name": None, "system_name": None}
-        if rest:
-            options["restapi"] = im_url
-        else:
-            options["xmlrpc"] = im_url
+        options["restapi"] = im_url
         options["verify"] = ssl_verify
         return IMClient(Values(options), auth_data, [])
 
@@ -523,35 +508,29 @@ class IMClient:
                               Default `False`.
            - dry_run(boolean): Flag to specify if the creation call will be a dry run (i.e.,
                                no actual creation). Default `False`.
-        Returns: A tuple with the operation success (boolean) and the infrastructure ID in case of success
-                 or the error message otherwise.
+        Returns: The ID of the created infrastructure.
+        Raises: HTTPError if the creation fails.
         """
         inf_id = None
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            if desc_type == "json":
-                headers["Content-Type"] = "application/json"
-            elif desc_type in "yaml":
-                headers["Content-Type"] = "text/yaml"
-            url = "%s/infrastructures" % self.options.restapi
-            params = {}
-            if asyncr:
-                params["async"] = "yes"
-            if dry_run:
-                params["dry_run"] = "yes"
-            resp = requests.request("POST", url, verify=self.options.verify, headers=headers,
-                                    params=params, data=str(inf_desc))
-            success = resp.status_code == 200
-            inf_id = resp.text
-            if success:
-                if dry_run:
-                    return True, resp.json()
-                else:
-                    inf_id = os.path.basename(inf_id)
+        headers = {"Authorization": self.rest_auth_data}
+        if desc_type == "json":
+            headers["Content-Type"] = "application/json"
+        elif desc_type in "yaml":
+            headers["Content-Type"] = "text/yaml"
+        url = "%s/infrastructures" % self.options.restapi
+        params = {}
+        if asyncr:
+            params["async"] = "yes"
+        if dry_run:
+            params["dry_run"] = "yes"
+        resp = requests.request("POST", url, verify=self.options.verify, headers=headers,
+                                params=params, data=str(inf_desc))
+        resp.raise_for_status()
+        if dry_run:
+            return True, resp.json()
         else:
-            (success, inf_id) = self.server.CreateInfrastructure(str(inf_desc), self.auth_data)
-
-        return success, inf_id
+            inf_id = os.path.basename(resp.text)
+            return inf_id
 
     def _create(self):
         radl_file = self._get_radl(0)
@@ -574,25 +553,17 @@ class IMClient:
            - inf_id(string): Infrastructure ID.
            - vm_list(list of strings): List of VM IDs to delete.
            - context(boolean): Flag to disable the contextualization at the end.
-        Returns: A tuple with the operation success (boolean) and the list of deleted VM IDs in case of success
-                 or the error message otherwise.
+        Returns: The list of deleted VM IDs.
+        Raises: HTTPError if the deletion fails.
         """
-        vm_list = ",".join(str(vm_id) for vm_id in vm_list)
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi.rstrip("/"), inf_id, vm_list)
-            if context is False:
-                url += "?context=0"
-            resp = requests.request("DELETE", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            if success:
-                vms_id = vm_list
-            else:
-                vms_id = resp.text
-        else:
-            (success, vms_id) = self.server.RemoveResource(inf_id, vm_list, self.auth_data, context)
-
-        return True, vms_id
+        vm_list_str = ",".join(str(vm_id) for vm_id in vm_list)
+        headers = {"Authorization": self.rest_auth_data}
+        url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi.rstrip("/"), inf_id, vm_list_str)
+        if context is False:
+            url += "?context=0"
+        resp = requests.request("DELETE", url, verify=self.options.verify, headers=headers)
+        resp.raise_for_status()
+        return vm_list
 
     def _removeresource(self):
         inf_id = self._get_inf_id()
@@ -604,13 +575,9 @@ class IMClient:
                 if self.args[2] in ["0", "1"]:
                     context = bool(int(self.args[2]))
                 else:
-                    return False, "The ctxt flag must be 0 or 1"
+                    raise ValueError("The ctxt flag must be 0 or 1")
         else:
-            if self.options.restapi:
-                msg = "VM ID to remove not specified"
-            else:
-                msg = "Coma separated VM list to remove not specified"
-            return False, msg
+            raise ValueError("VM ID to remove not specified")
 
         return self.removeresource(inf_id, vm_list, context)
 
@@ -622,32 +589,25 @@ class IMClient:
            - inf_desc(string): Infrastructure description in RADL (plain or JSON) or TOSCA.
            - desc_type(string): Infrastructure description type ("radl", "json" or "yaml")
            - context(boolean): Flag to disable the contextualization at the end.
-        Returns: A tuple with the operation success (boolean) and the list of added VM IDs in case of success
-                 or the error message otherwise.
+        Returns: The list of added VM IDs.
+        Raises: HTTPError if the addition fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-            if desc_type == "yaml":
-                headers["Content-Type"] = "text/yaml"
-            elif desc_type == "json":
-                headers["Content-Type"] = "application/json"
-            url = "%s/infrastructures/%s" % (self.options.restapi, inf_id)
-            if context is False:
-                url += "?context=0"
-            resp = requests.request("POST", url, verify=self.options.verify, headers=headers,
-                                    data=str(inf_desc))
-            success = resp.status_code == 200
-            restres = resp.text
-            if success:
-                vms_id = []
-                for elem in resp.json()["uri-list"]:
-                    vms_id.append(os.path.basename(list(elem.values())[0]))
-            else:
-                vms_id = restres
-        else:
-            (success, vms_id) = self.server.AddResource(inf_id, str(inf_desc), self.auth_data, context)
+        headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
+        if desc_type == "yaml":
+            headers["Content-Type"] = "text/yaml"
+        elif desc_type == "json":
+            headers["Content-Type"] = "application/json"
+        url = "%s/infrastructures/%s" % (self.options.restapi, inf_id)
+        if context is False:
+            url += "?context=0"
+        resp = requests.request("POST", url, verify=self.options.verify, headers=headers,
+                                data=str(inf_desc))
+        resp.raise_for_status()
+        vms_id = []
+        for elem in resp.json()["uri-list"]:
+            vms_id.append(os.path.basename(list(elem.values())[0]))
 
-        return success, vms_id
+        return vms_id
 
     def _addresource(self):
         inf_id = self._get_inf_id()
@@ -657,7 +617,7 @@ class IMClient:
             if self.args[2] in ["0", "1"]:
                 context = bool(int(self.args[2]))
             else:
-                return False, "The ctxt flag must be 0 or 1"
+                raise ValueError("The ctxt flag must be 0 or 1")
 
         radl, desc_type = self.read_input_file(radl_file)
 
@@ -670,19 +630,14 @@ class IMClient:
            - inf_id(string): Infrastructure ID.
            - vm_id(string): VM ID.
            - inf_desc(string): Infrastructure description in RADL (plain).
-        Returns: A tuple with the operation success (boolean) and the RADL of the modified VM in case of success
-                 or the error message otherwise.
+        Returns: The RADL of the modified VM.
+        Raises: HTTPError if the alteration fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi, inf_id, vm_id)
-            resp = requests.request("PUT", url, verify=self.options.verify, headers=headers, data=str(inf_desc))
-            success = resp.status_code == 200
-            res = resp.text
-        else:
-            (success, res) = self.server.AlterVM(inf_id, vm_id, str(inf_desc), self.auth_data)
-
-        return success, res
+        headers = {"Authorization": self.rest_auth_data}
+        url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi, inf_id, vm_id)
+        resp = requests.request("PUT", url, verify=self.options.verify, headers=headers, data=str(inf_desc))
+        resp.raise_for_status()
+        return resp.text
 
     def _alter(self):
         inf_id = self._get_inf_id()
@@ -700,25 +655,18 @@ class IMClient:
            - inf_id(string): Infrastructure ID.
            - inf_desc(string): Infrastructure description in RADL (plain).
            - vm_list(list of strings): Optional list of VM IDs to reconfigure (default all).
-        Returns: A tuple with the operation success (boolean) and an empty string in case of success
-                 or the error message otherwise.
+        Raises: HTTPError if the reconfiguration fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            if desc_type == "json":
-                headers["Content-Type"] = "application/json"
-            elif desc_type in "yaml":
-                headers["Content-Type"] = "text/yaml"
-            url = "%s/infrastructures/%s/reconfigure" % (self.options.restapi, inf_id)
-            if vm_list:
-                url += "?vm_list=" + ",".join(str(vm_id) for vm_id in vm_list)
-            resp = requests.request("PUT", url, verify=self.options.verify, headers=headers, data=str(inf_desc))
-            success = resp.status_code == 200
-            res = resp.text
-        else:
-            (success, res) = self.server.Reconfigure(inf_id, str(inf_desc), self.auth_data, vm_list)
-
-        return success, res
+        headers = {"Authorization": self.rest_auth_data}
+        if desc_type == "json":
+            headers["Content-Type"] = "application/json"
+        elif desc_type in "yaml":
+            headers["Content-Type"] = "text/yaml"
+        url = "%s/infrastructures/%s/reconfigure" % (self.options.restapi, inf_id)
+        if vm_list:
+            url += "?vm_list=" + ",".join(str(vm_id) for vm_id in vm_list)
+        resp = requests.request("PUT", url, verify=self.options.verify, headers=headers, data=str(inf_desc))
+        resp.raise_for_status()
 
     def _reconfigure(self):
         inf_id = self._get_inf_id()
@@ -742,31 +690,14 @@ class IMClient:
         Arguments:
            - inf_id(string): Infrastructure ID.
            - prop(string): Property to get. Valid values: "radl", "contmsg", "state", "outputs"
-        Returns: A tuple with the operation success (boolean) and the value of the prop in case of success
-                 or the error message otherwise.
+        Returns: The value of the property.
+        Raises: HTTPError if the operation fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s/%s" % (self.options.restapi, inf_id, prop)
-            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            if success:
-                res = resp.json()[prop]
-            else:
-                res = resp.text
-        else:
-            if prop == "state":
-                (success, res) = self.server.GetInfrastructureState(inf_id, self.auth_data)
-            elif prop == "contmsg":
-                (success, res) = self.server.GetInfrastructureContMsg(inf_id, self.auth_data)
-            elif prop == "radl":
-                (success, res) = self.server.GetInfrastructureRADL(inf_id, self.auth_data)
-            elif prop == "outputs":
-                return False, "ERROR getting the infrastructure outputs: Only available with REST API."
-            else:
-                return False, "Invalid Operation."
-
-        return success, res
+        headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
+        url = "%s/infrastructures/%s/%s" % (self.options.restapi, inf_id, prop)
+        resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
+        resp.raise_for_status()
+        return resp.json()[prop]
 
     def _get_infra_property(self, prop):
         inf_id = self._get_inf_id()
@@ -786,44 +717,28 @@ class IMClient:
            - vm_id(string): VM ID.
            - prop(string): Optional RADL property to get.
            - system_name(string): Optional system name to filter the VMs.
-        Returns: A tuple with the operation success (boolean) and the value of the prop in case of success
-                 or the error message otherwise.
+        Returns: The value of the property.
+        Raises: HTTPError if the operation fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi, inf_id, vm_id)
-            if prop and not system_name:
-                url += "/" + prop
-            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            if system_name and success:
-                radl_info = radl_parse.parse_radl(resp.text)
-                if radl_info.systems[0].name == system_name:
-                    if prop:
-                        info = radl_info.systems[0].getValue(prop)
-                    else:
-                        info = resp.text
+        headers = {"Authorization": self.rest_auth_data}
+        url = "%s/infrastructures/%s/vms/%s" % (self.options.restapi, inf_id, vm_id)
+        if prop and not system_name:
+            url += "/" + prop
+        resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
+        resp.raise_for_status()
+        if system_name:
+            radl_info = radl_parse.parse_radl(resp.text)
+            if radl_info.systems[0].name == system_name:
+                if prop:
+                    info = radl_info.systems[0].getValue(prop)
                 else:
-                    info = ""
+                    info = resp.text
             else:
-                info = resp.text
+                info = ""
         else:
-            if prop and not system_name:
-                if prop == "contmsg":
-                    (success, info) = self.server.GetVMContMsg(inf_id, vm_id, self.auth_data)
-                else:
-                    (success, info) = self.server.GetVMProperty(inf_id, vm_id, prop, self.auth_data)
-            else:
-                (success, info) = self.server.GetVMInfo(inf_id, vm_id, self.auth_data)
-                if success and system_name:
-                    radl_info = radl_parse.parse_radl(info)
-                    if radl_info.systems[0].name == system_name:
-                        if prop:
-                            info = radl_info.systems[0].getValue(prop)
-                    else:
-                        info = ""
+            info = resp.text
 
-        return success, info
+        return info
 
     def _getvminfo(self):
         inf_id = self._get_inf_id()
@@ -838,8 +753,11 @@ class IMClient:
     def _get_vms_info_generator(self, inf_id, vm_ids, prop, system_name):
         """Helper function to return a generator."""
         for vm_id in vm_ids:
-            success, radl = self.getvminfo(inf_id, vm_id, prop, system_name)
-            yield vm_id, success, radl
+            try:
+                radl = self.getvminfo(inf_id, vm_id, prop, system_name)
+            except Exception:
+                radl = None
+            yield vm_id, radl
 
     def getinfo(self, inf_id, prop=None, system_name=None):
         """
@@ -849,28 +767,18 @@ class IMClient:
            - inf_id(string): Infrastructure ID.
            - prop(string): Optional RADL property to get.
            - system_name(string): Optional system name to filter the VMs.
-        Returns: A tuple with the operation success (boolean) and the value of the prop in case of success
-                 or the error message otherwise.
+        Returns: A generator yielding the property for each VM in the infrastructure.
+        Raises: HTTPError if the operation fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s" % (self.options.restapi, inf_id)
-            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            restres = resp.text
-            if success:
-                vm_ids = []
-                for elem in resp.json()["uri-list"]:
-                    vm_ids.append(os.path.basename(list(elem.values())[0]))
-            else:
-                vm_ids = restres
-        else:
-            (success, vm_ids) = self.server.GetInfrastructureInfo(inf_id, self.auth_data)
-
-        if success:
-            return True, self._get_vms_info_generator(inf_id, vm_ids, prop, system_name)
-        else:
-            return False, "ERROR getting the information about the infrastructure: " + str(vm_ids)
+        headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
+        url = "%s/infrastructures/%s" % (self.options.restapi, inf_id)
+        resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
+        resp.raise_for_status()
+        vm_ids = []
+        for elem in resp.json()["uri-list"]:
+            vm_ids.append(os.path.basename(list(elem.values())[0]))
+        
+        return self._get_vms_info_generator(inf_id, vm_ids, prop, system_name)
 
     def _getinfo(self):
         inf_id = self._get_inf_id()
@@ -888,23 +796,16 @@ class IMClient:
            - inf_id(string): Infrastructure ID.
            - asyncr(boolean): Flag to specify if the deletion call will be asynchronous.
                               Default `False`.
-        Returns: A tuple with the operation success (boolean) and an empty string in case of success
-                 or the error message otherwise.
+        Raises: HTTPError if the deletion fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s" % (self.options.restapi, inf_id)
-            if self.options.force:
-                url += "?force=yes"
-            if asyncr:
-                url += "?async=yes"
-            resp = requests.request("DELETE", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            res = resp.text
-        else:
-            (success, res) = self.server.DestroyInfrastructure(inf_id, self.auth_data, self.options.force)
-
-        return success, res
+        headers = {"Authorization": self.rest_auth_data}
+        url = "%s/infrastructures/%s" % (self.options.restapi, inf_id)
+        if self.options.force:
+            url += "?force=yes"
+        if asyncr:
+            url += "?async=yes"
+        resp = requests.request("DELETE", url, verify=self.options.verify, headers=headers)
+        resp.raise_for_status()
 
     def _destroy(self):
         inf_id = self._get_inf_id()
@@ -917,7 +818,7 @@ class IMClient:
         if res == "yes":
             return self.destroy(inf_id)
         else:
-            return False, "Canceled by the user."
+            raise ValueError("Canceled by the user.")
 
     def list_infras(self, flt=None):
         """
@@ -925,34 +826,28 @@ class IMClient:
 
         Arguments:
            - flt(string): Optional filter (as regular expression) to filter the infrastructures.
-        Returns: A tuple with the operation success (boolean) and the list of infrastructure IDs
-                 in case of success or the error message otherwise.
+        Returns: The list of infrastructure IDs matching the filter.
+        Raises: HTTPError if the operation fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures" % self.options.restapi
-            if flt:
-                url += "?filter=%s" % flt
-            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            if success:
-                res = []
-                for elem in resp.json()["uri-list"]:
-                    res.append(os.path.basename(list(elem.values())[0]))
-            else:
-                res = resp.text
-        else:
-            (success, res) = self.server.GetInfrastructureList(self.auth_data, flt)
+        headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
+        url = "%s/infrastructures" % self.options.restapi
+        if flt:
+            url += "?filter=%s" % flt
+        resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
+        resp.raise_for_status()
+        res = []
+        for elem in resp.json()["uri-list"]:
+            res.append(os.path.basename(list(elem.values())[0]))
 
-        return success, res
+        return res
 
     def _list_infras(self, show_name=False, flt=None):
         if flt is None and len(self.args) >= 1:
             flt = self.args[0]
 
-        (success, res) = self.list_infras(flt)
+        res = self.list_infras(flt)
 
-        if success and show_name:
+        if show_name:
             inf_names = {}
             for inf_id in res:
                 inf_names[inf_id] = "N/A"
@@ -963,7 +858,7 @@ class IMClient:
                         inf_names[inf_id] = radl.description.getValue("name")
             res = inf_names
 
-        return success, res
+        return res
 
     def start_infra(self, inf_id):
         """
@@ -971,10 +866,9 @@ class IMClient:
 
         Arguments:
            - inf_id(string): Infrastructure ID.
-        Returns: A tuple with the operation success (boolean) and an empty string
-                 in case of success or the error message otherwise.
+        Raises: HTTPError if the operation fails.
         """
-        return self.infra_op(inf_id, "start")
+        self.infra_op(inf_id, "start")
 
     def stop_infra(self, inf_id):
         """
@@ -982,10 +876,9 @@ class IMClient:
 
         Arguments:
            - inf_id(string): Infrastructure ID.
-        Returns: A tuple with the operation success (boolean) and an empty string
-                 in case of success or the error message otherwise.
+        Raises: HTTPError if the operation fails.
         """
-        return self.infra_op(inf_id, "stop")
+        self.infra_op(inf_id, "stop")
 
     def infra_op(self, inf_id, operation):
         """
@@ -994,27 +887,16 @@ class IMClient:
         Arguments:
            - inf_id(string): Infrastructure ID.
            - operation(string): Operation to call: "start" or "stop".
-        Returns: A tuple with the operation success (boolean) and an empty string
-                 in case of success or the error message otherwise.
+        Raises: HTTPError if the operation fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/%s" % (self.options.restapi, inf_id, operation)
-            resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            res = resp.text
-        else:
-            if operation == "stop":
-                (success, res) = self.server.StopInfrastructure(inf_id, self.auth_data)
-            elif operation == "start":
-                (success, res) = self.server.StartInfrastructure(inf_id, self.auth_data)
-            else:
-                return False, "Invalid Operation."
-        return success, res
+        headers = {"Authorization": self.rest_auth_data}
+        url = "%s/infrastructures/%s/%s" % (self.options.restapi, inf_id, operation)
+        resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
+        resp.raise_for_status()
 
     def _infra_op(self, operation):
         inf_id = self._get_inf_id()
-        return self.infra_op(inf_id, operation)
+        self.infra_op(inf_id, operation)
 
     def start_vm(self, inf_id, vm_id):
         """
@@ -1023,10 +905,9 @@ class IMClient:
         Arguments:
            - inf_id(string): Infrastructure ID.
            - vm_id(string): VM ID.
-        Returns: A tuple with the operation success (boolean) and an empty string
-                 in case of success or the error message otherwise.
+        Raises: HTTPError if the operation fails.
         """
-        return self.vm_op(inf_id, vm_id, "start")
+        self.vm_op(inf_id, vm_id, "start")
 
     def stop_vm(self, inf_id, vm_id):
         """
@@ -1035,10 +916,9 @@ class IMClient:
         Arguments:
            - inf_id(string): Infrastructure ID.
            - vm_id(string): VM ID.
-        Returns: A tuple with the operation success (boolean) and an empty string
-                 in case of success or the error message otherwise.
+        Raises: HTTPError if the operation fails.
         """
-        return self.vm_op(inf_id, vm_id, "stop")
+        self.vm_op(inf_id, vm_id, "stop")
 
     def reboot_vm(self, inf_id, vm_id):
         """
@@ -1047,10 +927,9 @@ class IMClient:
         Arguments:
            - inf_id(string): Infrastructure ID.
            - vm_id(string): VM ID.
-        Returns: A tuple with the operation success (boolean) and an empty string
-                 in case of success or the error message otherwise.
+        Raises: HTTPError if the operation fails.
         """
-        return self.vm_op(inf_id, vm_id, "reboot")
+        self.vm_op(inf_id, vm_id, "reboot")
 
     def vm_op(self, inf_id, vm_id, operation):
         """
@@ -1060,31 +939,17 @@ class IMClient:
            - inf_id(string): Infrastructure ID.
            - vm_id(string): VM ID.
            - operation(string): Operation to call: "start", "stop" or "reboot".
-        Returns: A tuple with the operation success (boolean) and an empty string
-                 in case of success or the error message otherwise.
+        Raises: HTTPError if the operation fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/vms/%s/%s" % (self.options.restapi, inf_id, vm_id, operation)
-            resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            info = resp.text
-        else:
-            if operation == "start":
-                (success, info) = self.server.StartVM(inf_id, vm_id, self.auth_data)
-            elif operation == "stop":
-                (success, info) = self.server.StopVM(inf_id, vm_id, self.auth_data)
-            elif operation == "reboot":
-                (success, info) = self.server.RebootVM(inf_id, vm_id, self.auth_data)
-            else:
-                return False, "Invalid Operation."
-
-        return success, info
+        headers = {"Authorization": self.rest_auth_data}
+        url = "%s/infrastructures/%s/vms/%s/%s" % (self.options.restapi, inf_id, vm_id, operation)
+        resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
+        resp.raise_for_status()
 
     def _vm_op(self, operation):
         inf_id = self._get_inf_id()
         vm_id = self._get_vm_id()
-        return self.vm_op(inf_id, vm_id, operation)
+        self.vm_op(inf_id, vm_id, operation)
 
     def _ssh(self, operation):
         inf_id = self._get_inf_id()
@@ -1098,7 +963,7 @@ class IMClient:
                 if self.args[1] in ["0", "1"]:
                     show_only = bool(int(self.args[1]))
                 else:
-                    return False, "The show_only flag must be 0 or 1"
+                    raise ValueError("The show_only flag must be 0 or 1")
                 if len(self.args) >= 3:
                     cmd = self.args[2:]
         else:
@@ -1108,19 +973,15 @@ class IMClient:
                     if self.args[2] in ["0", "1"]:
                         show_only = bool(int(self.args[2]))
                     else:
-                        return False, "The show_only flag must be 0 or 1"
+                        raise ValueError("The show_only flag must be 0 or 1")
                     if len(self.args) >= 4:
                         cmd = self.args[3:]
             else:
-                return False, "VM ID to get info not specified"
+                raise ValueError("VM ID to get info not specified")
 
         self.args = [inf_id, vm_id]
-        vm_success, vm_info = self._getvminfo()
-
-        if vm_success:
-            radl = radl_parse.parse_radl(vm_info)
-        else:
-            return vm_success, "Error accessing VM: %s" % vm_info
+        vm_info = self._getvminfo()
+        radl = radl_parse.parse_radl(vm_info)
 
         proxy_host = False
         for netid in radl.systems[0].getNetworkIDs():
@@ -1134,50 +995,42 @@ class IMClient:
                 print("VM ID %s does not has public IP, try to access via VM ID 0." % vm_id)
 
             self.args = [inf_id, vm_id]
-            vm_success, vm_info = self._getvminfo()
+            vm_info = self._getvminfo()
 
-            if vm_success:
-                radl2 = radl_parse.parse_radl(vm_info)
-                host = radl2.getPublicIP()
-                username = radl2.systems[0].getValue("disk.0.os.credentials.username")
-                password = radl2.systems[0].getValue("disk.0.os.credentials.password")
-                priv_key = radl2.systems[0].getValue("disk.0.os.credentials.private_key")
+            radl2 = radl_parse.parse_radl(vm_info)
+            host = radl2.getPublicIP()
+            username = radl2.systems[0].getValue("disk.0.os.credentials.username")
+            password = radl2.systems[0].getValue("disk.0.os.credentials.password")
+            priv_key = radl2.systems[0].getValue("disk.0.os.credentials.private_key")
 
-                for netid in radl.systems[0].getNetworkIDs():
-                    net = radl.get_network_by_id(netid)
-                    if password:
-                        proxy_host = "%s:%s@%s" % (username, password, host)
-                    elif priv_key:
-                        proxy_host = "%s@%s" % (username, host)
-                        net.setValue('proxy_key', priv_key)
-                        proxy_key_filename = "/var/tmp/%s_%s_%s.pem" % (username, username, radl.getPrivateIP())
-                        with open(proxy_key_filename, "w") as f:
-                            f.write(priv_key)
-                        os.chmod(proxy_key_filename, 0o600)
-                    else:
-                        return False, "Error, no valid credentials in VM 0"
-                    net.setValue('proxy_host', proxy_host)
-            else:
-                return False, "Error accessing VM: %s" % vm_info
+            for netid in radl.systems[0].getNetworkIDs():
+                net = radl.get_network_by_id(netid)
+                if password:
+                    proxy_host = "%s:%s@%s" % (username, password, host)
+                elif priv_key:
+                    proxy_host = "%s@%s" % (username, host)
+                    net.setValue('proxy_key', priv_key)
+                    proxy_key_filename = "/var/tmp/%s_%s_%s.pem" % (username, username, radl.getPrivateIP())
+                    with open(proxy_key_filename, "w") as f:
+                        f.write(priv_key)
+                    os.chmod(proxy_key_filename, 0o600)
+                else:
+                    return False, "Error, no valid credentials in VM 0"
+                net.setValue('proxy_host', proxy_host)
 
-        return True, (radl, show_only, cmd)
+        return radl, show_only, cmd
 
     def getversion(self):
         """
         Get IM server version
 
-        Returns: A tuple with the operation success (boolean) and the version string
-                 in case of success or the error message otherwise.
+        Returns: The version string.
+        Raises: HTTPError if the operation fails.
         """
-        if self.options.restapi:
-            url = "%s/version" % self.options.restapi
-            resp = requests.request("GET", url, verify=self.options.verify)
-            success = resp.status_code == 200
-            version = resp.text
-        else:
-            (success, version) = self.server.GetVersion()
-
-        return success, version
+        url = "%s/version" % self.options.restapi
+        resp = requests.request("GET", url, verify=self.options.verify)
+        resp.raise_for_status()
+        return resp.text
 
     def export_data(self, inf_id, delete=None):
         """
@@ -1187,27 +1040,19 @@ class IMClient:
            - inf_id(string): Infrastructure ID.
            - delete(boolean): Flag to specify if the infrastructure will be deleted after exporting the data.
                               Default `False`.
-        Returns: A tuple with the operation success (boolean) and the json data of the infrastructure
-                 in case of success or the error message otherwise.
+        Returns: The json data of the infrastructure.
+        Raises: HTTPError if the operation fails.
         """
         if len(self.args) >= 2:
             delete = bool(int(self.args[1]))
 
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-            url = "%s/infrastructures/%s/data" % (self.options.restapi, inf_id)
-            if delete:
-                url += "?delete=yes"
-            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            if success:
-                data = resp.json()["data"]
-            else:
-                data = resp.text
-        else:
-            (success, data) = self.server.ExportInfrastructure(inf_id, delete, self.auth_data)
-
-        return success, data
+        headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
+        url = "%s/infrastructures/%s/data" % (self.options.restapi, inf_id)
+        if delete:
+            url += "?delete=yes"
+        resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
+        resp.raise_for_status()
+        return resp.json()["data"]
 
     def _export_data(self):
         inf_id = self._get_inf_id()
@@ -1222,21 +1067,14 @@ class IMClient:
 
         Arguments:
            - data(string): Json data with the Infrastructure info.
-        Returns: A tuple with the operation success (boolean) and the ID of the imported infrastructure
-                 in case of success or the error message otherwise.
+        Returns: The ID of the imported infrastructure.
+        Raises: HTTPError if the operation fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures" % self.options.restapi
-            resp = requests.request("PUT", url, verify=self.options.verify, headers=headers, data=data)
-            success = resp.status_code == 200
-            inf_id = resp.text
-            if success:
-                inf_id = os.path.basename(inf_id)
-        else:
-            (success, inf_id) = self.server.ImportInfrastructure(data, self.auth_data)
-
-        return success, inf_id
+        headers = {"Authorization": self.rest_auth_data}
+        url = "%s/infrastructures" % self.options.restapi
+        resp = requests.request("PUT", url, verify=self.options.verify, headers=headers, data=data)
+        resp.raise_for_status
+        return os.path.basename(resp.text)
 
     def _import_data(self):
         if len(self.args) >= 1:
@@ -1257,8 +1095,8 @@ class IMClient:
 
         Arguments:
            - cloud_id(string): ID of the cloud provider (as defined in the auth data).
-        Returns: A tuple with the operation success (boolean) and the requested data
-                 in case of success or the error message otherwise.
+        Returns: The list of images available in the cloud provider.
+        Raises: HTTPError if the operation fails.
         """
         return self.get_cloud_info(cloud_id, "images")
 
@@ -1268,8 +1106,8 @@ class IMClient:
 
         Arguments:
            - cloud_id(string): ID of the cloud provider (as defined in the auth data).
-        Returns: A tuple with the operation success (boolean) and the requested data
-                 in case of success or the error message otherwise.
+        Returns: The quotas available in the cloud provider.
+        Raises: HTTPError if the operation fails.
         """
         return self.get_cloud_info(cloud_id, "quotas")
 
@@ -1280,31 +1118,18 @@ class IMClient:
         Arguments:
            - cloud_id(string): ID of the cloud provider (as defined in the auth data).
            - operation(string): Type of information to get: "images" or "quotas".
-        Returns: A tuple with the operation success (boolean) and the requested data
-                 in case of success or the error message otherwise.
+        Returns: The requested information from the cloud provider.
+        Raises: HTTPError if the operation fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-            url = "%s/clouds/%s/%s" % (self.options.restapi, cloud_id, operation)
-            resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
-            success = resp.status_code == 200
-            if success:
-                data = resp.json()[operation]
-            else:
-                data = resp.text
-        else:
-            if operation == "images":
-                (success, data) = self.server.GetCloudImageList(cloud_id, self.auth_data)
-            elif operation == "quotas":
-                (success, data) = self.server.GetCloudQuotas(cloud_id, self.auth_data)
-            else:
-                return False, "Invalid Operation."
-
-        return success, data
+        headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
+        url = "%s/clouds/%s/%s" % (self.options.restapi, cloud_id, operation)
+        resp = requests.request("GET", url, verify=self.options.verify, headers=headers)
+        resp.raise_for_status()
+        return resp.json()[operation]
 
     def _get_cloud_info(self, operation):
         if not len(self.args) >= 1:
-            return False, "Cloud ID not specified"
+            raise ValueError("Cloud ID not specified")
 
         cloud_id = self.args[0]
         return self.get_cloud_info(cloud_id, operation)
@@ -1319,11 +1144,10 @@ class IMClient:
         state = "pending"
         while state in ["pending", "running", "unknown"] and unknown_count < 3 and wait < max_time:
 
-            success, res = self._get_infra_property("state")
-
-            if success:
+            try:
+                res = self._get_infra_property("state")
                 state = res['state']
-            else:
+            except Exception:
                 state = "unknown"
 
             if state == "unknown":
@@ -1351,30 +1175,23 @@ class IMClient:
            - new_auth_data(string): New Infrastructure Manager auth data to set.
            - overwrite(boolean): Flag to specify if the auth data will be overwrited.
                                  Default `False`.
-        Returns: A tuple with the operation success (boolean) and an empty string
-                 in case of success or the error message otherwise.
+        Raises: HTTPError if the operation fails.
         """
-        if self.options.restapi:
-            headers = {"Authorization": self.rest_auth_data}
-            url = "%s/infrastructures/%s/authorization" % (self.options.restapi, inf_id)
-            if overwrite:
-                url += "?overwrite=1"
-            resp = requests.request("POST", url, verify=self.options.verify,
-                                    headers=headers, data=json.dumps(new_auth_data[0]))
-            success = resp.status_code == 200
-            info = resp.text
-        else:
-            (success, info) = self.server.ChangeInfrastructureAuth(inf_id, new_auth_data[0], overwrite, self.auth_data)
-
-        return success, info
+        headers = {"Authorization": self.rest_auth_data}
+        url = "%s/infrastructures/%s/authorization" % (self.options.restapi, inf_id)
+        if overwrite:
+            url += "?overwrite=1"
+        resp = requests.request("POST", url, verify=self.options.verify,
+                                headers=headers, data=json.dumps(new_auth_data[0]))
+        resp.raise_for_status()
 
     def _change_auth(self):
         inf_id = self._get_inf_id()
         if len(self.args) >= 2:
             if not os.path.isfile(self.args[1]):
-                return False, "New auth file '" + self.args[1] + "' does not exist"
+                raise ValueError("New auth file '" + self.args[1] + "' does not exist")
         else:
-            return False, "JSON file to create inf. not specified"
+            raise ValueError("JSON file to create inf. not specified")
 
         new_auth_data = []
         for elem in IMClient.read_auth_data(self.args[1]):
@@ -1383,13 +1200,13 @@ class IMClient:
                 break
 
         if not new_auth_data:
-            return False, "No new InfrastructureManager auth provided."
+            raise ValueError("No new InfrastructureManager auth provided.")
 
         overwrite = False
         if len(self.args) >= 3:
             if self.args[2] in ["0", "1"]:
                 overwrite = bool(int(self.args[2]))
             else:
-                return False, "The overwrite flag must be 0 or 1"
+                raise ValueError("The overwrite flag must be 0 or 1")
 
-        return self.change_auth(inf_id, new_auth_data, overwrite)
+        self.change_auth(inf_id, new_auth_data, overwrite)

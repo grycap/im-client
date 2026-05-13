@@ -1,4 +1,4 @@
 from .imclient import IMClient
 
 __all__ = ['IMClient']
-version = "1.8.4"
+version = "2.0.0"
