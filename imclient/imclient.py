@@ -30,6 +30,7 @@ import subprocess
 import tempfile
 import time
 from optparse import OptionParser, Option, IndentedHelpFormatter, Values
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union
 
 from radl import radl_parse
 
@@ -286,12 +287,12 @@ class IMClient:
     Class to connect with the Infrastructure Manager
     """
 
-    def __init__(self, options, auth_data, args):
-        self.args = args
-        self.server = None
-        self.rest_auth_data = ""
-        self.options = options
-        self.auth_data = auth_data
+    def __init__(self, options: Values, auth_data: Union[str, List[Dict[str, str]], None], args: List[str]) -> None:
+        self.args: List[str] = args
+        self.server: Optional[str] = None
+        self.rest_auth_data: str = ""
+        self.options: Values = options
+        self.auth_data: Union[str, List[Dict[str, str]], None] = auth_data
         if auth_data:
             if isinstance(auth_data, str):
                 self.rest_auth_data = auth_data
@@ -303,7 +304,7 @@ class IMClient:
                     self.rest_auth_data += "\\n"
 
     @staticmethod
-    def init_client(im_url, auth_data, ssl_verify=False):
+    def init_client(im_url: str, auth_data: Union[str, List[Dict[str, str]]], ssl_verify: bool = False) -> "IMClient":
         """
         Create and initialize the IMClient class
         Arguments:
@@ -320,7 +321,7 @@ class IMClient:
         return IMClient(Values(options), auth_data, [])
 
     @staticmethod
-    def _replace_auth_values(value):
+    def _replace_auth_values(value: str) -> str:
         # Enable to specify a commnad and set the contents of the output
         if value.startswith("command(") and value.endswith(")"):
             command = value[8:-1]
@@ -336,7 +337,7 @@ class IMClient:
         return value
 
     @staticmethod
-    def _split_line(line, separator=";", maintain_quotes=False):
+    def _split_line(line: str, separator: str = ";", maintain_quotes: bool = False) -> List[str]:
         """
         Split line using ; as separator char
         considering single quotes as a way to delimit
@@ -371,7 +372,7 @@ class IMClient:
 
     # From IM.auth
     @staticmethod
-    def read_auth_data(filename):
+    def read_auth_data(filename: Union[str, List[str]]) -> Union[str, List[Dict[str, str]]]:
         """
         Read an IM auth data file.
         Arguments:
@@ -410,7 +411,7 @@ class IMClient:
 
     # fetch the output using the command
     @staticmethod
-    def _run_command(cmd):
+    def _run_command(cmd: str) -> str:
         proc = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         outs, errs = proc.communicate()
@@ -421,7 +422,7 @@ class IMClient:
         return outs.decode('utf-8').replace('\n', '')
 
     @staticmethod
-    def _get_input_params(radl):
+    def _get_input_params(radl: str) -> str:
         """
         Search for input parameters, ask the user for the values and replace them in the RADL
         """
@@ -438,19 +439,17 @@ class IMClient:
         return radl
 
     @staticmethod
-    def _get_master_vm_id(inf_id):
+    def _get_master_vm_id(inf_id: Union[str, int]) -> int:
         return 0
 
-    def _get_inf_id(self):
+    def _get_inf_id(self) -> Union[str, int]:
         if len(self.args) >= 1:
             inf_id = self.args[0]
             if inf_id.isdigit():
                 inf_id = int(self.args[0])
 
             if self.options.name:
-                success, infras = self._list_infras(flt=".*description\\s*.*\\s*(\\s*name\\s*=\\s*'%s'.*).*" % inf_id)
-                if not success:
-                    raise Exception("Error getting infrastructure list.")
+                infras = self.list_infras(flt=".*description\\s*.*\\s*(\\s*name\\s*=\\s*'%s'.*).*" % inf_id)
                 if len(infras) == 0:
                     raise Exception("Infrastructure Name not found")
                 elif len(infras) >= 1:
@@ -462,13 +461,13 @@ class IMClient:
         else:
             raise Exception("Infrastructure ID not specified")
 
-    def _get_vm_id(self):
+    def _get_vm_id(self) -> str:
         if len(self.args) >= 2:
             return self.args[1]
         else:
             raise Exception("VM ID not specified")
 
-    def _get_radl(self, param_index, fail_if_not_set=True):
+    def _get_radl(self, param_index: int, fail_if_not_set: bool = True) -> Optional[str]:
         if len(self.args) > param_index:
             if not os.path.isfile(self.args[param_index]):
                 raise Exception("RADL file '%s' does not exist" % self.args[param_index])
@@ -477,7 +476,7 @@ class IMClient:
             raise Exception("RADL file not specified")
 
     @staticmethod
-    def read_input_file(filename):
+    def read_input_file(filename: str) -> Tuple[Any, str]:
         # Read the file
         _, file_extension = os.path.splitext(filename)
         f = open(filename)
@@ -498,7 +497,7 @@ class IMClient:
 
         return radl, desc_type
 
-    def create(self, inf_desc, desc_type="radl", asyncr=False, dry_run=False):
+    def create(self, inf_desc: Any, desc_type: str = "radl", asyncr: bool = False, dry_run: bool = False) -> Union[str, Tuple[bool, Any]]:
         """
         Create an infrastructure
         Arguments:
@@ -546,7 +545,7 @@ class IMClient:
 
         return self.create(radl, desc_type, asyncr)
 
-    def removeresource(self, inf_id, vm_list, context=None):
+    def removeresource(self, inf_id: Union[str, int], vm_list: List[int], context: Optional[bool] = None) -> List[int]:
         """
         Remove resources from an infrastructure
         Arguments:
@@ -581,7 +580,7 @@ class IMClient:
 
         return self.removeresource(inf_id, vm_list, context)
 
-    def addresource(self, inf_id, inf_desc, desc_type="radl", context=None):
+    def addresource(self, inf_id: Union[str, int], inf_desc: Any, desc_type: str = "radl", context: Optional[bool] = None) -> List[str]:
         """
         Add resources into an infrastructure
         Arguments:
@@ -623,7 +622,7 @@ class IMClient:
 
         return self.addresource(inf_id, radl, desc_type, context)
 
-    def alter(self, inf_id, vm_id, inf_desc):
+    def alter(self, inf_id: Union[str, int], vm_id: str, inf_desc: Any) -> str:
         """
         Modifies the features of a VM
         Arguments:
@@ -648,7 +647,7 @@ class IMClient:
 
         return self.alter(inf_id, vm_id, radl)
 
-    def reconfigure(self, inf_id, inf_desc, desc_type="radl", vm_list=None):
+    def reconfigure(self, inf_id: Union[str, int], inf_desc: Any, desc_type: str = "radl", vm_list: Optional[List[int]] = None) -> None:
         """
         Reconfigure the infrastructure
         Arguments:
@@ -683,7 +682,7 @@ class IMClient:
 
         return self.reconfigure(inf_id, radl, desc_type, vm_list)
 
-    def get_infra_property(self, inf_id, prop):
+    def get_infra_property(self, inf_id: Union[str, int], prop: str) -> Any:
         """
         Get an infrastructure property.
 
@@ -699,7 +698,7 @@ class IMClient:
         resp.raise_for_status()
         return resp.json()[prop]
 
-    def _get_infra_property(self, prop):
+    def _get_infra_property(self, prop: str) -> Any:
         inf_id = self._get_inf_id()
         return self.get_infra_property(inf_id, prop)
 
@@ -708,7 +707,7 @@ class IMClient:
         vm_id = self._get_vm_id()
         return self.getvminfo(inf_id, vm_id, "contmsg")
 
-    def getvminfo(self, inf_id, vm_id, prop=None, system_name=None):
+    def getvminfo(self, inf_id: Union[str, int], vm_id: str, prop: Optional[str] = None, system_name: Optional[str] = None) -> Optional[str]:
         """
         Get VM info.
 
@@ -750,7 +749,7 @@ class IMClient:
 
         return self.getvminfo(inf_id, vm_id, prop)
 
-    def _get_vms_info_generator(self, inf_id, vm_ids, prop, system_name):
+    def _get_vms_info_generator(self, inf_id: Union[str, int], vm_ids: List[str], prop: Optional[str], system_name: Optional[str]) -> Generator[Tuple[str, Optional[str]], None, None]:
         """Helper function to return a generator."""
         for vm_id in vm_ids:
             try:
@@ -759,7 +758,7 @@ class IMClient:
                 radl = None
             yield vm_id, radl
 
-    def getinfo(self, inf_id, prop=None, system_name=None):
+    def getinfo(self, inf_id: Union[str, int], prop: Optional[str] = None, system_name: Optional[str] = None) -> Generator[Tuple[str, Optional[str]], None, None]:
         """
         Get infrastructure info.
 
@@ -788,7 +787,7 @@ class IMClient:
 
         return self.getinfo(inf_id, prop, self.options.system_name)
 
-    def destroy(self, inf_id, asyncr=False):
+    def destroy(self, inf_id: Union[str, int], asyncr: bool = False) -> None:
         """
         Destroy an infrastructure
 
@@ -820,7 +819,7 @@ class IMClient:
         else:
             raise ValueError("Canceled by the user.")
 
-    def list_infras(self, flt=None):
+    def list_infras(self, flt: Optional[str] = None) -> List[str]:
         """
         Get the list of user infrastructures
 
@@ -841,7 +840,7 @@ class IMClient:
 
         return res
 
-    def _list_infras(self, show_name=False, flt=None):
+    def _list_infras(self, show_name: bool = False, flt: Optional[str] = None) -> Union[List[str], Dict[str, str]]:
         if flt is None and len(self.args) >= 1:
             flt = self.args[0]
 
@@ -851,16 +850,18 @@ class IMClient:
             inf_names = {}
             for inf_id in res:
                 inf_names[inf_id] = "N/A"
-                success, radl_data = self.get_infra_property(inf_id, "radl")
-                if success:
+                try:
+                    radl_data = self.get_infra_property(inf_id, "radl")
                     radl = radl_parse.parse_radl(radl_data)
                     if radl.description and radl.description.getValue("name"):
                         inf_names[inf_id] = radl.description.getValue("name")
+                except Exception:
+                    pass
             res = inf_names
 
         return res
 
-    def start_infra(self, inf_id):
+    def start_infra(self, inf_id: Union[str, int]) -> None:
         """
         Start an infrastructure (previously stopped)
 
@@ -870,7 +871,7 @@ class IMClient:
         """
         self.infra_op(inf_id, "start")
 
-    def stop_infra(self, inf_id):
+    def stop_infra(self, inf_id: Union[str, int]) -> None:
         """
         Stop an infrastructure
 
@@ -880,7 +881,7 @@ class IMClient:
         """
         self.infra_op(inf_id, "stop")
 
-    def infra_op(self, inf_id, operation):
+    def infra_op(self, inf_id: Union[str, int], operation: str) -> None:
         """
         Call an infrastructure operation (start or stop)
 
@@ -894,11 +895,11 @@ class IMClient:
         resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
         resp.raise_for_status()
 
-    def _infra_op(self, operation):
+    def _infra_op(self, operation: str) -> None:
         inf_id = self._get_inf_id()
         self.infra_op(inf_id, operation)
 
-    def start_vm(self, inf_id, vm_id):
+    def start_vm(self, inf_id: Union[str, int], vm_id: str) -> None:
         """
         Start an VM (previously stopped)
 
@@ -909,7 +910,7 @@ class IMClient:
         """
         self.vm_op(inf_id, vm_id, "start")
 
-    def stop_vm(self, inf_id, vm_id):
+    def stop_vm(self, inf_id: Union[str, int], vm_id: str) -> None:
         """
         Stop an VM
 
@@ -920,7 +921,7 @@ class IMClient:
         """
         self.vm_op(inf_id, vm_id, "stop")
 
-    def reboot_vm(self, inf_id, vm_id):
+    def reboot_vm(self, inf_id: Union[str, int], vm_id: str) -> None:
         """
         Reboot an VM
 
@@ -931,7 +932,7 @@ class IMClient:
         """
         self.vm_op(inf_id, vm_id, "reboot")
 
-    def vm_op(self, inf_id, vm_id, operation):
+    def vm_op(self, inf_id: Union[str, int], vm_id: str, operation: str) -> None:
         """
         Call a VM operation (start, stop or reboot)
 
@@ -946,12 +947,12 @@ class IMClient:
         resp = requests.request("PUT", url, verify=self.options.verify, headers=headers)
         resp.raise_for_status()
 
-    def _vm_op(self, operation):
+    def _vm_op(self, operation: str) -> None:
         inf_id = self._get_inf_id()
         vm_id = self._get_vm_id()
         self.vm_op(inf_id, vm_id, operation)
 
-    def _ssh(self, operation):
+    def _ssh(self, operation: str) -> Any:
         inf_id = self._get_inf_id()
         show_only = False
         master_vm_id = None
@@ -1015,12 +1016,12 @@ class IMClient:
                         f.write(priv_key)
                     os.chmod(proxy_key_filename, 0o600)
                 else:
-                    return False, "Error, no valid credentials in VM 0"
+                    raise Exception("Error, no valid credentials in VM 0")
                 net.setValue('proxy_host', proxy_host)
 
         return radl, show_only, cmd
 
-    def getversion(self):
+    def getversion(self) -> str:
         """
         Get IM server version
 
@@ -1032,7 +1033,7 @@ class IMClient:
         resp.raise_for_status()
         return resp.text
 
-    def export_data(self, inf_id, delete=None):
+    def export_data(self, inf_id: Union[str, int], delete: Optional[bool] = None) -> Any:
         """
         Export infrastructure data
 
@@ -1061,7 +1062,7 @@ class IMClient:
             delete = bool(int(self.args[1]))
         return self.export_data(inf_id, delete)
 
-    def import_data(self, data):
+    def import_data(self, data: str) -> str:
         """
         Import infrastructure data
 
@@ -1079,9 +1080,9 @@ class IMClient:
     def _import_data(self):
         if len(self.args) >= 1:
             if not os.path.isfile(self.args[0]):
-                return False, "JSON file '" + self.args[0] + "' does not exist"
+                raise ValueError("JSON file '" + self.args[0] + "' does not exist")
         else:
-            return False, "JSON file to create inf. not specified"
+            raise ValueError("JSON file to create inf. not specified")
 
         f = open(self.args[0])
         data = "".join(f.readlines())
@@ -1089,7 +1090,7 @@ class IMClient:
 
         return self.import_data(data)
 
-    def get_cloud_images(self, cloud_id):
+    def get_cloud_images(self, cloud_id: str) -> Any:
         """
         Get Cloud provider images
 
@@ -1100,7 +1101,7 @@ class IMClient:
         """
         return self.get_cloud_info(cloud_id, "images")
 
-    def get_cloud_quotas(self, cloud_id):
+    def get_cloud_quotas(self, cloud_id: str) -> Any:
         """
         Get Cloud provider quotas
 
@@ -1111,7 +1112,7 @@ class IMClient:
         """
         return self.get_cloud_info(cloud_id, "quotas")
 
-    def get_cloud_info(self, cloud_id, operation):
+    def get_cloud_info(self, cloud_id: str, operation: str) -> Any:
         """
         Get Cloud provider info
 
@@ -1127,7 +1128,7 @@ class IMClient:
         resp.raise_for_status()
         return resp.json()[operation]
 
-    def _get_cloud_info(self, operation):
+    def _get_cloud_info(self, operation: str) -> Any:
         if not len(self.args) >= 1:
             raise ValueError("Cloud ID not specified")
 
@@ -1160,13 +1161,13 @@ class IMClient:
                 wait += 30
 
         if state == "configured":
-            return True, "The infrastructure is in state: %s" % state
+            return "The infrastructure is in state: %s" % state
         elif wait >= max_time:
-            return False, "Timeout waiting."
+            raise TimeoutError("Timeout waiting.")
         else:
-            return False, "The infrastructure is in state: %s" % state
+            raise Exception("The infrastructure is in state: %s" % state)
 
-    def change_auth(self, inf_id, new_auth_data, overwrite=None):
+    def change_auth(self, inf_id: Union[str, int], new_auth_data: List[Dict[str, str]], overwrite: Optional[bool] = None) -> None:
         """
         Change ownership of an infrastructure
 

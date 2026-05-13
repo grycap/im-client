@@ -58,24 +58,26 @@ def main(operation, options, args, parser):
             print("Connected with: " + options.restapi)
 
     if operation == "removeresource":
-        success, vms_id = imclient._removeresource()
-        if success:
+        try:
+            vms_id = imclient._removeresource()
             if not options.quiet:
-                print("Resources with IDs: %s successfully deleted." % str(vms_id))
-        else:
-            print("ERROR deleting resources from the infrastructure: %s" % vms_id)
-        return success
+                print("Resources with IDs: %s successfully deleted." % ",".join(str(v) for v in vms_id))
+            return True
+        except Exception as ex:
+            print("ERROR deleting resources from the infrastructure: %s" % ex)
+            return False
 
     elif operation == "addresource":
-        success, vms_id = imclient._addresource()
-        if success:
+        try:
+            vms_id = imclient._addresource()
             if not options.quiet:
-                print("Resources with IDs: %s successfully added." % ",".join(vms_id))
+                print("Resources with IDs: %s successfully added." % ",".join(str(v) for v in vms_id))
             else:
                 print(json.dumps(vms_id, indent=4))
-        else:
-            print("ERROR adding resources to infrastructure: %s" % vms_id)
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR adding resources to infrastructure: %s" % ex)
+            return False
 
     elif operation == "create":
         try:
@@ -89,39 +91,42 @@ def main(operation, options, args, parser):
             return False
 
     elif operation == "alter":
-        success, res = imclient._alter()
-        if success:
+        try:
+            imclient._alter()
             if not options.quiet:
                 print("VM successfully modified.")
-        else:
-            print("ERROR modifying the VM: %s" % res)
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR modifying the VM: %s" % ex)
+            return False
 
     elif operation == "reconfigure":
-        success, res = imclient._reconfigure()
-        if success:
+        try:
+            imclient._reconfigure()
             if not options.quiet:
                 print("Infrastructure successfully reconfigured.")
-        else:
-            print("ERROR reconfiguring the infrastructure: " + res)
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR reconfiguring the infrastructure: %s" % ex)
+            return False
 
     elif operation == "getcontmsg":
-        success, cont_out = imclient._get_infra_property("contmsg")
-        if success:
+        try:
+            cont_out = imclient._get_infra_property("contmsg")
             if len(cont_out) > 0:
                 if not options.quiet:
                     print("Msg Contextualizator: \n")
                 print(cont_out)
             elif not options.quiet:
                 print("No Msg Contextualizator avaliable\n")
-        else:
-            print("Error getting infrastructure contextualization message: %s" % cont_out)
-        return success
+            return True
+        except Exception as ex:
+            print("Error getting infrastructure contextualization message: %s" % ex)
+            return False
 
     elif operation == "getstate":
-        success, res = imclient._get_infra_property("state")
-        if success:
+        try:
+            res = imclient._get_infra_property("state")
             if not options.quiet:
                 state = res['state']
                 vm_states = res['vm_states']
@@ -130,44 +135,52 @@ def main(operation, options, args, parser):
                     print("VM ID: %s is in state: %s." % (vm_id, vm_state))
             else:
                 print(json.dumps(res, indent=4))
-        else:
-            print("Error getting infrastructure state: %s" % res)
-        return success
+            return True
+        except Exception as ex:
+            print("Error getting infrastructure state: %s" % ex)
+            return False
 
     elif operation == "getvminfo":
-        success, info = imclient._getvminfo()
-        if not success:
-            print("ERROR getting the VM info: %s" % info)
-        print(info)
-        return success
+        try:
+            info = imclient._getvminfo()
+            print(info)
+            return True
+        except Exception as ex:
+            print("ERROR getting the VM info: %s" % ex)
+            return False
 
     elif operation == "getinfo":
-        success, vms_info = imclient._getinfo()
-        if success:
-            for vm_id, vm_succes, vm_radl in vms_info:
+        try:
+            vms_info = imclient._getinfo()
+            for vm_id, vm_radl in vms_info:
                 if not options.quiet:
                     print("Info about VM with ID: %s" % vm_id)
-                if vm_succes:
+                if vm_radl is not None:
                     if not options.system_name or (options.system_name and vm_radl != ""):
                         print(vm_radl)
                 else:
-                    print("ERROR getting the information about the VM: " + vm_radl)
-        else:
-            print("ERROR getting the information about infrastructure: " + vms_info)
-        return success
+                    print("ERROR getting the information about the VM %s" % vm_id)
+            return True
+        except Exception as ex:
+            print("ERROR getting the information about infrastructure: %s" % ex)
+            return False
 
     elif operation == "destroy":
-        success, res = imclient._destroy()
-        if success:
+        try:
+            imclient._destroy()
             if not options.quiet:
                 print("Infrastructure successfully destroyed")
-        else:
-            print("ERROR destroying the infrastructure: %s" % res)
-        return success
+            return True
+        except ValueError as ex:
+            print(str(ex))
+            return False
+        except Exception as ex:
+            print("ERROR destroying the infrastructure: %s" % ex)
+            return False
 
     elif operation == "list":
-        success, res = imclient._list_infras(show_name=options.name)
-        if success:
+        try:
+            res = imclient._list_infras(show_name=options.name)
             if res:
                 if options.quiet:
                     print(json.dumps(res, indent=4))
@@ -181,212 +194,209 @@ def main(operation, options, args, parser):
             else:
                 if not options.quiet:
                     print("No Infrastructures.")
-        else:
-            print("ERROR listing then infrastructures: %s" % res)
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR listing then infrastructures: %s" % ex)
+            return False
 
     elif operation == "start":
-        success, res = imclient._infra_op(operation)
-        if success:
+        try:
+            imclient._infra_op(operation)
             if not options.quiet:
                 print("Infrastructure successfully started")
-        else:
-            print("ERROR starting the infraestructure: " + res)
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR starting the infraestructure: %s" % ex)
+            return False
 
     elif operation == "stop":
-        success, res = imclient._infra_op(operation)
-        if success:
+        try:
+            imclient._infra_op(operation)
             if not options.quiet:
                 print("Infrastructure successfully stopped")
-        else:
-            print("ERROR stopping the infrastructure: " + res)
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR stopping the infrastructure: %s" % ex)
+            return False
 
     elif operation == "getradl":
-        success, radl = imclient._get_infra_property("radl")
-        if success:
+        try:
+            radl = imclient._get_infra_property("radl")
             print(radl)
-        else:
-            print("ERROR getting the infrastructure RADL: %s" % radl)
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR getting the infrastructure RADL: %s" % ex)
+            return False
 
     elif operation == "getvmcontmsg":
-        success, info = imclient._getvmcontmsg()
-        if success:
+        try:
+            info = imclient._getvmcontmsg()
             print(info)
-        else:
-            print("Error getting VM contextualization message: %s" % info)
-        return success
+            return True
+        except Exception as ex:
+            print("Error getting VM contextualization message: %s" % ex)
+            return False
 
     elif operation == "startvm":
-        success, info = imclient._vm_op("start")
-        if success:
+        try:
+            imclient._vm_op("start")
             if not options.quiet:
                 print("VM successfully started")
-        else:
-            print("Error starting VM: %s" % info)
-
-        return success
+            return True
+        except Exception as ex:
+            print("Error starting VM: %s" % ex)
+            return False
 
     elif operation == "stopvm":
-        success, info = imclient._vm_op("stop")
-        if success:
+        try:
+            imclient._vm_op("stop")
             if not options.quiet:
                 print("VM successfully stopped")
-        else:
-            print("Error stopping VM: %s" % info)
-        return success
+            return True
+        except Exception as ex:
+            print("Error stopping VM: %s" % ex)
+            return False
 
     elif operation == "rebootvm":
-        success, info = imclient._vm_op("reboot")
-        if success:
+        try:
+            imclient._vm_op("reboot")
             if not options.quiet:
                 print("VM successfully rebooted")
-        else:
-            print("Error rebooting VM: %s" % info)
-        return success
+            return True
+        except Exception as ex:
+            print("Error rebooting VM: %s" % ex)
+            return False
 
     elif operation in ["sshvm", "ssh"]:
-        success, res = imclient._ssh(operation)
-        if success:
-            try:
-                radl, show_only, cmd = res
-                CmdSsh.run(radl, show_only, cmd)
-            except Exception as ex:
-                print(str(ex))
-                return False
+        try:
+            radl, show_only, cmd = imclient._ssh(operation)
+            CmdSsh.run(radl, show_only, cmd)
             return True
-        else:
-            print(res)
+        except Exception as ex:
+            print(str(ex))
             return False
 
     elif operation in ["putvm", "put"]:
-        success, res = imclient._ssh(operation)
-        if success:
-            try:
-                radl, show_only, cmd = res
-                if len(cmd) != 2:
-                    print("put must have 2 arguments")
-                    return False
-                CmdScp.run(radl, "put", cmd, show_only)
-            except Exception as ex:
-                print(str(ex))
+        try:
+            radl, show_only, cmd = imclient._ssh(operation)
+            if len(cmd) != 2:
+                print("put must have 2 arguments")
                 return False
+            CmdScp.run(radl, "put", cmd, show_only)
             return True
-        else:
-            print(res)
+        except Exception as ex:
+            print(str(ex))
             return False
 
     elif operation in ["getvm", "get"]:
-        success, res = imclient._ssh(operation)
-        if success:
-            try:
-                radl, show_only, cmd = res
-                if len(cmd) != 2:
-                    print("get must have 2 arguments")
-                    return False
-                CmdScp.run(radl, "get", cmd, show_only)
-            except Exception as ex:
-                print(str(ex))
+        try:
+            radl, show_only, cmd = imclient._ssh(operation)
+            if len(cmd) != 2:
+                print("get must have 2 arguments")
                 return False
+            CmdScp.run(radl, "get", cmd, show_only)
             return True
-        else:
-            print(res)
+        except Exception as ex:
+            print(str(ex))
             return False
 
     elif operation == "getversion":
-        success, version = imclient.getversion()
-        if success:
+        try:
+            ver = imclient.getversion()
             if not options.quiet:
-                print("IM service version: %s" % version)
+                print("IM service version: %s" % ver)
             else:
-                print(version)
-        else:
-            print("ERROR getting IM service version: " + version)
-        return success
+                print(ver)
+            return True
+        except Exception as ex:
+            print("ERROR getting IM service version: %s" % ex)
+            return False
 
     elif operation == "export":
-        success, data = imclient._export_data()
-        if success:
+        try:
+            data = imclient._export_data()
             print(json.dumps(data, indent=4))
-        else:
-            print("ERROR exporting data: " + data)
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR exporting data: %s" % ex)
+            return False
 
     elif operation == "import":
-        success, inf_id = imclient._import_data()
-        if success:
+        try:
+            inf_id = imclient._import_data()
             if not options.quiet:
                 print("New Inf: " + inf_id)
             else:
                 print(inf_id)
-        else:
-            print("ERROR importing data: " + inf_id)
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR importing data: %s" % ex)
+            return False
 
     elif operation == "getoutputs":
-        success, outputs = imclient._get_infra_property("outputs")
-        if success:
+        try:
+            outputs = imclient._get_infra_property("outputs")
             if not options.quiet:
                 print("The infrastructure outputs:\n")
                 for key, value in outputs.items():
                     print("%s = %s" % (key, value))
             else:
                 print(json.dumps(outputs, indent=4))
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR getting outputs: %s" % ex)
+            return False
 
     elif operation == "cloudimages":
-        success, data = imclient._get_cloud_info("images")
-        if success:
+        try:
+            data = imclient._get_cloud_info("images")
             print(json.dumps(data, indent=4))
-        else:
-            print("ERROR getting cloud image list: " + data)
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR getting cloud image list: %s" % ex)
+            return False
 
     elif operation == "cloudusage":
-        success, data = imclient._get_cloud_info("quotas")
-        if success:
+        try:
+            data = imclient._get_cloud_info("quotas")
             print(json.dumps(data, indent=4))
-        else:
-            print("ERROR getting cloud usage: " + data)
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR getting cloud usage: %s" % ex)
+            return False
 
     elif operation == "wait":
-        success, info = imclient._wait()
-        if success:
+        try:
+            info = imclient._wait()
             if not options.quiet:
                 print(info)
-        else:
-            print(info)
-        return success
+            return True
+        except Exception as ex:
+            print(str(ex))
+            return False
 
     elif operation == "create_wait_outputs":
-        success, inf_id = imclient._create()
-        if not success:
-            print(json.dumps({'error': inf_id}))
-            return False
-        imclient.args = [inf_id]
-        success, error = imclient._wait()
-        if not success:
-            print(json.dumps({'error': error, 'infid': inf_id}))
-            return False
-        success, outputs = imclient._get_infra_property("outputs")
-        if success:
+        try:
+            inf_id = imclient._create()
+            imclient.args = [inf_id]
+            imclient._wait()
+            outputs = imclient.get_infra_property(inf_id, "outputs")
             outputs["infid"] = inf_id
             print(json.dumps(outputs))
-        else:
-            print('{"infid": "%s", "outputs": {}}' % inf_id)
-        return True
+            return True
+        except Exception as ex:
+            print(json.dumps({'error': str(ex)}))
+            return False
 
     elif operation == "change_auth":
-        success, error = imclient._change_auth()
-        if success:
+        try:
+            imclient._change_auth()
             if not options.quiet:
                 print("Auth data successfully changed.")
-        else:
-            print("ERROR changing auth data: " + error)
-        return success
+            return True
+        except Exception as ex:
+            print("ERROR changing auth data: %s" % ex)
+            return False
 
 
 def get_parser():
