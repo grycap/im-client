@@ -281,7 +281,12 @@ class CmdScp():
         except Exception as e:
             raise Exception("Error connecting to VM: %s" % str(e))
 
+
 VMGenerator = Generator[Tuple[str, Optional[str]], None, None]
+
+
+DescTypes = Literal["radl", "json", "yaml", "yml"]
+
 
 class IMClient:
     """
@@ -498,7 +503,7 @@ class IMClient:
 
         return radl, desc_type
 
-    def create(self, inf_desc: str, desc_type: Literal["radl", "json", "yaml", "yml"] = "radl", asyncr: bool = False, dry_run: bool = False) -> Any:
+    def create(self, inf_desc: str, desc_type: DescTypes = "radl", asyncr: bool = False, dry_run: bool = False) -> Any:
         """
         Create an infrastructure
         Arguments:
@@ -580,7 +585,8 @@ class IMClient:
 
         return self.removeresource(inf_id, vm_list, context)
 
-    def addresource(self, inf_id: str, inf_desc: str, desc_type: Literal["radl", "json", "yaml", "yml"], context: Optional[bool] = None) -> List[str]:
+    def addresource(self, inf_id: str, inf_desc: str, desc_type: DescTypes,
+                    context: Optional[bool] = None) -> List[str]:
         """
         Add resources into an infrastructure
         Arguments:
@@ -648,7 +654,7 @@ class IMClient:
 
         return self.alter(inf_id, vm_id, radl)
 
-    def reconfigure(self, inf_id: str, inf_desc: str, desc_type: Literal["radl", "json", "yaml", "yml"] = "radl",
+    def reconfigure(self, inf_id: str, inf_desc: str, desc_type: DescTypes = "radl",
                     vm_list: Optional[List[int]] = None) -> None:
         """
         Reconfigure the infrastructure
@@ -753,7 +759,8 @@ class IMClient:
 
         return self.getvminfo(inf_id, vm_id, prop)
 
-    def _get_vms_info_generator(self, inf_id: str, vm_ids: List[str], prop: Optional[str], system_name: Optional[str]) -> VMGenerator:
+    def _get_vms_info_generator(self, inf_id: str, vm_ids: List[str], prop: Optional[str],
+                                system_name: Optional[str]) -> VMGenerator:
         """Helper function to return a generator."""
         for vm_id in vm_ids:
             try:
@@ -780,7 +787,7 @@ class IMClient:
         vm_ids = []
         for elem in resp.json()["uri-list"]:
             vm_ids.append(os.path.basename(list(elem.values())[0]))
-        
+
         return self._get_vms_info_generator(inf_id, vm_ids, prop, system_name)
 
     def _getinfo(self) -> VMGenerator:
