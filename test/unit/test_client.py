@@ -921,7 +921,6 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         sys.stdout = out
         options.quiet = False
-        options.xmlrpc = None
         options.name = False
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
@@ -963,7 +962,6 @@ class TestClient(unittest.TestCase):
         oldstdout = sys.stdout
         out = StringIO()
         sys.stdout = out
-        options.xmlrpc = None
         options.quiet = False
         options.name = False
         options.restapi = "https://localhost:8800"
@@ -990,7 +988,6 @@ class TestClient(unittest.TestCase):
         oldstdout = sys.stdout
         out = StringIO()
         sys.stdout = out
-        options.xmlrpc = None
         options.quiet = True
         options.name = False
         options.restapi = "https://localhost:8800"
@@ -1033,7 +1030,6 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = "https://localhost:8800"
-        options.xmlrpc = None
         options.quiet = True
         options.name = False
         parser = MagicMock()
@@ -1056,7 +1052,6 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = "https://localhost:8800"
-        options.xmlrpc = None
         options.quiet = True
         options.name = False
         parser = MagicMock()

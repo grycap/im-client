@@ -1,33 +1,30 @@
 IM Command-line Interface (CLI)
 ===============================
 
-The :program:`im_client` is a CLI client that uses XML-RPC API of IM Server.
+The :program:`im_client` is a CLI client that uses REST API of IM Server.
 
 Prerequisites
 -------------
 
-The :program:`im_client` needs at least Python 2.4 to run. If the XML-RPC API
-is secured with SSL certificates (see :confval:`XMLRCP_SSL`),
-`Spring Python <http://springpython.webfactional.com/>`_ should be installed.
-The Debian package is named ``python-springpython``.
+The :program:`im_client` needs at least Python 3.8 to run.
+It also needs the Python library `requests`, `radl` and `netaddr` to be installed.
+You can install it using pip with the following command:
+
+   $ pip install requests radl netaddr
 
 Invocation
 ----------
 
 The :program:`im_client` is called like this::
 
-   $ im_client.py [-u|--xmlrpc-url url] [-a|--auth_file filename] operation op_parameters
+   $ im_client.py [-r|--restapi-url <url>] [-a|--auth_file filename] operation op_parameters
 
 .. program:: im_client
 
-.. option:: -u|--xmlrpc-url url
+.. option:: -r|--restapi-url url
 
-   URL to the XML-RPC service.
-   The default value is ``http://localhost:8888``.
-
-   .. todo::
-
-      Change the default value of the port to XMLRCP_PORT.
+   URL to the REST API service.
+   The default value is ``http://localhost:8800``.
 
 .. option:: -a|--auth_file filename
 
