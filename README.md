@@ -482,7 +482,7 @@ IMClient can also be used as a Python library to access IM (since version
 
       deploy node 1
    """
-   success, inf_id = client.create(inf_desc)
+   inf_id = client.create(inf_desc)
    ...
-   success, err = client.destroy(inf_id)
+   client.destroy(inf_id)
 ```
