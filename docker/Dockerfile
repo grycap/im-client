@@ -1,7 +1,7 @@
 # Dockerfile to create a container with the IM client
 FROM alpine:3.23
 LABEL maintainer="Miguel Caballer <micafer1@upv.es>"
-LABEL version="1.8.4"
+LABEL version="2.0.0"
 LABEL description="Container image to run the IM client. (http://www.grycap.upv.es/im)"
 
 # Install python3
@@ -9,7 +9,7 @@ RUN  apk add --no-cache python3 py3-requests py3-packaging jq bash openssh-clien
 
 # Install IM client
 RUN  apk add --no-cache py3-pip && \
-     pip3 install --break-system-packages im-client==1.8.4 && \
+     pip3 install --break-system-packages im-client==2.0.0 && \
      apk del --no-cache py3-pip
 
 COPY im_client.cfg /im-client/im_client.cfg
