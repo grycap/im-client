@@ -89,6 +89,12 @@ class TestClient(unittest.TestCase):
             elif url == "/infrastructures/infid2/vms/vm2":
                 resp.status_code = 200
                 resp.text = "system node2 (cpu.count = 2)"
+            elif url == "/infrastructures/inf1/radl":
+                resp.status_code = 200
+                resp.json.return_value = {"radl": "description desc (name = 'some name')\nsystem s1 ()"}
+            elif url == "/infrastructures/inf2/radl":
+                resp.status_code = 200
+                resp.json.return_value = {"radl": "description desc (name = 'some name2')\nsystem s2 ()"}
             elif url == "/infrastructures/infid/radl":
                 resp.status_code = 200
                 resp.json.return_value = {"radl": "radltest"}
@@ -168,18 +174,14 @@ class TestClient(unittest.TestCase):
         return resp
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_list(self, server_proxy, requests):
+    def test_list(self, requests):
         """
         Test list operation
         """
-        proxy = MagicMock()
-        proxy.GetInfrastructureList.return_value = (True, ["inf1", "inf2"])
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.xmlrpc = "https://localhost:8899"
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.verify = False
         options.quiet = False
         options.name = False
@@ -189,69 +191,39 @@ class TestClient(unittest.TestCase):
         oldstdout = sys.stdout
         sys.stdout = out
         res = main("list", options, [], parser)
-        output = out.getvalue().strip()
         self.assertEqual(res, True)
+        output = out.getvalue().strip()
+        self.assertIn("IDs: \n  inf1\n  inf2", output)
+        sys.stdout = oldstdout
+
+        out = StringIO()
+        sys.stdout = out
+        res = main("list", options, [".*hadoop.*"], parser)
+        self.assertEqual(res, True)
+        output = out.getvalue().strip()
         self.assertIn("IDs: \n  inf1\n  inf2", output)
         sys.stdout = oldstdout
 
         options.name = True
-        proxy.GetInfrastructureRADL.side_effect = [(True, "description desc (name = 'some name')\nsystem s1 ()"),
-                                                   (True, "description desc (name = 'some name2')\nsystem s2 ()")]
-
         out = StringIO()
-        oldstdout = sys.stdout
         sys.stdout = out
         res = main("list", options, [], parser)
-        output = out.getvalue().strip()
         self.assertEqual(res, True)
+        output = out.getvalue().strip()
         self.assertIn("inf1    some name", output)
         self.assertIn("inf2    some name2", output)
         sys.stdout = oldstdout
         options.name = False
 
-        out = StringIO()
-        oldstdout = sys.stdout
-        sys.stdout = out
-        res = main("list", options, [".*hadoop.*"], parser)
-        output = out.getvalue().strip()
-        self.assertEqual(res, True)
-        self.assertIn("IDs: \n  inf1\n  inf2", output)
-        sys.stdout = oldstdout
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("list", options, [], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("IDs: \n  inf1\n  inf2", output)
-        sys.stdout = oldstdout
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("list", options, [".*hadoop.*"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("IDs: \n  inf1\n  inf2", output)
-        sys.stdout = oldstdout
-
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_create(self, server_proxy, requests):
+    def test_create(self, requests):
         """
         Test create operation
         """
-        proxy = MagicMock()
-        proxy.CreateInfrastructure.return_value = (True, "inf1")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         parser = MagicMock()
@@ -267,20 +239,6 @@ class TestClient(unittest.TestCase):
 
         out = StringIO()
         sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("create", options, [get_abs_path("../files/test.radl")], parser)
-        self.assertIsNotNone(res)
-        output = out.getvalue().strip()
-        self.assertIn("Infrastructure successfully created with ID: inf1", output)
-        sys.stdout = oldstdout
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
         res = main("create", options, [get_abs_path("../files/tosca.yml")], parser)
         self.assertIsNotNone(res)
         output = out.getvalue().strip()
@@ -288,16 +246,13 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_removeresource(self, server_proxy, requests):
+    def test_removeresource(self, requests):
         """
         Test removeresource operation
         """
-        proxy = MagicMock()
-        proxy.RemoveResource.return_value = (True, ["1", "2"])
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         options.auth_file = get_abs_path("../../auth.dat")
@@ -306,16 +261,6 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        res = main("removeresource", options, ["infid", "1,2"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("Resources with IDs: ['1', '2'] successfully deleted.", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
         res = main("removeresource", options, ["infid", "1"], parser)
         self.assertEqual(res, True)
         output = out.getvalue().strip()
@@ -323,17 +268,14 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_addresource(self, server_proxy, requests):
+    def test_addresource(self, requests):
         """
         Test addresource operation
         """
-        proxy = MagicMock()
-        proxy.AddResource.return_value = (True, ["1"])
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         parser = MagicMock()
@@ -345,23 +287,10 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("Resources with IDs: 1 successfully added.", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("addresource", options, ["infid", get_abs_path("../files/test.radl")], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("Resources with IDs: 1 successfully added.", output)
         sys.stdout = oldstdout
 
         out = StringIO()
         sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
         res = main("addresource", options, ["infid", get_abs_path("../files/tosca.yml")], parser)
         self.assertEqual(res, True)
         output = out.getvalue().strip()
@@ -369,17 +298,14 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_alter(self, server_proxy, requests):
+    def test_alter(self, requests):
         """
         Test alter operation
         """
-        proxy = MagicMock()
-        proxy.AlterVM.return_value = (True, "")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         parser = MagicMock()
@@ -391,30 +317,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("VM successfully modified.", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("alter", options, ["infid", "vmid", get_abs_path("../files/test.radl")], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("VM successfully modified.", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_reconfigure(self, server_proxy, requests):
+    def test_reconfigure(self, requests):
         """
         Test reconfigure operation
         """
-        proxy = MagicMock()
-        proxy.Reconfigure.return_value = (True, "")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         parser = MagicMock()
@@ -426,30 +339,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully reconfigured.", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("reconfigure", options, ["infid", get_abs_path("../files/test.radl")], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("Infrastructure successfully reconfigured.", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_getcontmsg(self, server_proxy, requests):
+    def test_getcontmsg(self, requests):
         """
         Test getcontmsg operation
         """
-        proxy = MagicMock()
-        proxy.GetInfrastructureContMsg.return_value = (True, "contmsg")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         parser = MagicMock()
@@ -461,30 +361,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("Msg Contextualizator: \n\ncontmsg", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("getcontmsg", options, ["infid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("Msg Contextualizator: \n\ncontmsg", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_getstate(self, server_proxy, requests):
+    def test_getstate(self, requests):
         """
         Test getstate operation
         """
-        proxy = MagicMock()
-        proxy.GetInfrastructureState.return_value = (True, {"state": "running", "vm_states": {"vm1": "running"}})
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         parser = MagicMock()
@@ -496,31 +383,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("The infrastructure is in state: running\nVM ID: vm1 is in state: running.", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("getstate", options, ["infid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("The infrastructure is in state: running\nVM ID: vm1 is in state: running.", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_getvminfo(self, server_proxy, requests):
+    def test_getvminfo(self, requests):
         """
         Test getvminfo operation
         """
-        proxy = MagicMock()
-        proxy.GetVMInfo.return_value = (True, "radltest")
-        proxy.GetVMProperty.return_value = (True, "property")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.name = False
         parser = MagicMock()
 
@@ -531,31 +404,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("radltest", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("getvminfo", options, ["infid", "vmid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("radltest", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_getinfo(self, server_proxy, requests):
+    def test_getinfo(self, requests):
         """
         Test getinfo operation
         """
-        proxy = MagicMock()
-        proxy.GetVMInfo.return_value = (True, "radltest")
-        proxy.GetInfrastructureInfo.return_value = (True, ["vm1"])
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         options.system_name = None
@@ -568,23 +427,10 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("Info about VM with ID: vm1\nradltest", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("getinfo", options, ["infid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("Info about VM with ID: vm1\nradltest", output)
         sys.stdout = oldstdout
 
         out = StringIO()
         sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
         res = main("getinfo", options, ["infid", "contmsg"], parser)
         self.assertEqual(res, True)
         output = out.getvalue().strip()
@@ -592,26 +438,8 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
         out = StringIO()
-        oldstdout = sys.stdout
         sys.stdout = out
-        options.xmlrpc = "http://localhost:8899"
-        options.restapi = None
         options.system_name = "node"
-        str_radl1 = "system node (cpu.count = 1)"
-        str_radl2 = "system node2 (cpu.count = 2)"
-        proxy.GetInfrastructureInfo.return_value = (True, ["vm1", "vm2"])
-        proxy.GetVMInfo.side_effect = [(True, str_radl1), (True, str_radl2)]
-        res = main("getinfo", options, ["infid", "cpu.count"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("Info about VM with ID: vm1\n1", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        options.system_name = "node"
-        requests.side_effect = self.get_response
         res = main("getinfo", options, ["infid2", "cpu.count"], parser)
         self.assertEqual(res, True)
         output = out.getvalue().strip()
@@ -619,18 +447,15 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
     @patch('builtins.input', return_value='yes')
-    def test_destroy(self, input_mock, server_proxy, requests):
+    def test_destroy(self, input_mock, requests):
         """
         Test destroy operation
         """
-        proxy = MagicMock()
-        proxy.DestroyInfrastructure.return_value = (True, "")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         options.force = False
@@ -644,39 +469,11 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully destroyed", output)
-
-        # Test using name instead of the ID
-        options.name = True
-        proxy.GetInfrastructureList.return_value = (True, ["inf1"])
-        out = StringIO()
-        oldstdout = sys.stdout
-        sys.stdout = out
-        res = main("destroy", options, ["some name"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("Infrastructure successfully destroyed", output)
-        self.assertEqual(proxy.GetInfrastructureList.call_args_list[0][0][1],
-                         ".*description\s*.*\s*(\s*name\s*=\s*'some name'.*).*")
-        self.assertEqual(proxy.DestroyInfrastructure.call_args_list[1][0][0], 'inf1')
-        options.name = False
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("destroy", options, ["infid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("Infrastructure successfully destroyed", output)
         sys.stdout = oldstdout
 
         out = StringIO()
         sys.stdout = out
         options.force = True
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
         res = main("destroy", options, ["infid"], parser)
         self.assertEqual(res, True)
         output = out.getvalue().strip()
@@ -688,9 +485,6 @@ class TestClient(unittest.TestCase):
         sys.stdout = out
         options.yes = False
         options.force = True
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
         res = main("destroy", options, ["infid"], parser)
         self.assertEqual(res, False)
         output = out.getvalue().strip()
@@ -701,9 +495,6 @@ class TestClient(unittest.TestCase):
         sys.stdout = out
         options.yes = True
         options.force = False
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
         res = main("destroy", options, ["infid"], parser)
         self.assertEqual(res, True)
         output = out.getvalue().strip()
@@ -711,17 +502,14 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_start(self, server_proxy, requests):
+    def test_start(self, requests):
         """
         Test start operation
         """
-        proxy = MagicMock()
-        proxy.StartInfrastructure.return_value = (True, "")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         parser = MagicMock()
@@ -733,30 +521,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully started", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("start", options, ["infid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("Infrastructure successfully started", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_stop(self, server_proxy, requests):
+    def test_stop(self, requests):
         """
         Test stop operation
         """
-        proxy = MagicMock()
-        proxy.StopInfrastructure.return_value = (True, "")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         parser = MagicMock()
@@ -768,30 +543,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("Infrastructure successfully stopped", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("stop", options, ["infid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("Infrastructure successfully stopped", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_getradl(self, server_proxy, requests):
+    def test_getradl(self, requests):
         """
         Test getradl operation
         """
-        proxy = MagicMock()
-        proxy.GetInfrastructureRADL.return_value = (True, "radltest")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.name = False
         parser = MagicMock()
 
@@ -802,30 +564,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("radltest", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("getradl", options, ["infid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("radltest", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_getvmcontmsg(self, server_proxy, requests):
+    def test_getvmcontmsg(self, requests):
         """
         Test getvmcontmsg operation
         """
-        proxy = MagicMock()
-        proxy.GetVMContMsg.return_value = (True, "getvmcontmsg")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.name = False
         parser = MagicMock()
 
@@ -836,31 +585,18 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("getvmcontmsg", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("getvmcontmsg", options, ["infid", "vmid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("getvmcontmsg", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_startvm(self, server_proxy, requests):
+    def test_startvm(self, requests):
         """
         Test startvm operation
         """
-        proxy = MagicMock()
-        proxy.StartVM.return_value = (True, "")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.quiet = False
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.name = False
         parser = MagicMock()
 
@@ -871,31 +607,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("VM successfully started", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.quiet = False
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("startvm", options, ["infid", "vmid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("VM successfully started", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_stopvm(self, server_proxy, requests):
+    def test_stopvm(self, requests):
         """
         Test stopvm operation
         """
-        proxy = MagicMock()
-        proxy.StopVM.return_value = (True, "")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         parser = MagicMock()
@@ -907,30 +629,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("VM successfully stopped", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("stopvm", options, ["infid", "vmid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("VM successfully stopped", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_rebootvm(self, server_proxy, requests):
+    def test_rebootvm(self, requests):
         """
         Test rebootvm operation
         """
-        proxy = MagicMock()
-        proxy.RebootVM.return_value = (True, "")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         parser = MagicMock()
@@ -942,30 +651,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("VM successfully rebooted", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("rebootvm", options, ["infid", "vmid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("VM successfully rebooted", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_getversion(self, server_proxy, requests):
+    def test_getversion(self, requests):
         """
         Test getversion operation
         """
-        proxy = MagicMock()
-        proxy.GetVersion.return_value = (True, "1.0")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.name = False
         parser = MagicMock()
 
@@ -976,30 +672,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("1.0", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("getversion", options, [], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("1.0", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_export(self, server_proxy, requests):
+    def test_export(self, requests):
         """
         Test export operation
         """
-        proxy = MagicMock()
-        proxy.ExportInfrastructure.return_value = (True, "strinf")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.name = False
         parser = MagicMock()
 
@@ -1010,30 +693,17 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("strinf", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("export", options, ["infid"], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("strinf", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_import(self, server_proxy, requests):
+    def test_import(self, requests):
         """
         Test import operation
         """
-        proxy = MagicMock()
-        proxy.ImportInfrastructure.return_value = (True, "newinfid")
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         parser = MagicMock()
@@ -1045,31 +715,25 @@ class TestClient(unittest.TestCase):
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("New Inf: newinfid", output)
-
-        out = StringIO()
-        sys.stdout = out
-        options.xmlrpc = None
-        options.restapi = "https://localhost:8800"
-        requests.side_effect = self.get_response
-        res = main("import", options, [get_abs_path("../files/test.radl")], parser)
-        self.assertEqual(res, True)
-        output = out.getvalue().strip()
-        self.assertIn("New Inf: newinfid", output)
         sys.stdout = oldstdout
 
-    @patch("imclient.imclient.ServerProxy")
-    def test_sshvm(self, server_proxy):
+    @patch('requests.request')
+    def test_sshvm(self, requests):
         """
         Test sshvm operation
         """
-        proxy = MagicMock()
-
         radl = open(get_abs_path("../files/test.radl"), 'r').read()
-        proxy.GetVMInfo.return_value = (True, radl)
-        server_proxy.return_value = proxy
+
+        def get_ssh_response(method, url, **kwargs):
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.text = radl
+            return resp
+
+        requests.side_effect = get_ssh_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.name = False
         parser = MagicMock()
 
@@ -1097,8 +761,15 @@ class TestClient(unittest.TestCase):
         sys.stderr = oldstderr
 
         # test proxy host
-        radl = open(get_abs_path("../files/test_proxy.radl"), 'r').read()
-        proxy.GetVMInfo.return_value = (True, radl)
+        radl_proxy = open(get_abs_path("../files/test_proxy.radl"), 'r').read()
+
+        def get_proxy_response(method, url, **kwargs):
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.text = radl_proxy
+            return resp
+
+        requests.side_effect = get_proxy_response
 
         out = StringIO()
         oldstdout = sys.stdout
@@ -1114,19 +785,23 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
-    @patch("imclient.imclient.ServerProxy")
-    def test_scpvm(self, server_proxy):
+    @patch('requests.request')
+    def test_scpvm(self, requests):
         """
         Test scpvm operation
         """
-        proxy = MagicMock()
-
         radl = open(get_abs_path("../files/test.radl"), 'r').read()
-        proxy.GetVMInfo.return_value = (True, radl)
-        server_proxy.return_value = proxy
+
+        def get_ssh_response(method, url, **kwargs):
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.text = radl
+            return resp
+
+        requests.side_effect = get_ssh_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.name = False
         parser = MagicMock()
 
@@ -1155,19 +830,23 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
-    @patch("imclient.imclient.ServerProxy")
-    def test_sshvm_key(self, server_proxy):
+    @patch('requests.request')
+    def test_sshvm_key(self, requests):
         """
         Test sshvm operation
         """
-        proxy = MagicMock()
-
         radl = open(get_abs_path("../files/test_priv.radl"), 'r').read()
-        proxy.GetVMInfo.return_value = (True, radl)
-        server_proxy.return_value = proxy
+
+        def get_ssh_response(method, url, **kwargs):
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.text = radl
+            return resp
+
+        requests.side_effect = get_ssh_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.name = False
         parser = MagicMock()
 
@@ -1184,20 +863,25 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
         sys.stderr = oldstderr
 
-    @patch("imclient.imclient.ServerProxy")
-    def test_sshvm_via_master(self, server_proxy):
+    @patch('requests.request')
+    def test_sshvm_via_master(self, requests):
         """
         Test sshvm operation via master VM
         """
-        proxy = MagicMock()
-
         radl_master = open(get_abs_path("../files/test_ssh_master.radl"), 'r').read()
         radl_wn = open(get_abs_path("../files/test_ssh_wn.radl"), 'r').read()
-        proxy.GetVMInfo.side_effect = [(True, radl_wn), (True, radl_master)]
-        server_proxy.return_value = proxy
+        radl_iter = iter([radl_wn, radl_master])
+
+        def get_ssh_response(method, url, **kwargs):
+            resp = MagicMock()
+            resp.status_code = 200
+            resp.text = next(radl_iter)
+            return resp
+
+        requests.side_effect = get_ssh_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.name = False
         parser = MagicMock()
 
@@ -1225,8 +909,7 @@ class TestClient(unittest.TestCase):
         self.assertEqual(['create', 'test.radl'], args)
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_getoutputs(self, server_proxy, requests):
+    def test_getoutputs(self, requests):
         """
         Test getoutputs operation
         """
@@ -1238,7 +921,6 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         sys.stdout = out
         options.quiet = False
-        options.xmlrpc = None
         options.name = False
         options.restapi = "https://localhost:8800"
         requests.side_effect = self.get_response
@@ -1264,13 +946,12 @@ class TestClient(unittest.TestCase):
         parser.parse_args(["--help"])
         output = out.getvalue().strip()
         self.assertEqual(output[:7], "Usage: ")
-        self.assertIn("[-u|--xmlrpc-url <url>] [-r|--restapi-url <url>] [-v|--verify-ssl] "
+        self.assertIn("[-r|--restapi-url <url>] [-v|--verify-ssl] "
                       "[-a|--auth_file <filename>] operation op_parameters", output)
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_getcloudimages(self, server_proxy, requests):
+    def test_getcloudimages(self, requests):
         """
         Test cloudimages operation
         """
@@ -1281,7 +962,6 @@ class TestClient(unittest.TestCase):
         oldstdout = sys.stdout
         out = StringIO()
         sys.stdout = out
-        options.xmlrpc = None
         options.quiet = False
         options.name = False
         options.restapi = "https://localhost:8800"
@@ -1297,8 +977,7 @@ class TestClient(unittest.TestCase):
         sys.stdout = oldstdout
 
     @patch('requests.request')
-    @patch("imclient.imclient.ServerProxy")
-    def test_getcloudusage(self, server_proxy, requests):
+    def test_getcloudusage(self, requests):
         """
         Test cloudusage operation
         """
@@ -1309,7 +988,6 @@ class TestClient(unittest.TestCase):
         oldstdout = sys.stdout
         out = StringIO()
         sys.stdout = out
-        options.xmlrpc = None
         options.quiet = True
         options.name = False
         options.restapi = "https://localhost:8800"
@@ -1321,17 +999,15 @@ class TestClient(unittest.TestCase):
         self.assertEqual({'cores': {'used': 5, 'limit': -1}}, output)
         sys.stdout = oldstdout
 
-    @patch("imclient.imclient.ServerProxy")
-    def test_wait(self, server_proxy):
+    @patch('requests.request')
+    def test_wait(self, requests):
         """
         Test wait operation
         """
-        proxy = MagicMock()
-        proxy.GetInfrastructureState.return_value = (True, {"state": "configured", "vm_states": {"vm1": "configured"}})
-        server_proxy.return_value = proxy
+        requests.side_effect = self.get_response
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
-        options.restapi = None
+        options.restapi = "https://localhost:8800"
         options.quiet = False
         options.name = False
         parser = MagicMock()
@@ -1339,7 +1015,7 @@ class TestClient(unittest.TestCase):
         out = StringIO()
         oldstdout = sys.stdout
         sys.stdout = out
-        res = main("wait", options, ["infid"], parser)
+        res = main("wait", options, ["inf1"], parser)
         self.assertEqual(res, True)
         output = out.getvalue().strip()
         self.assertIn("The infrastructure is in state: configured", output)
@@ -1354,7 +1030,6 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = "https://localhost:8800"
-        options.xmlrpc = None
         options.quiet = True
         options.name = False
         parser = MagicMock()
@@ -1377,7 +1052,6 @@ class TestClient(unittest.TestCase):
         options = MagicMock()
         options.auth_file = get_abs_path("../../auth.dat")
         options.restapi = "https://localhost:8800"
-        options.xmlrpc = None
         options.quiet = True
         options.name = False
         parser = MagicMock()
