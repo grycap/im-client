@@ -30,7 +30,7 @@ import subprocess
 import tempfile
 import time
 from optparse import OptionParser, Option, IndentedHelpFormatter, Values
-from typing import Any, Dict, Generator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, List, Optional, Tuple, Union, Literal
 
 from radl import radl_parse
 
@@ -281,6 +281,7 @@ class CmdScp():
         except Exception as e:
             raise Exception("Error connecting to VM: %s" % str(e))
 
+VMGenerator = Generator[Tuple[str, Optional[str]], None, None]
 
 class IMClient:
     """
@@ -418,7 +419,7 @@ class IMClient:
         if proc.returncode != 0:
             if errs == b'':
                 errs = outs
-            raise Exception("Failed to get auth value using command %s: %s" % (cmd, errs.decode('utf-8')))
+            raise ValueError("Failed to get auth value using command %s: %s" % (cmd, errs.decode('utf-8')))
         return outs.decode('utf-8').replace('\n', '')
 
     @staticmethod
@@ -439,10 +440,10 @@ class IMClient:
         return radl
 
     @staticmethod
-    def _get_master_vm_id(inf_id: Union[str, int]) -> int:
+    def _get_master_vm_id(inf_id: str) -> int:
         return 0
 
-    def _get_inf_id(self) -> Union[str, int]:
+    def _get_inf_id(self) -> str:
         if len(self.args) >= 1:
             inf_id = self.args[0]
             if inf_id.isdigit():
@@ -451,7 +452,7 @@ class IMClient:
             if self.options.name:
                 infras = self.list_infras(flt=".*description\\s*.*\\s*(\\s*name\\s*=\\s*'%s'.*).*" % inf_id)
                 if len(infras) == 0:
-                    raise Exception("Infrastructure Name not found")
+                    raise ValueError("Infrastructure Name not found")
                 elif len(infras) >= 1:
                     if len(infras) > 1:
                         print("WARNING!: more that one infrastructure with the same name. First one returned.")
@@ -459,21 +460,21 @@ class IMClient:
             else:
                 return inf_id
         else:
-            raise Exception("Infrastructure ID not specified")
+            raise ValueError("Infrastructure ID not specified")
 
     def _get_vm_id(self) -> str:
         if len(self.args) >= 2:
             return self.args[1]
         else:
-            raise Exception("VM ID not specified")
+            raise ValueError("VM ID not specified")
 
-    def _get_radl(self, param_index: int, fail_if_not_set: bool = True) -> Optional[str]:
+    def _get_radl(self, param_index: int, fail_if_not_set: bool = True) -> str:
         if len(self.args) > param_index:
             if not os.path.isfile(self.args[param_index]):
-                raise Exception("RADL file '%s' does not exist" % self.args[param_index])
+                raise ValueError("RADL file '%s' does not exist" % self.args[param_index])
             return self.args[param_index]
         elif fail_if_not_set:
-            raise Exception("RADL file not specified")
+            raise ValueError("RADL file not specified")
 
     @staticmethod
     def read_input_file(filename: str) -> Tuple[Any, str]:
@@ -497,12 +498,12 @@ class IMClient:
 
         return radl, desc_type
 
-    def create(self, inf_desc: Any, desc_type: str = "radl", asyncr: bool = False, dry_run: bool = False) -> Union[str, Tuple[bool, Any]]:
+    def create(self, inf_desc: str, desc_type: Literal["radl", "json", "yaml", "yml"] = "radl", asyncr: bool = False, dry_run: bool = False) -> Any:
         """
         Create an infrastructure
         Arguments:
            - inf_desc(string): Infrastructure description in RADL (plain or JSON) or TOSCA.
-           - desc_type(string): Infrastructure description type ("radl", "json" or "yaml")
+           - desc_type(string): Infrastructure description type ("radl", "json", "yaml" or "yml")
            - asyncr(boolean): Flag to specify if the creation call will be asynchronous.
                               Default `False`.
            - dry_run(boolean): Flag to specify if the creation call will be a dry run (i.e.,
@@ -526,12 +527,11 @@ class IMClient:
                                 params=params, data=str(inf_desc))
         resp.raise_for_status()
         if dry_run:
-            return True, resp.json()
+            return resp.json()
         else:
-            inf_id = os.path.basename(resp.text)
-            return inf_id
+            return os.path.basename(resp.text)
 
-    def _create(self):
+    def _create(self) -> Any:
         radl_file = self._get_radl(0)
         asyncr = False
         # by default asyncr is False, but in case of REST API, it is True
@@ -545,7 +545,7 @@ class IMClient:
 
         return self.create(radl, desc_type, asyncr)
 
-    def removeresource(self, inf_id: Union[str, int], vm_list: List[int], context: Optional[bool] = None) -> List[int]:
+    def removeresource(self, inf_id: str, vm_list: List[int], context: Optional[bool] = None) -> List[int]:
         """
         Remove resources from an infrastructure
         Arguments:
@@ -564,7 +564,7 @@ class IMClient:
         resp.raise_for_status()
         return vm_list
 
-    def _removeresource(self):
+    def _removeresource(self) -> List[int]:
         inf_id = self._get_inf_id()
         context = None
         if len(self.args) >= 2:
@@ -580,27 +580,28 @@ class IMClient:
 
         return self.removeresource(inf_id, vm_list, context)
 
-    def addresource(self, inf_id: Union[str, int], inf_desc: Any, desc_type: str = "radl", context: Optional[bool] = None) -> List[str]:
+    def addresource(self, inf_id: str, inf_desc: str, desc_type: Literal["radl", "json", "yaml", "yml"], context: Optional[bool] = None) -> List[str]:
         """
         Add resources into an infrastructure
         Arguments:
            - inf_id(string): Infrastructure ID.
            - inf_desc(string): Infrastructure description in RADL (plain or JSON) or TOSCA.
-           - desc_type(string): Infrastructure description type ("radl", "json" or "yaml")
+           - desc_type(string): Infrastructure description type ("radl", "json", "yaml" or "yml")
            - context(boolean): Flag to disable the contextualization at the end.
         Returns: The list of added VM IDs.
         Raises: HTTPError if the addition fails.
         """
         headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
-        if desc_type == "yaml":
+        if desc_type in "yaml":
             headers["Content-Type"] = "text/yaml"
         elif desc_type == "json":
             headers["Content-Type"] = "application/json"
         url = "%s/infrastructures/%s" % (self.options.restapi, inf_id)
+        params = {}
         if context is False:
-            url += "?context=0"
+            params["context"] = "0"
         resp = requests.request("POST", url, verify=self.options.verify, headers=headers,
-                                data=str(inf_desc))
+                                data=str(inf_desc), params=params)
         resp.raise_for_status()
         vms_id = []
         for elem in resp.json()["uri-list"]:
@@ -608,7 +609,7 @@ class IMClient:
 
         return vms_id
 
-    def _addresource(self):
+    def _addresource(self) -> List[str]:
         inf_id = self._get_inf_id()
         radl_file = self._get_radl(1)
         context = None
@@ -622,7 +623,7 @@ class IMClient:
 
         return self.addresource(inf_id, radl, desc_type, context)
 
-    def alter(self, inf_id: Union[str, int], vm_id: str, inf_desc: Any) -> str:
+    def alter(self, inf_id: str, vm_id: str, inf_desc: str) -> str:
         """
         Modifies the features of a VM
         Arguments:
@@ -638,7 +639,7 @@ class IMClient:
         resp.raise_for_status()
         return resp.text
 
-    def _alter(self):
+    def _alter(self) -> str:
         inf_id = self._get_inf_id()
         vm_id = self._get_vm_id()
         radl_file = self._get_radl(2)
@@ -647,12 +648,13 @@ class IMClient:
 
         return self.alter(inf_id, vm_id, radl)
 
-    def reconfigure(self, inf_id: Union[str, int], inf_desc: Any, desc_type: str = "radl", vm_list: Optional[List[int]] = None) -> None:
+    def reconfigure(self, inf_id: str, inf_desc: str, desc_type: Literal["radl", "json", "yaml", "yml"] = "radl",
+                    vm_list: Optional[List[int]] = None) -> None:
         """
         Reconfigure the infrastructure
         Arguments:
            - inf_id(string): Infrastructure ID.
-           - inf_desc(string): Infrastructure description in RADL (plain).
+           - inf_desc(string): Infrastructure description in RADL (plain), JSON or YAML.
            - vm_list(list of strings): Optional list of VM IDs to reconfigure (default all).
         Raises: HTTPError if the reconfiguration fails.
         """
@@ -662,12 +664,14 @@ class IMClient:
         elif desc_type in "yaml":
             headers["Content-Type"] = "text/yaml"
         url = "%s/infrastructures/%s/reconfigure" % (self.options.restapi, inf_id)
+        params = {}
         if vm_list:
-            url += "?vm_list=" + ",".join(str(vm_id) for vm_id in vm_list)
-        resp = requests.request("PUT", url, verify=self.options.verify, headers=headers, data=str(inf_desc))
+            params["vm_list"] = ",".join(str(vm_id) for vm_id in vm_list)
+        resp = requests.request("PUT", url, verify=self.options.verify, headers=headers,
+                                data=str(inf_desc), params=params)
         resp.raise_for_status()
 
-    def _reconfigure(self):
+    def _reconfigure(self) -> None:
         inf_id = self._get_inf_id()
         radl = ""
         vm_list = None
@@ -682,7 +686,7 @@ class IMClient:
 
         return self.reconfigure(inf_id, radl, desc_type, vm_list)
 
-    def get_infra_property(self, inf_id: Union[str, int], prop: str) -> Any:
+    def get_infra_property(self, inf_id: str, prop: str) -> Any:
         """
         Get an infrastructure property.
 
@@ -702,12 +706,12 @@ class IMClient:
         inf_id = self._get_inf_id()
         return self.get_infra_property(inf_id, prop)
 
-    def _getvmcontmsg(self):
+    def _getvmcontmsg(self) -> str:
         inf_id = self._get_inf_id()
         vm_id = self._get_vm_id()
         return self.getvminfo(inf_id, vm_id, "contmsg")
 
-    def getvminfo(self, inf_id: Union[str, int], vm_id: str, prop: Optional[str] = None, system_name: Optional[str] = None) -> Optional[str]:
+    def getvminfo(self, inf_id: str, vm_id: str, prop: Optional[str] = None, system_name: Optional[str] = None) -> str:
         """
         Get VM info.
 
@@ -739,7 +743,7 @@ class IMClient:
 
         return info
 
-    def _getvminfo(self):
+    def _getvminfo(self) -> str:
         inf_id = self._get_inf_id()
         vm_id = self._get_vm_id()
 
@@ -749,7 +753,7 @@ class IMClient:
 
         return self.getvminfo(inf_id, vm_id, prop)
 
-    def _get_vms_info_generator(self, inf_id: Union[str, int], vm_ids: List[str], prop: Optional[str], system_name: Optional[str]) -> Generator[Tuple[str, Optional[str]], None, None]:
+    def _get_vms_info_generator(self, inf_id: str, vm_ids: List[str], prop: Optional[str], system_name: Optional[str]) -> VMGenerator:
         """Helper function to return a generator."""
         for vm_id in vm_ids:
             try:
@@ -758,7 +762,7 @@ class IMClient:
                 radl = None
             yield vm_id, radl
 
-    def getinfo(self, inf_id: Union[str, int], prop: Optional[str] = None, system_name: Optional[str] = None) -> Generator[Tuple[str, Optional[str]], None, None]:
+    def getinfo(self, inf_id: str, prop: Optional[str] = None, system_name: Optional[str] = None) -> VMGenerator:
         """
         Get infrastructure info.
 
@@ -779,7 +783,7 @@ class IMClient:
         
         return self._get_vms_info_generator(inf_id, vm_ids, prop, system_name)
 
-    def _getinfo(self):
+    def _getinfo(self) -> VMGenerator:
         inf_id = self._get_inf_id()
         prop = None
         if len(self.args) >= 2:
@@ -787,7 +791,7 @@ class IMClient:
 
         return self.getinfo(inf_id, prop, self.options.system_name)
 
-    def destroy(self, inf_id: Union[str, int], asyncr: bool = False) -> None:
+    def destroy(self, inf_id: str, asyncr: bool = False) -> None:
         """
         Destroy an infrastructure
 
@@ -799,11 +803,12 @@ class IMClient:
         """
         headers = {"Authorization": self.rest_auth_data}
         url = "%s/infrastructures/%s" % (self.options.restapi, inf_id)
+        params = {}
         if self.options.force:
-            url += "?force=yes"
+            params["force"] = "yes"
         if asyncr:
-            url += "?async=yes"
-        resp = requests.request("DELETE", url, verify=self.options.verify, headers=headers)
+            params["async"] = "yes"
+        resp = requests.request("DELETE", url, verify=self.options.verify, headers=headers, params=params)
         resp.raise_for_status()
 
     def _destroy(self):
@@ -861,7 +866,7 @@ class IMClient:
 
         return res
 
-    def start_infra(self, inf_id: Union[str, int]) -> None:
+    def start_infra(self, inf_id: str) -> None:
         """
         Start an infrastructure (previously stopped)
 
@@ -871,7 +876,7 @@ class IMClient:
         """
         self.infra_op(inf_id, "start")
 
-    def stop_infra(self, inf_id: Union[str, int]) -> None:
+    def stop_infra(self, inf_id: str) -> None:
         """
         Stop an infrastructure
 
@@ -881,7 +886,7 @@ class IMClient:
         """
         self.infra_op(inf_id, "stop")
 
-    def infra_op(self, inf_id: Union[str, int], operation: str) -> None:
+    def infra_op(self, inf_id: str, operation: str) -> None:
         """
         Call an infrastructure operation (start or stop)
 
@@ -899,7 +904,7 @@ class IMClient:
         inf_id = self._get_inf_id()
         self.infra_op(inf_id, operation)
 
-    def start_vm(self, inf_id: Union[str, int], vm_id: str) -> None:
+    def start_vm(self, inf_id: str, vm_id: str) -> None:
         """
         Start an VM (previously stopped)
 
@@ -910,7 +915,7 @@ class IMClient:
         """
         self.vm_op(inf_id, vm_id, "start")
 
-    def stop_vm(self, inf_id: Union[str, int], vm_id: str) -> None:
+    def stop_vm(self, inf_id: str, vm_id: str) -> None:
         """
         Stop an VM
 
@@ -921,7 +926,7 @@ class IMClient:
         """
         self.vm_op(inf_id, vm_id, "stop")
 
-    def reboot_vm(self, inf_id: Union[str, int], vm_id: str) -> None:
+    def reboot_vm(self, inf_id: str, vm_id: str) -> None:
         """
         Reboot an VM
 
@@ -932,7 +937,7 @@ class IMClient:
         """
         self.vm_op(inf_id, vm_id, "reboot")
 
-    def vm_op(self, inf_id: Union[str, int], vm_id: str, operation: str) -> None:
+    def vm_op(self, inf_id: str, vm_id: str, operation: str) -> None:
         """
         Call a VM operation (start, stop or reboot)
 
@@ -952,7 +957,7 @@ class IMClient:
         vm_id = self._get_vm_id()
         self.vm_op(inf_id, vm_id, operation)
 
-    def _ssh(self, operation: str) -> Any:
+    def _ssh(self, operation: str) -> Tuple[radl_parse.RADL, bool, List[str] | None]:
         inf_id = self._get_inf_id()
         show_only = False
         master_vm_id = None
@@ -1016,7 +1021,7 @@ class IMClient:
                         f.write(priv_key)
                     os.chmod(proxy_key_filename, 0o600)
                 else:
-                    raise Exception("Error, no valid credentials in VM 0")
+                    raise ValueError("Error, no valid credentials in VM 0")
                 net.setValue('proxy_host', proxy_host)
 
         return radl, show_only, cmd
@@ -1033,7 +1038,7 @@ class IMClient:
         resp.raise_for_status()
         return resp.text
 
-    def export_data(self, inf_id: Union[str, int], delete: Optional[bool] = None) -> Any:
+    def export_data(self, inf_id: str, delete: Optional[bool] = None) -> dict:
         """
         Export infrastructure data
 
@@ -1055,7 +1060,7 @@ class IMClient:
         resp.raise_for_status()
         return resp.json()["data"]
 
-    def _export_data(self):
+    def _export_data(self) -> dict:
         inf_id = self._get_inf_id()
         delete = None
         if len(self.args) >= 2:
@@ -1074,10 +1079,10 @@ class IMClient:
         headers = {"Authorization": self.rest_auth_data}
         url = "%s/infrastructures" % self.options.restapi
         resp = requests.request("PUT", url, verify=self.options.verify, headers=headers, data=data)
-        resp.raise_for_status
+        resp.raise_for_status()
         return os.path.basename(resp.text)
 
-    def _import_data(self):
+    def _import_data(self) -> str:
         if len(self.args) >= 1:
             if not os.path.isfile(self.args[0]):
                 raise ValueError("JSON file '" + self.args[0] + "' does not exist")
@@ -1090,7 +1095,7 @@ class IMClient:
 
         return self.import_data(data)
 
-    def get_cloud_images(self, cloud_id: str) -> Any:
+    def get_cloud_images(self, cloud_id: str) -> list:
         """
         Get Cloud provider images
 
@@ -1101,7 +1106,7 @@ class IMClient:
         """
         return self.get_cloud_info(cloud_id, "images")
 
-    def get_cloud_quotas(self, cloud_id: str) -> Any:
+    def get_cloud_quotas(self, cloud_id: str) -> dict:
         """
         Get Cloud provider quotas
 
@@ -1112,14 +1117,14 @@ class IMClient:
         """
         return self.get_cloud_info(cloud_id, "quotas")
 
-    def get_cloud_info(self, cloud_id: str, operation: str) -> Any:
+    def get_cloud_info(self, cloud_id: str, operation: str) -> requests.Response:
         """
         Get Cloud provider info
 
         Arguments:
            - cloud_id(string): ID of the cloud provider (as defined in the auth data).
            - operation(string): Type of information to get: "images" or "quotas".
-        Returns: The requested information from the cloud provider.
+        Returns: The response of the REST API call with the requested information.
         Raises: HTTPError if the operation fails.
         """
         headers = {"Authorization": self.rest_auth_data, "Accept": "application/json"}
@@ -1128,7 +1133,7 @@ class IMClient:
         resp.raise_for_status()
         return resp.json()[operation]
 
-    def _get_cloud_info(self, operation: str) -> Any:
+    def _get_cloud_info(self, operation: str) -> list | dict:
         if not len(self.args) >= 1:
             raise ValueError("Cloud ID not specified")
 
@@ -1167,7 +1172,7 @@ class IMClient:
         else:
             raise Exception("The infrastructure is in state: %s" % state)
 
-    def change_auth(self, inf_id: Union[str, int], new_auth_data: List[Dict[str, str]], overwrite: Optional[bool] = None) -> None:
+    def change_auth(self, inf_id: str, new_auth_data: List[Dict[str, str]], overwrite: Optional[bool] = None) -> None:
         """
         Change ownership of an infrastructure
 
