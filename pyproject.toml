@@ -23,8 +23,8 @@ dependencies = [
     "requests",
 ]
 
-# Para PyPI y Twine
-requires-python = ">=3.7"
+# For PyPI, Twine and typing-extensions
+requires-python = ">=3.8"
 
 
 [project.scripts]
