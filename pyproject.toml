@@ -21,10 +21,19 @@ dependencies = [
     "radl",
     "netaddr",
     "requests",
+    "httpx",
 ]
 
 # For PyPI, Twine and typing-extensions
 requires-python = ">=3.8"
+
+
+[project.optional-dependencies]
+test = [
+    "coverage",
+    "mock",
+    "pycodestyle",
+]
 
 
 [project.scripts]

@@ -296,18 +296,31 @@ class IMClient:
     def __init__(self, options: Values, auth_data: Union[str, List[Dict[str, str]], None], args: List[str]) -> None:
         self.args: List[str] = args
         self.server: Optional[str] = None
-        self.rest_auth_data: str = ""
+        self.rest_auth_data: str = IMClient.build_auth_data(auth_data)
         self.options: Values = options
         self.auth_data: Union[str, List[Dict[str, str]], None] = auth_data
+
+    @staticmethod
+    def build_auth_data(auth_data: Union[str, List[Dict[str, str]], None]) -> str:
+        """
+        Build the value of the Authorization header used to authenticate with the IM REST API.
+
+        Arguments:
+           - auth_data(string or :py:class:`list` of :py:class:`dict` of str objects): Authentication
+             data to access the cloud providers and the IM (as returned by `read_auth_data` function).
+        Returns(string): The string to use as the value of the Authorization header.
+        """
+        rest_auth_data = ""
         if auth_data:
             if isinstance(auth_data, str):
-                self.rest_auth_data = auth_data
+                rest_auth_data = auth_data
             else:
                 for item in auth_data:
                     for key, value in item.items():
                         value = value.replace("\n", "\\\\n")
-                        self.rest_auth_data += "%s = %s;" % (key, value)
-                    self.rest_auth_data += "\\n"
+                        rest_auth_data += "%s = %s;" % (key, value)
+                    rest_auth_data += "\\n"
+        return rest_auth_data
 
     @staticmethod
     def init_client(im_url: str, auth_data: Union[str, List[Dict[str, str]]], ssl_verify: bool = False) -> "IMClient":

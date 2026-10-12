@@ -486,3 +486,44 @@ IMClient can also be used as a Python library to access IM (since version
    ...
    client.destroy(inf_id)
 ```
+
+### 1.6 ASYNC PYTHON CLIENT
+
+`AsyncIMClient` provides the same operations as `IMClient` but performs the REST
+calls asynchronously using `httpx`, reusing a single connection across calls
+and applying a configurable per-request timeout. It can be used as an async
+context manager so the connection pool is always released:
+
+```py
+   import asyncio
+   from imclient import IMClient, AsyncIMClient
+
+   async def main():
+       auth = IMClient.read_auth_data("/path/auth.dat")
+       async with AsyncIMClient.init_client("https://im.egi.eu/im", auth) as client:
+           inf_desc = """
+              network public (outbound = 'yes')
+
+              system node (
+              cpu.count>=2 and
+              memory.size>=4g and
+              net_interface.0.connection = 'public' and
+              disk.0.os.name='linux' and
+              disk.0.image.url = 'appdb://SCAI/egi.ubuntu.20.04?vo.access.egi.eu'
+              )
+
+              deploy node 1
+           """
+           success, inf_id = await client.create(inf_desc)
+           if success:
+               success, outputs = await client.wait(inf_id)
+           await client.destroy(inf_id)
+
+   asyncio.run(main())
+```
+
+Unlike the synchronous client, the async operations do not raise exceptions on
+failure: they return a `(success, result)` tuple where `result` is either the
+requested value or the error message. The per-request timeout defaults to
+`imclient.asyncclient.DEFAULT_TIMEOUT` (60 seconds) and can be set with the
+`timeout` argument of `init_client`.

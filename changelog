@@ -143,3 +143,7 @@ IM-client: 1.8.4
 IM-client: 2.0.0
     * Remove XML-RPC support
     * Improve and Refactor code.
+
+IM-client: 2.1.0
+    * Add an asynchronous client (AsyncIMClient) based on httpx with a configurable
+      per-request timeout and connection reuse.
