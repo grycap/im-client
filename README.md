@@ -514,16 +514,17 @@ context manager so the connection pool is always released:
 
               deploy node 1
            """
-           success, inf_id = await client.create(inf_desc)
-           if success:
-               success, outputs = await client.wait(inf_id)
+           inf_id = await client.create(inf_desc)
+           await client.wait(inf_id)
+           outputs = await client.get_infra_property(inf_id, "outputs")
            await client.destroy(inf_id)
 
    asyncio.run(main())
 ```
 
-Unlike the synchronous client, the async operations do not raise exceptions on
-failure: they return a `(success, result)` tuple where `result` is either the
-requested value or the error message. The per-request timeout defaults to
-`imclient.asyncclient.DEFAULT_TIMEOUT` (60 seconds) and can be set with the
-`timeout` argument of `init_client`.
+Error handling follows the same convention as the synchronous client: failures
+raise exceptions (`httpx.HTTPStatusError` for HTTP errors,
+`httpx.TransportError` for network errors, and `TimeoutError`/`RuntimeError`
+from the `wait` operation), instead of returning `(success, result)` tuples.
+The per-request timeout defaults to `imclient.asyncclient.DEFAULT_TIMEOUT`
+(60 seconds) and can be set with the `timeout` argument of `init_client`.
